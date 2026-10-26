@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Checkout Preview — SYNEX 2026</title>
+  <meta name="description" content="Review your registration fee breakdown and preview the secure checkout flow for SYNEX 2026 Hackathon.">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/register.css">
+  <link rel="stylesheet" href="css/payment.css">
+</head>
+<body>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-banner" role="status">
+    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+    <span><strong>DEMO PAYMENT PREVIEW:</strong> This is NOT a real payment gateway. No real money will be charged or collected.</span>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
+        <div class="brand-logo-icon">S</div>
+        <div class="brand-text">
+          <span class="brand-name">SYNEX</span>
+          <span class="brand-sub">Hackathon 2026</span>
+        </div>
+      </a>
+
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="index.html#about" class="nav-link">About</a></li>
+          <li><a href="index.html#domains" class="nav-link">Domains</a></li>
+          <li><a href="schedule.html" class="nav-link">Schedule</a></li>
+          <li><a href="rules.html" class="nav-link">Rules</a></li>
+          <li><a href="contact.html" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-cta">
+        <a href="register.html" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i>
+          <span>Edit Details</span>
+        </a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileNav">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="index.html#about" class="nav-link">About</a>
+    <a href="index.html#domains" class="nav-link">Domains</a>
+    <a href="schedule.html" class="nav-link">Schedule</a>
+    <a href="rules.html" class="nav-link">Rules</a>
+    <a href="contact.html" class="nav-link">Contact</a>
+    <a href="register.html" class="btn btn-outline">Edit Registration Details</a>
+  </div>
+
+  <main class="payment-page">
+    <div class="container payment-container">
+
+      <!-- Progress Stepper (Step 3 Active) -->
+      <div class="stepper-container" aria-label="Registration Progress">
+        <ol class="stepper">
+          <li class="step-item completed">
+            <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+            <span class="step-label">Participant Details</span>
+          </li>
+          <li class="step-item completed">
+            <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+            <span class="step-label">Review Entry Fee</span>
+          </li>
+          <li class="step-item active">
+            <div class="step-circle" aria-current="step">3</div>
+            <span class="step-label">Payment</span>
+          </li>
+          <li class="step-item">
+            <div class="step-circle">4</div>
+            <span class="step-label">Confirmation</span>
+          </li>
+        </ol>
+      </div>
+
+      <!-- Missing Session State Card (If accessed directly) -->
+      <div class="checkout-card" id="missingStateCard" style="display: none; text-align: center;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: #FEF3C7; color: #D97706; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin: 0 auto 1.25rem auto;">
+          <i class="fa-solid fa-file-circle-question"></i>
+        </div>
+        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">No Active Registration Found</h2>
+        <p style="color: var(--color-text-secondary); max-width: 480px; margin: 0 auto 1.5rem auto;">
+          We could not locate an active draft registration session in your browser. Please fill in your participant credentials first.
+        </p>
+        <a href="register.html" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Go to Registration Form</span>
+        </a>
+      </div>
+
+      <!-- Main Checkout Card -->
+      <div class="checkout-card" id="checkoutCard">
+        <div class="checkout-header">
+          <div>
+            <span class="section-tag">Step 3 of 4</span>
+            <h1 class="checkout-title">Fee Payment Checkout Preview</h1>
+            <p class="checkout-sub">Review registration summary before proceeding to the simulated gateway.</p>
+          </div>
+          <div>
+            <span class="demo-ref-badge" id="checkoutRefId">SYN-DEMO-00000</span>
+          </div>
+        </div>
+
+        <!-- Strict Safety Alert -->
+        <div class="alert alert-warning">
+          <i class="fa-solid fa-shield-halved" style="font-size: 1.15rem; color: #D97706;" aria-hidden="true"></i>
+          <div>
+            <strong>Frontend Demonstration Mode:</strong>
+            Real payment gateway APIs (e.g. Razorpay, Stripe, or Cashfree) and server-side webhook signature verifications will be connected during backend integration. No financial credentials are collected here.
+          </div>
+        </div>
+
+        <!-- Order Summary Details -->
+        <div class="order-details-list">
+          <div class="order-detail-item">
+            <span class="order-detail-label">
+              <i class="fa-solid fa-user-check"></i>
+              <span>Participant / Team</span>
+            </span>
+            <span class="order-detail-val" id="orderName">Loading...</span>
+          </div>
+          <div class="order-detail-item">
+            <span class="order-detail-label">
+              <i class="fa-solid fa-ticket"></i>
+              <span>Registration Type</span>
+            </span>
+            <span class="order-detail-val" id="orderType">Individual</span>
+          </div>
+          <div class="order-detail-item">
+            <span class="order-detail-label">
+              <i class="fa-solid fa-school"></i>
+              <span>College / Institute</span>
+            </span>
+            <span class="order-detail-val" id="orderCollege">Loading...</span>
+          </div>
+          <div class="order-detail-item">
+            <span class="order-detail-label">
+              <i class="fa-solid fa-cubes"></i>
+              <span>Selected Track / Domain</span>
+            </span>
+            <span class="order-detail-val" id="orderDomain">AI &amp; Machine Learning</span>
+          </div>
+        </div>
+
+        <!-- Fee Breakdown Table -->
+        <div class="pricing-breakdown">
+          <div class="pricing-row">
+            <span>Base Hackathon Entry Fee:</span>
+            <strong id="orderBaseFee">₹299</strong>
+          </div>
+          <div class="pricing-row">
+            <span>Swag Kit &amp; Meals Surcharge:</span>
+            <span style="color: var(--color-success); font-weight: 600;">Included (₹0.00)</span>
+          </div>
+          <div class="pricing-row">
+            <span>Platform Gateway Convenience Fee:</span>
+            <span style="color: var(--color-success); font-weight: 600;">Waived (₹0.00)</span>
+          </div>
+          <div class="pricing-row total-row">
+            <span>Total Payable Amount:</span>
+            <span class="total-amount-highlight" id="orderTotalAmount">₹299</span>
+          </div>
+        </div>
+
+        <!-- Payment Method Mock Selector -->
+        <div class="payment-methods-preview">
+          <h2 class="methods-title">
+            <i class="fa-solid fa-wallet"></i>
+            <span>Simulated Payment Channel Preview</span>
+          </h2>
+          <div class="method-options">
+            <div class="method-box selected">
+              <div class="method-icon"><i class="fa-solid fa-qrcode"></i></div>
+              <div class="method-name">UPI / QR Code</div>
+              <div class="method-sub">GPay, PhonePe, Paytm</div>
+            </div>
+            <div class="method-box">
+              <div class="method-icon"><i class="fa-regular fa-credit-card"></i></div>
+              <div class="method-name">Debit / Credit Card</div>
+              <div class="method-sub">Visa, Mastercard, RuPay</div>
+            </div>
+            <div class="method-box">
+              <div class="method-icon"><i class="fa-solid fa-building-columns"></i></div>
+              <div class="method-name">Net Banking</div>
+              <div class="method-sub">50+ Indian Banks</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkout Actions -->
+        <div class="checkout-actions">
+          <div class="checkout-action-row">
+            <button type="button" class="btn btn-proceed btn-lg" id="btnProceedPayment">
+              <i class="fa-solid fa-shield" aria-hidden="true"></i>
+              <span>Proceed to Secure Payment (Demo)</span>
+            </button>
+
+            <button type="button" class="btn btn-fail-demo btn-lg" id="btnSimulateFailure">
+              <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+              <span>Preview Payment Failure</span>
+            </button>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <a href="register.html" class="btn btn-outline btn-sm">
+              <i class="fa-solid fa-pen-to-square"></i>
+              <span>Edit Registration Details</span>
+            </a>
+            <span style="font-size: 0.78rem; color: var(--color-text-muted);">
+              <i class="fa-solid fa-lock"></i> 256-bit Simulated Handshake
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Failure State Preview Card (Shown when failure is triggered) -->
+      <div class="failure-state-card" id="failureStateCard">
+        <div class="failure-icon">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+        <h2 class="failure-title">Demo Payment Failed</h2>
+        <p class="failure-desc">
+          This simulates a declined transaction or network timeout from the payment provider. 
+          <strong>No money was deducted</strong> and your registration draft remains safely saved in your browser session.
+        </p>
+
+        <div class="alert alert-warning" style="text-align: left; max-width: 520px; margin: 0 auto 2rem auto;">
+          <i class="fa-solid fa-circle-info"></i>
+          <div>
+            <strong>Demonstration Tip:</strong> In production with Flask and payment webhooks, failed attempts log an incident ID and allow the user to select an alternate payment method or retry.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary btn-lg" id="btnRetryDemo">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Retry Demo Payment</span>
+          </button>
+          <a href="register.html" class="btn btn-outline btn-lg">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Return to Form</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Demo Payment Simulation Modal -->
+  <div class="modal-backdrop" id="demoPaymentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-dialog">
+      <div class="modal-spinner" id="modalSpinner"></div>
+      <h3 class="modal-title" id="modalTitle">Simulating Handshake</h3>
+      <p class="modal-desc" id="modalDesc">Connecting to simulated payment server...</p>
+
+      <div class="modal-actions" id="modalActions" style="display: none;">
+        <button type="button" class="btn btn-primary btn-lg" id="btnCompleteDemoSuccess">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Complete Demo Payment (Success)</span>
+        </button>
+        <button type="button" class="btn btn-outline" id="btnCancelDemoModal">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Cancel Simulation</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom" style="border: none; padding-top: 0;">
+        <div>&copy; 2026 SYNEX Hackathon. Frontend demonstration prototype.</div>
+        <div>
+          <a href="admin-login.html" class="footer-admin-link">
+            <i class="fa-solid fa-lock"></i> Admin Portal
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/payment.js"></script>
+</body>
+</html>

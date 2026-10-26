@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rules &amp; Guidelines — SYNEX 2026</title>
+  <meta name="description" content="Comprehensive participation rules, eligibility, code of conduct, submission criteria, and intellectual property terms for SYNEX 2026.">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .rules-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+    .rules-nav-card {
+      position: sticky;
+      top: calc(var(--nav-height) + 2rem);
+      background: #FFFFFF;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .rules-nav-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-text-main);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .rules-nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .rules-nav-list a {
+      display: block;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+    }
+    .rules-nav-list a:hover {
+      background: var(--color-bg-alt);
+      color: var(--color-primary);
+    }
+    .rule-block {
+      background: #FFFFFF;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 2.25rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .rule-block-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .rule-num {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .rule-block-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--color-text-main);
+    }
+    .criteria-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    .criteria-table th {
+      background: var(--color-bg-surface);
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--color-border);
+      text-align: left;
+      font-weight: 700;
+    }
+    .criteria-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    @media (max-width: 900px) {
+      .rules-layout {
+        grid-template-columns: 1fr;
+      }
+      .rules-nav-card {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-banner" role="status">
+    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    <span><strong>SAMPLE CONTENT:</strong> Rules, eligibility guidelines, and refund terms are sample content for demonstration.</span>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
+        <div class="brand-logo-icon">S</div>
+        <div class="brand-text">
+          <span class="brand-name">SYNEX</span>
+          <span class="brand-sub">Hackathon 2026</span>
+        </div>
+      </a>
+
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="index.html#about" class="nav-link">About</a></li>
+          <li><a href="index.html#domains" class="nav-link">Domains</a></li>
+          <li><a href="schedule.html" class="nav-link">Schedule</a></li>
+          <li><a href="rules.html" class="nav-link active">Rules</a></li>
+          <li><a href="contact.html" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-cta">
+        <a href="register.html" class="btn btn-primary btn-sm">
+          <span>Register Now</span>
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileNav">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="index.html#about" class="nav-link">About</a>
+    <a href="index.html#domains" class="nav-link">Domains</a>
+    <a href="schedule.html" class="nav-link">Schedule</a>
+    <a href="rules.html" class="nav-link active">Rules</a>
+    <a href="contact.html" class="nav-link">Contact</a>
+    <a href="register.html" class="btn btn-primary">Register Now</a>
+  </div>
+
+  <!-- Page Header -->
+  <div style="background: radial-gradient(100% 70% at 50% 0%, #EBF4FF 0%, #FFFFFF 100%); padding: 4rem 0 3rem 0; border-bottom: 1px solid var(--color-border); text-align: center;">
+    <div class="container">
+      <span class="section-tag">
+        <i class="fa-solid fa-gavel"></i>
+        <span>Official Guidelines</span>
+      </span>
+      <h1 style="font-size: 2.75rem; margin-bottom: 0.75rem;">Rules, Ethics &amp; Evaluation Rubric</h1>
+      <p style="font-size: 1.1rem; color: var(--color-text-secondary); max-width: 680px; margin: 0 auto;">
+        Clear guidelines ensuring fairness, creative integrity, intellectual property safety, and collaborative excellence at SYNEX 2026.
+      </p>
+    </div>
+  </div>
+
+  <!-- Content Section -->
+  <main class="section">
+    <div class="container">
+      <div class="rules-layout">
+
+        <!-- Sticky Quick Navigation -->
+        <aside class="rules-nav-card" aria-label="Table of Contents">
+          <div class="rules-nav-title">Quick Jump</div>
+          <ul class="rules-nav-list">
+            <li><a href="#eligibility">1. Eligibility &amp; Format</a></li>
+            <li><a href="#teamsize">2. Team Composition</a></li>
+            <li><a href="#originality">3. Code Originality</a></li>
+            <li><a href="#ip">4. Intellectual Property</a></li>
+            <li><a href="#conduct">5. Code of Conduct</a></li>
+            <li><a href="#submission">6. Submission Reqs</a></li>
+            <li><a href="#judging">7. Judging Rubric</a></li>
+            <li><a href="#fees">8. Fee &amp; Refund Policy</a></li>
+            <li><a href="#deadlines">9. Key Deadlines</a></li>
+          </ul>
+        </aside>
+
+        <!-- Main Rules Content -->
+        <div class="rules-content">
+
+          <!-- 1. Eligibility -->
+          <article class="rule-block" id="eligibility">
+            <div class="rule-block-header">
+              <div class="rule-num">1</div>
+              <h2 class="rule-block-title">Eligibility &amp; Format</h2>
+            </div>
+            <p>
+              SYNEX 2026 is open to all students actively pursuing full-time or part-time undergraduate (B.E./B.Tech, BCA, B.Sc), postgraduate (M.E./M.Tech, MCA, M.Sc, MBA), or diploma degrees from accredited educational institutions worldwide.
+            </p>
+            <p>
+              Both in-person attendance at our Bengaluru tech campus and virtual hybrid participation options are provided. All participants must present a valid student identity card or proof of current enrollment at check-in.
+            </p>
+          </article>
+
+          <!-- 2. Team Composition -->
+          <article class="rule-block" id="teamsize">
+            <div class="rule-block-header">
+              <div class="rule-num">2</div>
+              <h2 class="rule-block-title">Individual &amp; Team Composition</h2>
+            </div>
+            <p>
+              Participants may choose to compete individually or in teams of up to 4 members:
+            </p>
+            <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--color-text-secondary); line-height: 1.7;">
+              <li><strong>Solo Hackers:</strong> Individuals can register at the discounted individual rate of ₹299.</li>
+              <li><strong>Teams:</strong> Teams can comprise between <strong>2 to 4 members</strong> with a fixed team entry fee of ₹999.</li>
+              <li><strong>Inter-College Teams:</strong> Cross-institutional teams and interdisciplinary pairings (e.g. Computer Science + Healthcare/Biotech) are highly encouraged.</li>
+              <li><strong>Single Entry Restriction:</strong> An individual can belong to only one team during the event.</li>
+            </ul>
+          </article>
+
+          <!-- 3. Originality & Integrity -->
+          <article class="rule-block" id="originality">
+            <div class="rule-block-header">
+              <div class="rule-num">3</div>
+              <h2 class="rule-block-title">Project Originality &amp; Academic Integrity</h2>
+            </div>
+            <p>
+              All core codebase, architectural designs, and functional components must be authored during the official 36-hour hacking sprint. Pre-existing applications, pre-built turnkey templates, or previously published capstone projects are strictly prohibited.
+            </p>
+            <p>
+              Use of publicly available open-source libraries, frameworks (React, Flutter, PyTorch, Node.js), public APIs, and foundational models is permitted provided they are disclosed in your project README file.
+            </p>
+          </article>
+
+          <!-- 4. Intellectual Property -->
+          <article class="rule-block" id="ip">
+            <div class="rule-block-header">
+              <div class="rule-num">4</div>
+              <h2 class="rule-block-title">100% Intellectual Property (IP) Retention</h2>
+            </div>
+            <p>
+              <strong>You own what you build.</strong> Neither the SYNEX organizers, sponsors, nor venue partners claim any rights, equity, or ownership over the intellectual property created during the hackathon.
+            </p>
+            <p>
+              Teams remain free to open-source, patent, incorporate into startups, or commercialize their products after the event concludes.
+            </p>
+          </article>
+
+          <!-- 5. Code of Conduct -->
+          <article class="rule-block" id="conduct">
+            <div class="rule-block-header">
+              <div class="rule-num">5</div>
+              <h2 class="rule-block-title">Code of Conduct</h2>
+            </div>
+            <p>
+              SYNEX is committed to providing a safe, respectful, inclusive, and harassment-free experience for everyone regardless of gender, sexual orientation, disability, physical appearance, race, ethnicity, or religion.
+            </p>
+            <p>
+              Harassment of any kind, plagiarism, toxic competitive behavior, or violation of venue regulations will result in immediate disqualification and removal from the premises without refund.
+            </p>
+          </article>
+
+          <!-- 6. Submission Guidelines -->
+          <article class="rule-block" id="submission">
+            <div class="rule-block-header">
+              <div class="rule-num">6</div>
+              <h2 class="rule-block-title">Submission Requirements</h2>
+            </div>
+            <p>
+              To qualify for judging, all teams must finalize and submit the following assets prior to the Day 2 05:00 PM code freeze:
+            </p>
+            <ul style="margin-left: 1.5rem; color: var(--color-text-secondary); line-height: 1.7;">
+              <li><strong>GitHub Repository:</strong> Public link containing all source code with commit history timestamped during the sprint.</li>
+              <li><strong>README Documentation:</strong> Clear setup instructions, problem statement, architecture overview, and third-party dependencies.</li>
+              <li><strong>Demonstration Video:</strong> A 2-minute unedited walkthrough screen recording showcasing live functionality.</li>
+              <li><strong>Pitch Deck:</strong> 5-slide PDF presentation outlining value proposition, market impact, and technical stack.</li>
+            </ul>
+          </article>
+
+          <!-- 7. Judging Rubric -->
+          <article class="rule-block" id="judging">
+            <div class="rule-block-header">
+              <div class="rule-num">7</div>
+              <h2 class="rule-block-title">Evaluation &amp; Judging Rubric</h2>
+            </div>
+            <p>
+              Projects will be systematically evaluated by an independent jury of engineering directors, venture capitalists, and domain specialists according to a weighted rubric:
+            </p>
+            <table class="criteria-table">
+              <thead>
+                <tr>
+                  <th>Evaluation Parameter</th>
+                  <th>Weight</th>
+                  <th>Key Focus Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Innovation &amp; Originality</strong></td>
+                  <td>25%</td>
+                  <td>Novelty of approach, creativity, and unconventional problem solving.</td>
+                </tr>
+                <tr>
+                  <td><strong>Technical Complexity</strong></td>
+                  <td>25%</td>
+                  <td>Architecture quality, algorithmic depth, performance, and code hygiene.</td>
+                </tr>
+                <tr>
+                  <td><strong>Practical Viability &amp; Impact</strong></td>
+                  <td>20%</td>
+                  <td>Real-world feasibility, market relevance, and potential for societal adoption.</td>
+                </tr>
+                <tr>
+                  <td><strong>User Experience (UI/UX)</strong></td>
+                  <td>15%</td>
+                  <td>Intuitive interface, accessibility standards, responsive ergonomics.</td>
+                </tr>
+                <tr>
+                  <td><strong>Presentation &amp; Pitch</strong></td>
+                  <td>15%</td>
+                  <td>Clarity of communication, handling of jury Q&amp;A, demo readiness.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <!-- 8. Fee & Refund Policy -->
+          <article class="rule-block" id="fees">
+            <div class="rule-block-header">
+              <div class="rule-num">8</div>
+              <h2 class="rule-block-title">Entry Fee &amp; Refund Policy</h2>
+            </div>
+            <p>
+              Registration fees contribute directly towards venue infrastructure, 1Gbps connectivity, official kits, mentor travel, and round-the-clock catering for participants:
+            </p>
+            <ul style="margin-left: 1.5rem; color: var(--color-text-secondary); line-height: 1.7; margin-bottom: 1rem;">
+              <li><strong>Individual Fee:</strong> ₹299 (Sample amount)</li>
+              <li><strong>Team Fee:</strong> ₹999 (Sample amount for up to 4 members)</li>
+            </ul>
+            <div class="alert alert-warning" style="margin-bottom: 0;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <div>
+                <strong>Non-Refundable Notice:</strong> Because logistics, meals, and swag production are locked in advance with vendors, registration fees are non-refundable. Team substitutions can be approved up to 72 hours before kickoff.
+              </div>
+            </div>
+          </article>
+
+          <!-- 9. Deadlines -->
+          <article class="rule-block" id="deadlines">
+            <div class="rule-block-header">
+              <div class="rule-num">9</div>
+              <h2 class="rule-block-title">Key Deadlines</h2>
+            </div>
+            <p>
+              Please take note of critical registration and submission milestones:
+            </p>
+            <ul style="margin-left: 1.5rem; color: var(--color-text-secondary); line-height: 1.7;">
+              <li><strong>Registration Closes:</strong> November 10, 2026 at 11:59 PM IST</li>
+              <li><strong>Team Roster Freeze:</strong> November 12, 2026 at 06:00 PM IST</li>
+              <li><strong>Hackathon Kickoff:</strong> November 14, 2026 at 08:30 AM IST</li>
+              <li><strong>Final Code Freeze:</strong> November 15, 2026 at 05:00 PM IST</li>
+            </ul>
+          </article>
+
+          <!-- Register Callout -->
+          <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); border-radius: var(--radius-xl); padding: 2.5rem; text-align: center; color: #FFFFFF;">
+            <h3 style="font-size: 1.75rem; color: #FFFFFF; margin-bottom: 0.5rem;">Ready to Abide by the Code &amp; Build?</h3>
+            <p style="color: #E0E7FF; max-width: 540px; margin: 0 auto 1.5rem auto;">
+              Slots are capped at 300 teams. Secure your spot and join the most anticipated sprint of the year.
+            </p>
+            <a href="register.html" class="btn btn-lg" style="background: #FFFFFF; color: var(--color-primary); font-weight: 700;">
+              <span>Register Now For SYNEX</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="index.html" class="brand" aria-label="SYNEX Homepage">
+            <div class="brand-logo-icon">S</div>
+            <div class="brand-text">
+              <span class="brand-name">SYNEX</span>
+              <span class="brand-sub">Hackathon 2026</span>
+            </div>
+          </a>
+          <p class="footer-desc">
+            A premier national 36-hour technology sprint uniting visionary developers, researchers, and designers to create scalable societal solutions.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="index.html#about">About Event</a></li>
+            <li><a href="index.html#domains">Domains</a></li>
+            <li><a href="schedule.html">Schedule</a></li>
+            <li><a href="rules.html">Rules &amp; Guidelines</a></li>
+            <li><a href="contact.html">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Registration</h4>
+          <ul class="footer-links">
+            <li><a href="register.html">Individual Entry</a></li>
+            <li><a href="register.html">Team Registration</a></li>
+            <li><a href="payment.html">Payment Preview</a></li>
+            <li><a href="confirmation.html">Pass Status</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Administration</h4>
+          <ul class="footer-links">
+            <li><a href="admin-login.html">Organizer Login</a></li>
+            <li><a href="admin-dashboard.html">Dashboard Preview</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 SYNEX Hackathon. Frontend demonstration prototype.</div>
+        <div>
+          <a href="admin-login.html" class="footer-admin-link">
+            <i class="fa-solid fa-lock"></i> Admin Portal
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+</body>
+</html>

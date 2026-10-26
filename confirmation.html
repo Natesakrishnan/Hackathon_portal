@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration Confirmation — SYNEX 2026</title>
+  <meta name="description" content="View your SYNEX 2026 Hackathon participant pass and registration confirmation details.">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/register.css">
+  <link rel="stylesheet" href="css/payment.css">
+</head>
+<body>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-banner" role="status">
+    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+    <span><strong>DEMO CONFIRMATION:</strong> No real payment was processed. This is a frontend layout and printable pass preview.</span>
+  </div>
+
+  <!-- Navigation Bar (Hidden during printing) -->
+  <header class="navbar no-print">
+    <div class="container nav-container">
+      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
+        <div class="brand-logo-icon">S</div>
+        <div class="brand-text">
+          <span class="brand-name">SYNEX</span>
+          <span class="brand-sub">Hackathon 2026</span>
+        </div>
+      </a>
+
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="index.html#about" class="nav-link">About</a></li>
+          <li><a href="index.html#domains" class="nav-link">Domains</a></li>
+          <li><a href="schedule.html" class="nav-link">Schedule</a></li>
+          <li><a href="rules.html" class="nav-link">Rules</a></li>
+          <li><a href="contact.html" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-cta">
+        <a href="index.html" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-house" aria-hidden="true"></i>
+          <span>Return to Home</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="payment-page">
+    <div class="container payment-container">
+
+      <!-- Progress Stepper (Step 4 Active - Hidden on print) -->
+      <div class="stepper-container no-print" aria-label="Registration Progress">
+        <ol class="stepper">
+          <li class="step-item completed">
+            <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+            <span class="step-label">Participant Details</span>
+          </li>
+          <li class="step-item completed">
+            <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+            <span class="step-label">Review Entry Fee</span>
+          </li>
+          <li class="step-item completed">
+            <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+            <span class="step-label">Payment</span>
+          </li>
+          <li class="step-item active">
+            <div class="step-circle" aria-current="step">4</div>
+            <span class="step-label">Confirmation</span>
+          </li>
+        </ol>
+      </div>
+
+      <!-- State A: Active Demo Success Display -->
+      <div class="confirmation-card" id="confirmSuccessState">
+        <div class="confirm-status-icon">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+
+        <div class="badge badge-demo" style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.4rem 1rem;">
+          DEMO CONFIRMATION — NO REAL PAYMENT WAS PROCESSED
+        </div>
+
+        <h1 class="confirm-title">Registration Slot Reserved (Demo)!</h1>
+        <p class="confirm-subtitle">
+          Your simulated registration has been registered for the demonstration session. Save or print this pass for check-in verification.
+        </p>
+
+        <!-- Printable Participant Pass Slip -->
+        <div class="pass-slip" id="printablePassSlip">
+          <div class="pass-main-side">
+            <div class="pass-slip-brand">
+              <div class="brand-logo-icon" style="width: 32px; height: 32px; font-size: 1rem;">S</div>
+              <div>
+                <strong style="color: var(--color-text-main); font-size: 1.1rem; line-height: 1;">SYNEX 2026 OFFICIAL PASS</strong>
+                <div style="font-size: 0.72rem; color: var(--color-text-secondary);">National Innovation Hackathon • Hybrid Edition</div>
+              </div>
+            </div>
+
+            <div class="pass-ref-tag" id="passRefId">SYN-DEMO-00000</div>
+
+            <div class="pass-grid">
+              <div class="pass-item">
+                <span class="pass-item-label">Participant / Lead</span>
+                <span class="pass-item-val" id="passName">Loading...</span>
+              </div>
+              <div class="pass-item">
+                <span class="pass-item-label">Entry Category</span>
+                <span class="pass-item-val" id="passType">Individual</span>
+              </div>
+              <div class="pass-item">
+                <span class="pass-item-label">Innovation Domain</span>
+                <span class="pass-item-val" id="passDomain">AI &amp; ML</span>
+              </div>
+              <div class="pass-item">
+                <span class="pass-item-label">Institution</span>
+                <span class="pass-item-val" id="passCollege">Loading...</span>
+              </div>
+              <div class="pass-item">
+                <span class="pass-item-label">Event Date &amp; Kickoff</span>
+                <span class="pass-item-val">Nov 14, 2026 • 08:30 AM IST</span>
+              </div>
+              <div class="pass-item">
+                <span class="pass-item-label">Demo Fee Paid</span>
+                <span class="pass-item-val" id="passFee">₹299 (Simulated)</span>
+              </div>
+            </div>
+
+            <!-- Team Members Listing (If Team) -->
+            <div id="passTeamMembersRow" style="display: none; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--color-border);">
+              <span class="pass-item-label">Team Members:</span>
+              <div id="passMembersList" style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-main); margin-top: 0.25rem;"></div>
+            </div>
+          </div>
+
+          <!-- QR Code Mockup Side -->
+          <div class="pass-qr-side">
+            <div class="qr-box">
+              <!-- Inline Scalable SVG Mock QR -->
+              <svg width="90" height="90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Mock Pass QR Code">
+                <rect x="5" y="5" width="30" height="30" rx="4" stroke="#1E293B" stroke-width="4" fill="white"/>
+                <rect x="12" y="12" width="16" height="16" fill="#2563EB"/>
+                <rect x="65" y="5" width="30" height="30" rx="4" stroke="#1E293B" stroke-width="4" fill="white"/>
+                <rect x="72" y="12" width="16" height="16" fill="#2563EB"/>
+                <rect x="5" y="65" width="30" height="30" rx="4" stroke="#1E293B" stroke-width="4" fill="white"/>
+                <rect x="12" y="72" width="16" height="16" fill="#2563EB"/>
+                <!-- Mock QR Bits -->
+                <rect x="42" y="10" width="8" height="8" fill="#1E293B"/>
+                <rect x="52" y="18" width="8" height="8" fill="#1E293B"/>
+                <rect x="42" y="42" width="16" height="16" rx="2" fill="#7C3AED"/>
+                <rect x="65" y="45" width="8" height="8" fill="#1E293B"/>
+                <rect x="80" y="55" width="8" height="8" fill="#1E293B"/>
+                <rect x="45" y="70" width="8" height="8" fill="#1E293B"/>
+                <rect x="65" y="75" width="12" height="12" fill="#1E293B"/>
+                <rect x="85" y="80" width="8" height="8" fill="#1E293B"/>
+              </svg>
+            </div>
+            <span class="qr-caption">Scan at Check-In</span>
+          </div>
+        </div>
+
+        <!-- Instructions Box -->
+        <div class="instructions-box">
+          <h2 class="instructions-title">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>Important Next Steps &amp; Instructions</span>
+          </h2>
+          <ul class="instructions-list">
+            <li>
+              <i class="fa-solid fa-check"></i>
+              <span>Bring your original college identity card along with a printed or digital copy of this pass to the check-in desk.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-check"></i>
+              <span>Join the official SYNEX 2026 Discord server (sample link: <code>discord.gg/synex-hackathon-demo</code>) for announcements and mentor office hours.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-check"></i>
+              <span>Prepare your laptop environments, GitHub accounts, and hardware peripherals in advance. Hacking starts promptly at 11:30 AM on Day 1.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Action Buttons (no-print) -->
+        <div class="no-print" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary btn-lg" onclick="window.print()">
+            <i class="fa-solid fa-print"></i>
+            <span>Print Confirmation Pass</span>
+          </button>
+          <a href="index.html" class="btn btn-outline btn-lg">
+            <i class="fa-solid fa-house"></i>
+            <span>Return to Home</span>
+          </a>
+          <a href="register.html" class="btn btn-outline btn-lg">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Register Another</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- State B: Missing / Direct Access Warning State -->
+      <div class="confirmation-card" id="confirmUnavailableState" style="display: none;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; background: #F1F5F9; color: #64748B; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem auto;">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <h2 style="font-size: 1.6rem; color: var(--color-text-main); margin-bottom: 0.5rem;">Registration Status Unavailable</h2>
+        <p style="color: var(--color-text-secondary); max-width: 520px; margin: 0 auto 2rem auto; font-size: 0.95rem;">
+          No completed demo registration was found in your current browser session. To receive a valid confirmation pass, please complete the registration and demo checkout flow.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+          <a href="register.html" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Start Registration</span>
+          </a>
+          <a href="index.html" class="btn btn-outline btn-lg">
+            <i class="fa-solid fa-house"></i>
+            <span>Return to Homepage</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer (no-print) -->
+  <footer class="footer no-print">
+    <div class="container">
+      <div class="footer-bottom" style="border: none; padding-top: 0;">
+        <div>&copy; 2026 SYNEX Hackathon. Frontend demonstration prototype.</div>
+        <div>
+          <a href="admin-login.html" class="footer-admin-link">
+            <i class="fa-solid fa-lock"></i> Admin Portal
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const successCard = document.getElementById("confirmSuccessState");
+      const unavailCard = document.getElementById("confirmUnavailableState");
+
+      // Verify payment status and draft session
+      let isSuccess = false;
+      let draft = null;
+
+      try {
+        const paymentStatus = sessionStorage.getItem("synex_payment_status");
+        const rawDraft = sessionStorage.getItem("synex_registration_draft");
+        if (paymentStatus === "demo_success" && rawDraft) {
+          draft = JSON.parse(rawDraft);
+          if (draft && draft.participantName) {
+            isSuccess = true;
+          }
+        }
+      } catch (e) {
+        console.error("Error reading confirmation state:", e);
+      }
+
+      if (!isSuccess) {
+        if (successCard) successCard.style.display = "none";
+        if (unavailCard) unavailCard.style.display = "block";
+        return;
+      }
+
+      // Populate valid demo confirmation pass
+      if (successCard) successCard.style.display = "block";
+      if (unavailCard) unavailCard.style.display = "none";
+
+      document.getElementById("passRefId").textContent = draft.referenceId || "SYN-DEMO-00000";
+      
+      const passName = document.getElementById("passName");
+      if (draft.type === "Team" && draft.teamName) {
+        passName.textContent = `${draft.teamName} (Lead: ${draft.participantName})`;
+      } else {
+        passName.textContent = draft.participantName;
+      }
+
+      document.getElementById("passType").textContent = draft.type === "Team"
+        ? `Team (${draft.teamSize || 3} Members)`
+        : "Individual";
+
+      document.getElementById("passDomain").textContent = draft.domain || "AI & Machine Learning";
+      document.getElementById("passCollege").textContent = draft.college || "N/A";
+      document.getElementById("passFee").textContent = `${draft.currency || "₹"}${draft.totalAmount} (Demo)`;
+
+      // If team members exist, display them
+      if (draft.type === "Team" && Array.isArray(draft.members) && draft.members.length > 0) {
+        const teamRow = document.getElementById("passTeamMembersRow");
+        const listDiv = document.getElementById("passMembersList");
+        if (teamRow && listDiv) {
+          teamRow.style.display = "block";
+          listDiv.textContent = draft.members.map(m => `${m.name} (${m.email})`).join(" • ");
+        }
+      }
+    });
+  </script>
+</body>
+</html>

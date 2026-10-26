@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard Preview — SYNEX 2026</title>
+  <meta name="description" content="Organizer administration dashboard preview with registration metrics, payment statistics, and participant table.">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-banner" role="status">
+    <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+    <span><strong>ADMIN DASHBOARD PREVIEW:</strong> Displaying sample demo statistics and mock participant data. Backend database not connected.</span>
+  </div>
+
+  <div class="admin-layout">
+
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin Navigation Sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="brand" aria-label="SYNEX Public Portal">
+          <div class="brand-logo-icon" style="width: 36px; height: 36px; font-size: 1.1rem;">S</div>
+          <div class="brand-text">
+            <span class="brand-name" style="font-size: 1.2rem;">SYNEX</span>
+            <span class="brand-sub">Admin Console</span>
+          </div>
+        </a>
+      </div>
+
+      <ul class="sidebar-nav">
+        <li class="sidebar-item active">
+          <a href="admin-dashboard.html">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#registrations" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+            <i class="fa-solid fa-address-card"></i>
+            <span>Registrations</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#participants" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+            <i class="fa-solid fa-users"></i>
+            <span>Participants</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#teams" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+            <i class="fa-solid fa-people-group"></i>
+            <span>Teams</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#payments" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+            <i class="fa-solid fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#reports" onclick="event.preventDefault(); alert('Report generation preview: Backend Flask report generator will be wired during server-side integration.');">
+            <i class="fa-solid fa-chart-column"></i>
+            <span>Reports</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#announcements" onclick="event.preventDefault(); alert('Announcement engine preview: Push alerts will be sent via Discord webhook & email server.');">
+            <i class="fa-solid fa-bullhorn"></i>
+            <span>Announcements</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#settings" onclick="event.preventDefault(); alert('Event configuration preview: Modify target deadlines and prize amounts in window.SYNEX_CONFIG.');">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Event Settings</span>
+          </a>
+        </li>
+        <li class="sidebar-item" style="margin-top: auto;">
+          <a href="admin-login.html" style="color: var(--color-error);">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Log Out</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-admin-user">
+          <div class="admin-avatar">AD</div>
+          <div class="admin-user-info">
+            <span class="admin-user-name" id="adminUserName">Organizer Admin</span>
+            <span class="admin-user-role">Super Admin (Demo)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="admin-main">
+
+      <!-- Topbar Header -->
+      <header class="admin-topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" id="adminSidebarToggle" aria-label="Toggle admin sidebar">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 class="topbar-title">Hackathon Overview &amp; Analytics</h1>
+        </div>
+
+        <div class="topbar-right">
+          <a href="index.html" class="btn btn-outline btn-sm">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span>View Public Site</span>
+          </a>
+          <div class="badge badge-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">
+            <i class="fa-solid fa-circle" style="color: var(--color-success); font-size: 0.5rem;"></i>
+            <span>Live Sync (Mock)</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Admin Dashboard Content -->
+      <main class="admin-content">
+
+        <!-- 6 Summary Metrics Cards -->
+        <div class="metrics-grid">
+          <!-- Card 1: Total Registrations -->
+          <div class="metric-card metric-primary">
+            <div class="metric-header">
+              <span class="metric-label">Total Regs</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-user-plus"></i></div>
+            </div>
+            <div class="metric-val">428</div>
+            <span class="metric-sub">Sample demo total</span>
+          </div>
+
+          <!-- Card 2: Paid Registrations -->
+          <div class="metric-card metric-success">
+            <div class="metric-header">
+              <span class="metric-label">Paid Regs</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="metric-val">386</div>
+            <span class="metric-sub">90.1% conversion rate</span>
+          </div>
+
+          <!-- Card 3: Pending Payments -->
+          <div class="metric-card metric-warning">
+            <div class="metric-header">
+              <span class="metric-label">Pending</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-clock"></i></div>
+            </div>
+            <div class="metric-val">27</div>
+            <span class="metric-sub">Awaiting gateway sync</span>
+          </div>
+
+          <!-- Card 4: Failed Payments -->
+          <div class="metric-card metric-error">
+            <div class="metric-header">
+              <span class="metric-label">Failed</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-circle-xmark"></i></div>
+            </div>
+            <div class="metric-val">15</div>
+            <span class="metric-sub">Declined / Timeout</span>
+          </div>
+
+          <!-- Card 5: Total Collection -->
+          <div class="metric-card metric-purple">
+            <div class="metric-header">
+              <span class="metric-label">Gross Revenue</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            </div>
+            <div class="metric-val">₹2.84L</div>
+            <span class="metric-sub">Simulated collection</span>
+          </div>
+
+          <!-- Card 6: Total Teams -->
+          <div class="metric-card metric-info">
+            <div class="metric-header">
+              <span class="metric-label">Total Teams</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-people-group"></i></div>
+            </div>
+            <div class="metric-val">112</div>
+            <span class="metric-sub">Avg 3.4 hackers/team</span>
+          </div>
+        </div>
+
+        <!-- Charts Section (Chart.js) -->
+        <div class="charts-grid">
+          <!-- Left: Registration Trend -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h2 class="chart-title">Daily Registration Influx (Past 7 Days)</h2>
+              <span class="badge badge-primary">Trend Preview</span>
+            </div>
+            <div class="chart-canvas-container">
+              <canvas id="trendsChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Right: Payment Status Distribution -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h2 class="chart-title">Payment Distribution</h2>
+              <span class="badge badge-success">386 Paid</span>
+            </div>
+            <div class="chart-canvas-container">
+              <canvas id="paymentStatusChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Full Width: Registrations by Domain -->
+          <div class="chart-card chart-card-full">
+            <div class="chart-header">
+              <h2 class="chart-title">Registrations Across 8 Innovation Domains</h2>
+              <span class="badge badge-secondary">Track Breakdown</span>
+            </div>
+            <div class="chart-canvas-container" style="min-height: 240px;">
+              <canvas id="domainChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Data Table Card -->
+        <div class="table-card" id="tableCard">
+          <div class="table-toolbar">
+            <!-- Search -->
+            <div class="toolbar-search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="tableSearchInput" placeholder="Search by name, ID, college, domain...">
+            </div>
+
+            <!-- Filters & CSV Export -->
+            <div class="toolbar-filters">
+              <!-- Domain Filter Dropdown -->
+              <select id="tableDomainFilter" class="filter-select" aria-label="Filter by innovation domain">
+                <option value="all">All Domains (8 Tracks)</option>
+                <option value="Artificial Intelligence & Machine Learning">AI &amp; Machine Learning</option>
+                <option value="Web Development">Web Development</option>
+                <option value="Cybersecurity">Cybersecurity</option>
+                <option value="Internet of Things (IoT)">Internet of Things (IoT)</option>
+                <option value="Healthcare Technology">Healthcare Technology</option>
+                <option value="Financial Technology (FinTech)">Financial Technology (FinTech)</option>
+                <option value="Smart Cities & Sustainability">Smart Cities &amp; Sustainability</option>
+                <option value="Open Innovation">Open Innovation</option>
+              </select>
+
+              <!-- Payment Status Filter -->
+              <select id="tableStatusFilter" class="filter-select" aria-label="Filter by payment status">
+                <option value="all">All Payment Statuses</option>
+                <option value="paid">Paid Only</option>
+                <option value="pending">Pending Only</option>
+                <option value="failed">Failed Only</option>
+              </select>
+
+              <button type="button" class="btn-export-csv" id="btnExportCsv">
+                <i class="fa-solid fa-file-csv"></i>
+                <span>Export Sample CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Content -->
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Reg ID</th>
+                  <th>Participant / Team</th>
+                  <th>Type</th>
+                  <th>College / University</th>
+                  <th>Domain</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Registered Date</th>
+                </tr>
+              </thead>
+              <tbody id="registrationsTableBody">
+                <!-- Dynamically populated by js/admin.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Footer -->
+          <div class="table-footer">
+            <span id="tableShowingCount">Showing 12 demo records</span>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-outline btn-sm" disabled style="opacity: 0.5;">Previous</button>
+              <button class="btn btn-outline btn-sm" disabled style="opacity: 0.5;">Next</button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+  <!-- Team & Participant Details Modal -->
+  <div class="team-modal-backdrop" id="teamDetailsModal" role="dialog" aria-modal="true" aria-labelledby="modalTeamName">
+    <div class="team-modal-dialog">
+      <div class="team-modal-header">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon">
+            <i class="fa-solid fa-people-group"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="modalTeamName">Team Name</h2>
+            <span class="team-modal-ref" id="modalTeamRef">ID: SYN-2026-00000</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseTeamModal" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body">
+        <!-- Team Overview Meta Grid -->
+        <div class="team-meta-grid">
+          <div class="team-meta-item">
+            <span class="team-meta-label">Domain Track</span>
+            <span class="team-meta-value" id="modalTeamDomain">AI &amp; Machine Learning</span>
+          </div>
+          <div class="team-meta-item">
+            <span class="team-meta-label">Institution / College</span>
+            <span class="team-meta-value" id="modalTeamCollege">Loading...</span>
+          </div>
+          <div class="team-meta-item">
+            <span class="team-meta-label">Registration Type</span>
+            <span class="team-meta-value" id="modalTeamType">Team (4 Members)</span>
+          </div>
+          <div class="team-meta-item">
+            <span class="team-meta-label">Entry Fee &amp; Status</span>
+            <span class="team-meta-value" id="modalTeamFee">₹999 (PAID)</span>
+          </div>
+        </div>
+
+        <!-- Team Leader Card -->
+        <div class="leader-card">
+          <div class="leader-badge">
+            <i class="fa-solid fa-crown"></i>
+            <span>Team Leader / Primary Contact</span>
+          </div>
+          <div class="leader-name" id="modalLeaderName">Leader Name</div>
+          <div class="leader-details">
+            <span><i class="fa-solid fa-envelope"></i> <span id="modalLeaderEmail">leader@college.edu</span></span>
+            <span><i class="fa-solid fa-phone"></i> <span id="modalLeaderMobile">+91 98765 43210</span></span>
+            <span><i class="fa-solid fa-graduation-cap"></i> <span id="modalLeaderDept">Computer Science</span></span>
+          </div>
+        </div>
+
+        <!-- Team Members List -->
+        <div>
+          <div class="members-section-title">
+            <span id="modalMembersCountTitle">Team Members</span>
+            <span style="font-size: 0.78rem; color: var(--color-text-muted);">Verified Credentials</span>
+          </div>
+          <div id="modalMembersList">
+            <!-- Populated dynamically by js/admin.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="team-modal-footer">
+        <button type="button" class="btn btn-primary btn-sm" id="btnModalFooterClose">
+          <i class="fa-solid fa-check"></i>
+          <span>Done</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,593 @@
+/* ==========================================================================
+   SYNEX HACKATHON — REGISTRATION STYLESHEET (register.css)
+   ========================================================================== */
+
+.register-page {
+  padding: 3rem 0 5rem 0;
+  background-color: var(--color-bg-alt);
+  min-height: calc(100vh - var(--nav-height) - 100px);
+}
+
+/* ==========================================================================
+   Progress Stepper Indicator
+   ========================================================================== */
+
+.stepper-container {
+  max-width: 840px;
+  margin: 0 auto 3rem auto;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.stepper::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  right: 40px;
+  height: 2px;
+  background-color: var(--color-border);
+  z-index: 1;
+}
+
+.step-item {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.step-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: var(--color-bg-card);
+  border: 2px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+  margin-bottom: 0.5rem;
+}
+
+.step-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+}
+
+/* Active Step */
+.step-item.active .step-circle {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px var(--color-primary-subtle);
+}
+
+.step-item.active .step-label {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* Completed Step */
+.step-item.completed .step-circle {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: #FFFFFF;
+}
+
+.step-item.completed .step-label {
+  color: var(--color-text-main);
+}
+
+/* ==========================================================================
+   Registration Layout
+   ========================================================================== */
+
+.register-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.form-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1.5rem;
+}
+
+.form-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+  margin-bottom: 0.4rem;
+}
+
+.form-desc {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   Type Selector (Individual vs Team)
+   ========================================================================== */
+
+.type-selector-group {
+  margin-bottom: 2rem;
+}
+
+.type-selector-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-main);
+  margin-bottom: 0.75rem;
+}
+
+.type-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.type-pill {
+  position: relative;
+  cursor: pointer;
+}
+
+.type-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.type-pill-box {
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all var(--transition-fast);
+  background: var(--color-bg-card);
+}
+
+.type-pill:hover .type-pill-box {
+  border-color: var(--color-primary-subtle);
+  background: var(--color-bg-surface);
+}
+
+.type-pill input[type="radio"]:checked + .type-pill-box {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.type-pill-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: #E2E8F0;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.type-pill input[type="radio"]:checked + .type-pill-box .type-pill-icon {
+  background: var(--color-primary);
+  color: #FFFFFF;
+}
+
+.type-pill-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  line-height: 1.2;
+}
+
+.type-pill-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.2rem;
+}
+
+.type-pill-fee {
+  margin-left: auto;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+/* ==========================================================================
+   Form Fields & Grid
+   ========================================================================== */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group-full {
+  grid-column: 1 / -1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-label .required {
+  color: var(--color-error);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  color: #94A3B8;
+  font-size: 0.95rem;
+  pointer-events: none;
+  transition: color var(--transition-fast);
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  background-color: #FFFFFF;
+  color: var(--color-text-main);
+  transition: all var(--transition-fast);
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  outline: none;
+}
+
+.form-input:focus ~ .input-icon,
+.form-select:focus ~ .input-icon {
+  color: var(--color-primary);
+}
+
+/* Validation states */
+.form-group.has-error .form-input,
+.form-group.has-error .form-select {
+  border-color: var(--color-error);
+  background-color: #FFF5F5;
+}
+
+.form-group.has-error .input-icon {
+  color: var(--color-error);
+}
+
+.field-error {
+  display: none;
+  font-size: 0.75rem;
+  color: var(--color-error);
+  font-weight: 500;
+  margin-top: 0.35rem;
+}
+
+.form-group.has-error .field-error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ==========================================================================
+   Team Section & Dynamic Members
+   ========================================================================== */
+
+.team-section {
+  display: none;
+  background: var(--color-bg-surface);
+  border: 1px dashed #CBD5E1;
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.team-section.active {
+  display: block;
+}
+
+.team-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.team-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-size-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.member-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  position: relative;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-fast);
+}
+
+.member-card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.member-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.member-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-remove-member {
+  background: transparent;
+  border: none;
+  color: var(--color-error);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.btn-remove-member:hover {
+  background: var(--color-error-bg);
+}
+
+.add-member-container {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.btn-add-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: #FFFFFF;
+  border: 1px dashed var(--color-primary);
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-add-member:hover {
+  background: var(--color-primary-light);
+}
+
+/* ==========================================================================
+   Terms Agreement Checkbox
+   ========================================================================== */
+
+.terms-group {
+  margin: 1.75rem 0;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* ==========================================================================
+   Sidebar Summary Card (Sticky)
+   ========================================================================== */
+
+.register-sidebar {
+  position: sticky;
+  top: calc(var(--nav-height) + 2rem);
+}
+
+.summary-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.summary-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-main);
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.85rem;
+}
+
+.summary-row strong {
+  color: var(--color-text-main);
+}
+
+.summary-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 1.25rem 0;
+}
+
+.summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.summary-total-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.summary-total-price {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.summary-security {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 1rem;
+  text-align: center;
+  justify-content: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+
+@media (max-width: 992px) {
+  .register-layout {
+    grid-template-columns: 1fr;
+  }
+  .register-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .stepper::before {
+    left: 20px;
+    right: 20px;
+  }
+  .step-label {
+    font-size: 0.7rem;
+  }
+  .step-circle {
+    width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+  }
+  .type-pills {
+    grid-template-columns: 1fr;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-card {
+    padding: 1.5rem;
+  }
+}
