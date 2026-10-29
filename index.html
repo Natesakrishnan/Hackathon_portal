@@ -133,7 +133,7 @@
               </div>
               <div class="hero-meta-text">
                 <span class="hero-meta-label">Entry From</span>
-                <span class="hero-meta-val">₹299 Individual / ₹999 Team</span>
+                <span class="hero-meta-val" id="heroEntryFeeDisplay" data-synex-fees="combined">₹{{ individual_fee }} Individual / ₹{{ team_fee }} Team</span>
               </div>
             </div>
           </div>
@@ -766,7 +766,7 @@
             </button>
             <div class="faq-answer">
               <p>
-                Both options are supported! You can register as an <strong>Individual (₹299)</strong> if you wish to hack solo, or as a <strong>Team of 2 to 4 members (₹999 total)</strong>. We also host a virtual team-formation mixer on Discord prior to kickoff for solo participants looking to form teams.
+                Both options are supported! You can register as an <strong id="faqIndividualFee" class="faq-indiv-fee-text">Individual (₹{{ individual_fee }})</strong> if you wish to hack solo, or as a <strong id="faqTeamFee" class="faq-team-fee-text">Team of 2 to 4 members (₹{{ team_fee }} total)</strong>. We also host a virtual team-formation mixer on Discord prior to kickoff for solo participants looking to form teams.
               </p>
             </div>
           </div>

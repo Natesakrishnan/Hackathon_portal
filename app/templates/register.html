@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register for SYNEX 2026 — Participant Portal</title>
+  <meta name="description"
+    content="Register as an individual or team for SYNEX 2026 National Innovation Hackathon. Complete your registration details and review entry fees.">
+
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core & Page Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/register.css">
+</head>
+
+<body>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-banner" role="status">
+    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    <span><strong>DEMO PREVIEW:</strong> Temporary frontend registration flow. Information is saved to your browser
+      session only.</span>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
+        <div class="brand-logo-icon">S</div>
+        <div class="brand-text">
+          <span class="brand-name">SYNEX</span>
+          <span class="brand-sub">Hackathon 2026</span>
+        </div>
+      </a>
+
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="index.html#about" class="nav-link">About</a></li>
+          <li><a href="index.html#domains" class="nav-link">Domains</a></li>
+          <li><a href="schedule.html" class="nav-link">Schedule</a></li>
+          <li><a href="rules.html" class="nav-link">Rules</a></li>
+          <li><a href="contact.html" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-cta">
+        <a href="index.html" class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          <span>Back to Home</span>
+        </a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false"
+          aria-controls="mobileNav">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="index.html#about" class="nav-link">About</a>
+    <a href="index.html#domains" class="nav-link">Domains</a>
+    <a href="schedule.html" class="nav-link">Schedule</a>
+    <a href="rules.html" class="nav-link">Rules</a>
+    <a href="contact.html" class="nav-link">Contact</a>
+    <a href="index.html" class="btn btn-outline">Back to Home</a>
+  </div>
+
+  <main class="register-page">
+    <div class="container">
+
+      <!-- Progress Stepper Indicator -->
+      <div class="stepper-container" aria-label="Registration Progress">
+        <ol class="stepper">
+          <li class="step-item active" id="stepIndicator1">
+            <div class="step-circle" aria-current="step">1</div>
+            <span class="step-label">Participant Details</span>
+          </li>
+          <li class="step-item" id="stepIndicator2">
+            <div class="step-circle">2</div>
+            <span class="step-label">Review Entry Fee</span>
+          </li>
+          <li class="step-item" id="stepIndicator3">
+            <div class="step-circle">3</div>
+            <span class="step-label">Payment</span>
+          </li>
+          <li class="step-item" id="stepIndicator4">
+            <div class="step-circle">4</div>
+            <span class="step-label">Confirmation</span>
+          </li>
+        </ol>
+      </div>
+
+      <!-- Registration Layout -->
+      <div class="register-layout">
+
+        <!-- Form Card Main -->
+        <div class="form-card" id="step1Card">
+          <div class="form-header">
+            <span class="section-tag">Step 1 of 4</span>
+            <h1 class="form-title">Participant Registration</h1>
+            <p class="form-desc">Choose your registration format and provide participant credentials to reserve your
+              team spot.</p>
+          </div>
+
+          <form id="registrationForm" novalidate>
+
+            <!-- Registration Type Selection -->
+            <div class="type-selector-group">
+              <span class="type-selector-label">Select Registration Type <span class="required">*</span></span>
+              <div class="type-pills">
+                <label class="type-pill">
+                  <input type="radio" name="regType" id="typeIndividual" value="individual" checked>
+                  <div class="type-pill-box">
+                    <div class="type-pill-icon"><i class="fa-solid fa-user"></i></div>
+                    <div>
+                      <div class="type-pill-title">Individual</div>
+                      <div class="type-pill-desc">Solo hacker participation</div>
+                    </div>
+                    <div class="type-pill-fee" id="pillIndividualFee" data-fee-pill="individual">₹{{ individual_fee }}</div>
+                  </div>
+                </label>
+
+                <label class="type-pill">
+                  <input type="radio" name="regType" id="typeTeam" value="team">
+                  <div class="type-pill-box">
+                    <div class="type-pill-icon"><i class="fa-solid fa-users"></i></div>
+                    <div>
+                      <div class="type-pill-title">Team Entry</div>
+                      <div class="type-pill-desc">2 to 4 members capacity</div>
+                    </div>
+                    <div class="type-pill-fee" id="pillTeamFee" data-fee-pill="team">₹{{ team_fee }}</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Primary Participant / Team Leader Fields -->
+            <div class="form-grid">
+              <div class="form-group form-group-full">
+                <label class="form-label" for="fullName">
+                  <span id="nameFieldLabel">Full Name (Team Leader)</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input type="text" id="fullName" class="form-input" placeholder="e.g. Aditi Sharma" required
+                    autocomplete="name">
+                  <i class="fa-solid fa-user input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please enter your full legal name.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="email">
+                  <span>Official Email Address</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input type="email" id="email" class="form-input" placeholder="aditi.sharma@college.edu" required
+                    autocomplete="email">
+                  <i class="fa-solid fa-envelope input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please provide a valid institutional email.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="mobile">
+                  <span>Mobile Phone Number</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input type="tel" id="mobile" class="form-input" placeholder="e.g. 9876543210 (10 digits)" required
+                    autocomplete="tel">
+                  <i class="fa-solid fa-phone input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please enter a 10-digit Indian mobile number.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="college">
+                  <span>College / Institution</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input type="text" id="college" class="form-input" placeholder="e.g. National Institute of Technology"
+                    required>
+                  <i class="fa-solid fa-building-columns input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please state your college or university.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="department">
+                  <span>Department</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input type="text" id="department" class="form-input" placeholder="e.g. Computer Science &amp; Engg."
+                    required>
+                  <i class="fa-solid fa-laptop-code input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please specify your branch or department.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="yearOfStudy">
+                  <span>Current Year of Study</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <select id="yearOfStudy" class="form-select" required>
+                    <option value="" disabled selected>Select study year</option>
+                    <option value="1st Year">1st Year (Fresher)</option>
+                    <option value="2nd Year">2nd Year </option>
+                    <option value="3rd Year">3rd Year </option>
+                    <option value="4th Year">4th Year </option>
+                    <option value="Postgraduate">Postgraduate / Research Scholar</option>
+                  </select>
+                  <i class="fa-solid fa-graduation-cap input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please select your year of study.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="domain">
+                  <span>Preferred Domain Track</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <select id="domain" class="form-select" required>
+                    <option value="" disabled selected>Select your domain</option>
+                    <option value="AI & Machine Learning">AI &amp; Machine Learning</option>
+                    <option value="Web3 & Blockchain">Web3 &amp; Blockchain</option>
+                    <option value="IoT & Embedded Systems">IoT &amp; Embedded Systems</option>
+                    <option value="Cloud & Cybersecurity">Cloud &amp; Cybersecurity</option>
+                    <option value="Healthcare & MedTech">Healthcare &amp; MedTech</option>
+                    <option value="Open Innovation & FinTech">Open Innovation &amp; FinTech</option>
+                  </select>
+                  <i class="fa-solid fa-layer-group input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please pick an initial innovation track.</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Team Section (Visible only when Team is selected) -->
+            <div class="team-section" id="teamSection">
+              <div class="team-section-header">
+                <div class="team-section-title">
+                  <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+                  <span>Team Composition Details</span>
+                </div>
+                <span class="team-size-badge" id="teamSizeBadge">3 of 4 max</span>
+              </div>
+
+              <!-- Team Name Input -->
+              <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label" for="teamName">
+                  <span>Team Name</span>
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input type="text" id="teamName" class="form-input" placeholder="e.g. NeuralVoyagers">
+                  <i class="fa-solid fa-flag input-icon" aria-hidden="true"></i>
+                </div>
+                <span class="field-error">Please provide a unique team name.</span>
+              </div>
+
+              <!-- Container for Member 2, 3, etc. -->
+              <div id="dynamicMembersContainer"></div>
+
+              <!-- Add Member Button -->
+              <div class="add-member-container">
+                <button type="button" class="btn-add-member" id="btnAddMember">
+                  <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                  <span>Add Team Member (Up to 4 Max)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Terms & Conditions Agreement -->
+            <div class="terms-group">
+              <label class="checkbox-label" for="termsCheck">
+                <input type="checkbox" id="termsCheck" required>
+                <span>
+                  I have read and agree to the <a href="rules.html" target="_blank" rel="noopener">Rules &amp; Code of
+                    Conduct</a> and understand that registration fees are non-refundable sample fees.
+                </span>
+              </label>
+            </div>
+
+            <!-- Submit Button & Return Option -->
+            <div
+              style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+              <button type="submit" class="btn btn-primary btn-lg" id="btnContinuePayment">
+                <span>Review &amp; Proceed to Payment</span>
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </button>
+
+              <a href="index.html" class="btn btn-outline">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                <span>Cancel Registration</span>
+              </a>
+            </div>
+          </form>
+        </div>
+
+        <!-- Step 2: Review Entry Fee Card (Displayed after successful Step 1 submission) -->
+        <div class="form-card" id="step2Card" style="display: none;">
+          <div class="form-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <span class="section-tag">Step 2 of 4</span>
+              <h1 class="form-title">Review Entry Fee &amp; Details</h1>
+              <p class="form-desc">Please review your registration details and verified entry fee before proceeding to payment.</p>
+            </div>
+            <div>
+              <div class="review-ref-badge" id="reviewRefBadge">
+                <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+                <span>Reference:</span>
+                <strong id="reviewRefCode">SYNEX-000000</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Verified Notice -->
+          <div class="alert alert-success" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; padding: 1rem 1.25rem; border-radius: var(--radius-md);">
+            <i class="fa-solid fa-circle-check" style="font-size: 1.2rem; color: #059669;" aria-hidden="true"></i>
+            <div>
+              <strong>Participant Details Verified:</strong> Registration reserved in system. Entry fee is calculated securely by the server.
+            </div>
+          </div>
+
+          <!-- Review Summary Section -->
+          <div class="review-section">
+            <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-id-card" style="color: var(--color-primary);" aria-hidden="true"></i>
+              <span>Registration Overview</span>
+            </h2>
+
+            <div class="review-grid">
+              <div class="review-item">
+                <span class="review-label">Registration Type</span>
+                <strong class="review-value" id="reviewRegType">Individual</strong>
+              </div>
+              <div class="review-item">
+                <span class="review-label">Domain Track</span>
+                <strong class="review-value" id="reviewDomain">AI &amp; Machine Learning</strong>
+              </div>
+              <div class="review-item">
+                <span class="review-label">Institution / College</span>
+                <strong class="review-value" id="reviewCollege">National Institute of Technology</strong>
+              </div>
+              <div class="review-item">
+                <span class="review-label">Department &amp; Year</span>
+                <strong class="review-value" id="reviewDeptYear">Computer Science (3rd Year)</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Participant / Team Breakdown -->
+          <div class="review-section" style="margin-top: 1.5rem;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-users" style="color: var(--color-primary);" aria-hidden="true"></i>
+              <span id="reviewParticipantsTitle">Participant Credentials</span>
+            </h2>
+
+            <!-- Team Name Row (if team) -->
+            <div id="reviewTeamNameRow" style="display: none; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--color-bg-alt); border-radius: var(--radius-md); border-left: 4px solid var(--color-primary);">
+              <span style="font-size: 0.85rem; color: var(--color-text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block;">Team Name</span>
+              <strong id="reviewTeamName" style="font-size: 1.1rem; color: var(--color-text-main);">NeuralVoyagers</strong>
+            </div>
+
+            <!-- Members List Container -->
+            <div id="reviewMembersList" class="review-members-container">
+              <!-- Dynamically populated via register.js -->
+            </div>
+          </div>
+
+          <!-- Server Calculated Entry Fee Breakdown -->
+          <div class="review-section" style="margin-top: 1.5rem; background: var(--color-bg-alt); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-receipt" style="color: var(--color-primary);" aria-hidden="true"></i>
+              <span>Server-Calculated Entry Fee</span>
+            </h2>
+
+            <div class="pricing-rows-review">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
+                <span style="color: var(--color-text-secondary);">Base Hackathon Entry Fee:</span>
+                <strong id="reviewBaseFee" style="color: var(--color-text-main);">₹{{ individual_fee }}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
+                <span style="color: var(--color-text-secondary);">Swag Kit &amp; Meals Surcharge:</span>
+                <span style="color: var(--color-success); font-weight: 600;">Included (₹0.00)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
+                <span style="color: var(--color-text-secondary);">Platform Processing Fee:</span>
+                <span style="color: var(--color-success); font-weight: 600;">Waived (₹0.00)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 0 0.25rem 0; font-size: 1.15rem; font-weight: 800;">
+                <span style="color: var(--color-text-main);">Total Payable Amount:</span>
+                <span id="reviewTotalAmount" style="color: var(--color-primary); font-size: 1.4rem;">₹{{ individual_fee }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 Actions -->
+          <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <button type="button" class="btn btn-primary btn-lg" id="btnProceedToPayment">
+              <span>Continue to Payment (Step 3)</span>
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </button>
+
+            <button type="button" class="btn btn-outline" id="btnEditRegistration">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              <span>Edit Participant Details</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sticky Fee & Summary Sidebar -->
+        <aside class="register-sidebar" aria-label="Fee Summary">
+          <div class="summary-card">
+            <h2 class="summary-title">Registration Summary</h2>
+
+            <div class="summary-row">
+              <span>Event:</span>
+              <strong>SYNEX 2026</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Access Mode:</span>
+              <span class="badge badge-primary">In-Person &amp; Hybrid</span>
+            </div>
+
+            <div class="summary-row">
+              <span>Selected Type:</span>
+              <strong id="summaryRegType">Individual Registration</strong>
+            </div>
+
+            <div class="summary-row" id="summaryMembersRow" style="display: none;">
+              <span>Team Size:</span>
+              <strong id="summaryMembersCount">3 Members</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Base Entry Fee:</span>
+              <strong id="summaryBaseFee">₹{{ individual_fee }}</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Platform &amp; Tech Fee:</span>
+              <span class="badge badge-success">₹0 Free</span>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <div class="summary-total">
+              <span class="summary-total-label">Total Payable:</span>
+              <span class="summary-total-price" id="summaryTotalPrice">₹{{ individual_fee }}</span>
+            </div>
+
+            <div class="alert alert-info" style="margin-bottom: 0; font-size: 0.78rem; line-height: 1.45;">
+              <i class="fa-solid fa-shield-halved" style="font-size: 1rem;" aria-hidden="true"></i>
+              <span>
+                <strong>Frontend Demo:</strong> No actual monetary transaction will occur. Next step will preview the
+                payment checkout screen.
+              </span>
+            </div>
+
+            <div class="summary-security">
+              <i class="fa-solid fa-lock" aria-hidden="true"></i>
+              <span>Temporary sessionStorage session</span>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom" style="border: none; padding-top: 0;">
+        <div>&copy; 2026 SYNEX Hackathon </div>
+        <div>
+          <a href="admin-login.html" class="footer-admin-link">
+            <i class="fa-solid fa-lock"></i> Admin Portal
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/register.js"></script>
+</body>
+
+</html>

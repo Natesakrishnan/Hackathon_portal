@@ -954,3 +954,296 @@
   }
 }
 
+/* ==========================================================================
+   Admin Extended Sections (Reports, Announcements, Event Settings)
+   ========================================================================== */
+
+.admin-section-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  margin-top: 2rem;
+  overflow: hidden;
+}
+
+.admin-section-header {
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+  background: #FFFFFF;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-section-header .section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.admin-section-header .section-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.admin-section-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0;
+}
+
+.admin-section-header p {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  margin: 0.15rem 0 0 0;
+}
+
+.admin-section-body {
+  padding: 1.75rem;
+}
+
+/* Reports Download Grid */
+.reports-download-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.report-download-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all var(--transition-fast);
+}
+
+.report-download-card:hover {
+  background: #FFFFFF;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.report-card-top {
+  margin-bottom: 1.25rem;
+}
+
+.report-card-top .report-type-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  background: #E2E8F0;
+  color: #334155;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.65rem;
+}
+
+.report-card-top h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-bottom: 0.35rem;
+}
+
+.report-card-top p {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.report-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+}
+
+/* Admin Form Grid & Inputs */
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-form-group.span-full {
+  grid-column: 1 / -1;
+}
+
+.admin-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.admin-form-group .form-helper {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.admin-form-control {
+  width: 100%;
+  padding: 0.65rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--color-text-main);
+  background-color: #FFFFFF;
+  transition: all var(--transition-fast);
+}
+
+.admin-form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  outline: none;
+}
+
+textarea.admin-form-control {
+  resize: vertical;
+  min-height: 95px;
+}
+
+.admin-checkbox-group {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+}
+
+.admin-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  color: var(--color-text-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-checkbox-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.admin-alert-banner {
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-alert-success {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+}
+
+.admin-alert-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+
+/* History table */
+.announcement-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5rem;
+}
+
+.announcement-history-table th {
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.announcement-history-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  vertical-align: top;
+}
+
+.announcement-history-table tr:hover {
+  background-color: var(--color-bg-surface);
+}
+
+/* Danger Zone and Danger Button Styles */
+.danger-zone-card {
+  margin-top: 2rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #FECACA;
+  background: #FFF5F5;
+  border-radius: var(--radius-md, 8px);
+  transition: box-shadow 0.2s ease;
+}
+
+.danger-zone-card:hover {
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);
+}
+
+.btn-danger {
+  background: #DC2626 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #DC2626 !important;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #B91C1C !important;
+  border-color: #B91C1C !important;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-danger:active {
+  transform: translateY(0);
+  background: #991B1B !important;
+}
+
+.btn-danger:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+

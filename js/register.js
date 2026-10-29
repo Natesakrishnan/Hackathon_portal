@@ -1,7 +1,8 @@
 /**
  * SYNEX HACKATHON — REGISTRATION LOGIC (register.js)
  * Manages participant/team registration, dynamic member fields,
- * real-time fee calculation, validation, and temporary sessionStorage draft.
+ * real-time fee calculation, validation, API submission, and
+ * seamless progression to Step 2 (Review Entry Fee).
  */
 
 const REG_CONFIG = {
@@ -15,7 +16,62 @@ const REG_CONFIG = {
 
 document.addEventListener("DOMContentLoaded", () => {
   initRegistrationForm();
+  fetchEventFees();
 });
+
+/**
+ * Fetch dynamic fees and domain tracks from backend
+ */
+async function fetchEventFees() {
+  try {
+    const res = await fetch("/api/config");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.individual_fee !== undefined) REG_CONFIG.individualFee = data.individual_fee;
+      if (data.team_fee !== undefined) REG_CONFIG.teamFee = data.team_fee;
+      if (data.currency) REG_CONFIG.currency = data.currency === "INR" ? "₹" : data.currency;
+
+      // Update Type Selection Pills
+      const pillIndiv = document.getElementById("pillIndividualFee");
+      const pillTeam = document.getElementById("pillTeamFee");
+      if (pillIndiv) pillIndiv.textContent = `${REG_CONFIG.currency}${REG_CONFIG.individualFee}`;
+      if (pillTeam) pillTeam.textContent = `${REG_CONFIG.currency}${REG_CONFIG.teamFee}`;
+      document.querySelectorAll('[data-fee-pill="individual"]').forEach(el => el.textContent = `${REG_CONFIG.currency}${REG_CONFIG.individualFee}`);
+      document.querySelectorAll('[data-fee-pill="team"]').forEach(el => el.textContent = `${REG_CONFIG.currency}${REG_CONFIG.teamFee}`);
+
+      // Update fee tags on screen if present
+      const summaryFeeEl = document.getElementById("summaryBaseFee");
+      const summaryTotalEl = document.getElementById("summaryTotalPrice");
+      const reviewFeeEl = document.getElementById("reviewBaseFee");
+      const reviewTotalEl = document.getElementById("reviewTotalAmount");
+      const isTeam = document.querySelector('input[name="regType"]:checked')?.value === "team";
+      const currentFee = isTeam ? REG_CONFIG.teamFee : REG_CONFIG.individualFee;
+
+      if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
+      if (summaryTotalEl) summaryTotalEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
+      if (reviewFeeEl) reviewFeeEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
+      if (reviewTotalEl) reviewTotalEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
+    }
+  } catch (err) {
+    // Graceful fallback to default config
+  }
+
+  // Also verify domain options from /api/domains
+  try {
+    const domainRes = await fetch("/api/domains");
+    if (domainRes.ok) {
+      const domainData = await domainRes.json();
+      const domainSelect = document.getElementById("domain");
+      if (domainSelect && Array.isArray(domainData.domains) && domainData.domains.length > 0) {
+        const currentVal = domainSelect.value;
+        domainSelect.innerHTML = `<option value="" disabled ${!currentVal ? "selected" : ""}>Select your domain</option>` +
+          domainData.domains.map(d => `<option value="${escapeHtml(d)}" ${currentVal === d ? "selected" : ""}>${escapeHtml(d)}</option>`).join("");
+      }
+    }
+  } catch (err) {
+    // Retain hardcoded fallback options
+  }
+}
 
 function initRegistrationForm() {
   const form = document.getElementById("registrationForm");
@@ -45,6 +101,12 @@ function initRegistrationForm() {
   });
 
   function updateFormType(isTeam) {
+    const currentFee = isTeam ? REG_CONFIG.teamFee : REG_CONFIG.individualFee;
+    const reviewFeeEl = document.getElementById("reviewBaseFee");
+    const reviewTotalEl = document.getElementById("reviewTotalAmount");
+    if (reviewFeeEl) reviewFeeEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
+    if (reviewTotalEl) reviewTotalEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
+
     if (isTeam) {
       teamSection.classList.add("active");
       summaryTypeEl.textContent = "Team Registration";
@@ -68,8 +130,6 @@ function initRegistrationForm() {
 
     // Leader is member 1 (filled in the primary fields)
     // Additional members start from index 2 up to currentTeamSize
-    const additionalCount = REG_CONFIG.currentTeamSize - 1;
-
     for (let i = 2; i <= REG_CONFIG.currentTeamSize; i++) {
       const memberCard = document.createElement("div");
       memberCard.className = "member-card";
@@ -99,8 +159,9 @@ function initRegistrationForm() {
               <input type="text" id="member_${i}_name" class="form-input member-name" placeholder="Member full name" required>
               <i class="fa-solid fa-user input-icon" aria-hidden="true"></i>
             </div>
-            <span class="field-error">Please enter member's full name.</span>
+            <span class="field-error">Please enter the member's full name.</span>
           </div>
+
           <div class="form-group">
             <label class="form-label" for="member_${i}_email">
               <span>Email Address</span>
@@ -110,89 +171,118 @@ function initRegistrationForm() {
               <input type="email" id="member_${i}_email" class="form-input member-email" placeholder="member@college.edu" required>
               <i class="fa-solid fa-envelope input-icon" aria-hidden="true"></i>
             </div>
-            <span class="field-error">Please provide a valid college email.</span>
+            <span class="field-error">Please enter a valid email address.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="member_${i}_phone">
+              <span>Phone Number</span>
+              <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="tel" id="member_${i}_phone" class="form-input member-phone" placeholder="10-digit mobile number" required maxlength="10">
+              <i class="fa-solid fa-phone input-icon" aria-hidden="true"></i>
+            </div>
+            <span class="field-error">Please enter a valid 10-digit phone number.</span>
           </div>
         </div>
       `;
       membersContainer.appendChild(memberCard);
     }
 
-    // Attach remove event listeners
-    const removeButtons = membersContainer.querySelectorAll(".btn-remove-member");
-    removeButtons.forEach((btn) => {
+    if (summaryMembersCount) {
+      summaryMembersCount.textContent = `${REG_CONFIG.currentTeamSize} Members (1 Lead + ${REG_CONFIG.currentTeamSize - 1} Members)`;
+    }
+
+    // Bind remove buttons
+    const removeBtns = membersContainer.querySelectorAll(".btn-remove-member");
+    removeBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
         if (REG_CONFIG.currentTeamSize > REG_CONFIG.minTeamSize) {
           REG_CONFIG.currentTeamSize--;
           renderTeamMembers();
-          updateSummaryCount();
+          updateAddButtonState();
         }
       });
     });
 
-    // Toggle add member button visibility based on max limit
-    if (btnAddMember) {
-      if (REG_CONFIG.currentTeamSize >= REG_CONFIG.maxTeamSize) {
-        btnAddMember.style.display = "none";
-      } else {
-        btnAddMember.style.display = "inline-flex";
-      }
-    }
-
-    updateSummaryCount();
+    updateAddButtonState();
   }
 
-  // Add Member Button
+  function updateAddButtonState() {
+    if (!btnAddMember) return;
+    if (REG_CONFIG.currentTeamSize >= REG_CONFIG.maxTeamSize) {
+      btnAddMember.disabled = true;
+      btnAddMember.innerHTML = `<i class="fa-solid fa-ban" aria-hidden="true"></i> <span>Maximum Team Size Reached (4 Members)</span>`;
+    } else {
+      btnAddMember.disabled = false;
+      btnAddMember.innerHTML = `<i class="fa-solid fa-plus" aria-hidden="true"></i> <span>Add Member ${REG_CONFIG.currentTeamSize + 1}</span>`;
+    }
+  }
+
+  // Add Member Click
   if (btnAddMember) {
     btnAddMember.addEventListener("click", () => {
       if (REG_CONFIG.currentTeamSize < REG_CONFIG.maxTeamSize) {
         REG_CONFIG.currentTeamSize++;
         renderTeamMembers();
-        updateSummaryCount();
       }
     });
   }
 
-  function updateSummaryCount() {
-    if (summaryMembersCount) {
-      summaryMembersCount.textContent = `${REG_CONFIG.currentTeamSize} Members`;
-    }
-    const teamSizeBadge = document.getElementById("teamSizeBadge");
-    if (teamSizeBadge) {
-      teamSizeBadge.textContent = `${REG_CONFIG.currentTeamSize} of ${REG_CONFIG.maxTeamSize} max`;
-    }
-  }
-
-  // Clear errors on input
-  form.querySelectorAll("input, select").forEach((input) => {
-    input.addEventListener("input", () => {
+  // Real-time error clearance on input
+  form.addEventListener("input", (e) => {
+    const input = e.target;
+    if (input.classList.contains("is-invalid")) {
+      input.classList.remove("is-invalid");
       const group = input.closest(".form-group");
       if (group) group.classList.remove("has-error");
-    });
+    }
   });
 
-  // Handle Form Submission with Validation
-  form.addEventListener("submit", (e) => {
+  // Real-time error clearance on terms checkbox
+  const termsCheckbox = document.getElementById("termsCheck") || document.getElementById("termsAccepted");
+  if (termsCheckbox) {
+    termsCheckbox.addEventListener("change", () => {
+      if (termsCheckbox.checked) {
+        const termsGroup = termsCheckbox.closest(".terms-group");
+        if (termsGroup) {
+          termsGroup.style.borderColor = "";
+          termsGroup.style.backgroundColor = "";
+        }
+      }
+    });
+  }
+
+  // Handle Form Submission via Backend API
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const isTeam = document.querySelector('input[name="regType"]:checked')?.value === "team";
     let isValid = true;
     let firstInvalidField = null;
 
     function markError(element, message) {
+      element.classList.add("is-invalid");
       const group = element.closest(".form-group");
       if (group) {
         group.classList.add("has-error");
-        const errSpan = group.querySelector(".field-error");
-        if (errSpan && message) {
-          errSpan.textContent = message;
-        }
+        const errEl = group.querySelector(".field-error");
+        if (errEl && message) errEl.textContent = message;
       }
-      if (!firstInvalidField) {
-        firstInvalidField = element;
-      }
+      if (!firstInvalidField) firstInvalidField = element;
       isValid = false;
     }
 
-    // Validate Primary Details
+    // Clear previous errors
+    document.querySelectorAll(".is-invalid").forEach((el) => el.classList.remove("is-invalid"));
+    document.querySelectorAll(".has-error").forEach((el) => el.classList.remove("has-error"));
+
+    // Remove any existing top error banner
+    const oldBanner = document.getElementById("formSubmitErrorBanner");
+    if (oldBanner) oldBanner.remove();
+
+    // Primary Participant / Team Leader Fields
     const fullName = document.getElementById("fullName");
     const email = document.getElementById("email");
     const mobile = document.getElementById("mobile");
@@ -200,49 +290,42 @@ function initRegistrationForm() {
     const department = document.getElementById("department");
     const yearOfStudy = document.getElementById("yearOfStudy");
     const domain = document.getElementById("domain");
-    const termsCheck = document.getElementById("termsCheck");
+    const termsCheck = document.getElementById("termsCheck") || document.getElementById("termsAccepted");
 
-    // Full Name
+    // Full Name Validation
     if (!fullName.value.trim() || fullName.value.trim().length < 2) {
-      markError(fullName, "Please enter your full legal name.");
+      markError(fullName, "Please enter your full legal name (at least 2 letters).");
     }
 
-    // Email format
+    // Email Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.value.trim() || !emailRegex.test(email.value.trim())) {
-      markError(email, "Please enter a valid email address.");
+      markError(email, "Please provide a valid email address.");
     }
 
-    // Indian Phone format (10 digits starting with 6-9)
-    const cleanedMobile = mobile.value.trim().replace(/^(\+91|0)/, "").replace(/[\s-]/g, "");
-    const mobileRegex = /^[6-9]\d{9}$/;
-    if (!mobileRegex.test(cleanedMobile)) {
-      markError(mobile, "Please enter a valid 10-digit Indian mobile number.");
+    // Mobile Validation
+    const cleanedMobile = mobile.value.replace(/\D/g, "");
+    if (cleanedMobile.length !== 10) {
+      markError(mobile, "Please enter a valid 10-digit mobile number.");
     }
 
-    // College
-    if (!college.value.trim()) {
-      markError(college, "Please enter your institution or university.");
+    // College & Dept
+    if (!college.value.trim() || college.value.trim().length < 2) {
+      markError(college, "Please enter your institution or college name.");
     }
-
-    // Department
-    if (!department.value.trim()) {
-      markError(department, "Please specify your branch or department.");
+    if (!department.value.trim() || department.value.trim().length < 2) {
+      markError(department, "Please specify your academic branch or department.");
     }
-
-    // Year of Study
     if (!yearOfStudy.value) {
       markError(yearOfStudy, "Please select your current year of study.");
     }
 
-    // Preferred Domain
+    // Domain Track
     if (!domain.value) {
-      markError(domain, "Please choose your preferred innovation domain.");
+      markError(domain, "Please choose one hackathon domain track.");
     }
 
-    // Team Specific Validation
-    const selectedType = document.querySelector('input[name="regType"]:checked').value;
-    const isTeam = selectedType === "team";
+    // Team specific validation
     let teamNameVal = "";
     const membersData = [];
 
@@ -258,6 +341,7 @@ function initRegistrationForm() {
       for (let i = 2; i <= REG_CONFIG.currentTeamSize; i++) {
         const mName = document.getElementById(`member_${i}_name`);
         const mEmail = document.getElementById(`member_${i}_email`);
+        const mPhone = document.getElementById(`member_${i}_phone`);
 
         if (mName && (!mName.value.trim() || mName.value.trim().length < 2)) {
           markError(mName, `Please enter full name for Member ${i}.`);
@@ -265,31 +349,40 @@ function initRegistrationForm() {
         if (mEmail && (!mEmail.value.trim() || !emailRegex.test(mEmail.value.trim()))) {
           markError(mEmail, `Please enter a valid email for Member ${i}.`);
         }
+        const mPhoneCleaned = mPhone ? mPhone.value.replace(/\D/g, "") : "";
+        if (mPhone && mPhoneCleaned.length !== 10) {
+          markError(mPhone, `Please enter a valid 10-digit phone for Member ${i}.`);
+        }
 
         if (mName && mEmail) {
           membersData.push({
-            role: `Member ${i}`,
+            role: "member",
+            full_name: mName.value.trim(),
             name: mName.value.trim(),
-            email: mEmail.value.trim()
+            email: mEmail.value.trim(),
+            phone: mPhoneCleaned || "9876543210",
+            college: college.value.trim(),
+            department: department.value.trim(),
+            year_of_study: yearOfStudy.value,
           });
         }
       }
     }
 
     // Terms Acceptance
-    if (!termsCheck.checked) {
-      const termsGroup = termsCheck.closest(".terms-group");
+    if (!termsCheck || !termsCheck.checked) {
+      const termsGroup = termsCheck ? termsCheck.closest(".terms-group") : null;
       if (termsGroup) {
         termsGroup.style.borderColor = "var(--color-error)";
         termsGroup.style.backgroundColor = "var(--color-error-bg)";
       }
-      if (!firstInvalidField) firstInvalidField = termsCheck;
+      if (!firstInvalidField && termsCheck) firstInvalidField = termsCheck;
       isValid = false;
     } else {
       const termsGroup = termsCheck.closest(".terms-group");
       if (termsGroup) {
-        termsGroup.style.borderColor = "var(--color-border)";
-        termsGroup.style.backgroundColor = "var(--color-bg-alt)";
+        termsGroup.style.borderColor = "";
+        termsGroup.style.backgroundColor = "";
       }
     }
 
@@ -302,43 +395,319 @@ function initRegistrationForm() {
       return;
     }
 
-    // Collect Registration Data & Generate DEMO Reference
-    const randomRef = Math.floor(10000 + Math.random() * 90000);
-    const demoRef = `SYN-DEMO-${randomRef}`;
-    const feeAmount = isTeam ? REG_CONFIG.teamFee : REG_CONFIG.individualFee;
-
-    const draftData = {
-      referenceId: demoRef,
-      type: isTeam ? "Team" : "Individual",
-      participantName: fullName.value.trim(),
-      email: email.value.trim(),
-      mobile: cleanedMobile,
-      college: college.value.trim(),
-      department: department.value.trim(),
-      yearOfStudy: yearOfStudy.value,
-      domain: domain.value,
-      teamName: isTeam ? teamNameVal : null,
-      teamSize: isTeam ? REG_CONFIG.currentTeamSize : 1,
-      members: membersData,
-      baseFee: feeAmount,
-      totalAmount: feeAmount,
-      currency: REG_CONFIG.currency,
-      registeredAt: new Date().toISOString(),
-      isDemo: true
-    };
-
-    // Store temporarily in sessionStorage
-    try {
-      sessionStorage.setItem("synex_registration_draft", JSON.stringify(draftData));
-      // Reset any previous payment simulation state
-      sessionStorage.removeItem("synex_payment_status");
-    } catch (err) {
-      console.warn("sessionStorage warning:", err);
+    // Build Payload for Backend API
+    let payload = {};
+    if (isTeam) {
+      payload = {
+        registration_type: "team",
+        team_name: teamNameVal,
+        domain: domain.value,
+        leader: {
+          full_name: fullName.value.trim(),
+          name: fullName.value.trim(),
+          email: email.value.trim(),
+          phone: cleanedMobile,
+          college: college.value.trim(),
+          department: department.value.trim(),
+          year_of_study: yearOfStudy.value,
+        },
+        members: membersData,
+      };
+    } else {
+      payload = {
+        registration_type: "individual",
+        domain: domain.value,
+        full_name: fullName.value.trim(),
+        name: fullName.value.trim(),
+        email: email.value.trim(),
+        phone: cleanedMobile,
+        college: college.value.trim(),
+        department: department.value.trim(),
+        year_of_study: yearOfStudy.value,
+      };
     }
 
-    // Forward to payment checkout preview
-    window.location.href = "payment.html";
+    // Submit button loading state & duplicate submission prevention
+    const submitBtn = document.getElementById("btnContinuePayment") || document.getElementById("btnSubmitRegistration");
+    const originalBtnContent = submitBtn ? submitBtn.innerHTML : "<span>Review &amp; Proceed to Payment</span>";
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Creating Registration...</span>`;
+    }
+
+    try {
+      const response = await fetch("/api/registrations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Save draft in sessionStorage for payment / offline fallback
+        try {
+          sessionStorage.setItem("synex_registration_ref", result.registration_id);
+          sessionStorage.setItem("synex_registration_draft", JSON.stringify({
+            referenceId: result.registration_id,
+            type: isTeam ? "Team" : "Individual",
+            participantName: fullName.value.trim(),
+            email: email.value.trim(),
+            mobile: cleanedMobile,
+            college: college.value.trim(),
+            department: department.value.trim(),
+            yearOfStudy: yearOfStudy.value,
+            domain: domain.value,
+            teamName: isTeam ? teamNameVal : null,
+            teamSize: isTeam ? REG_CONFIG.currentTeamSize : 1,
+            members: membersData,
+            baseFee: result.entry_fee,
+            totalAmount: result.entry_fee,
+            currency: REG_CONFIG.currency,
+          }));
+        } catch (e) {
+          console.warn("Storage warning:", e);
+        }
+
+        // Restore button state for future edits
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnContent;
+        }
+
+        // Advance to Step 2 (Review Entry Fee & Details)
+        advanceToStep2(result, payload, isTeam);
+
+      } else {
+        // Error returned from API
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnContent;
+        }
+
+        const banner = document.createElement("div");
+        banner.id = "formSubmitErrorBanner";
+        banner.className = "alert alert-danger";
+        banner.style.cssText = "margin-bottom: 24px; padding: 14px 18px; border-radius: 8px; background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; display: flex; align-items: center; gap: 12px; font-weight: 500;";
+        banner.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="font-size: 1.25rem;"></i> <span>${escapeHtml(result.error || "Failed to create registration. Please check the entered data.")}</span>`;
+        
+        form.insertBefore(banner, form.firstChild);
+        banner.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    } catch (err) {
+      console.error("Submission error:", err);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnContent;
+      }
+      const banner = document.createElement("div");
+      banner.id = "formSubmitErrorBanner";
+      banner.className = "alert alert-danger";
+      banner.style.cssText = "margin-bottom: 24px; padding: 14px 18px; border-radius: 8px; background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; display: flex; align-items: center; gap: 12px; font-weight: 500;";
+      banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="font-size: 1.25rem;"></i> <span>Connection error. Please check your internet connection and try again.</span>`;
+      form.insertBefore(banner, form.firstChild);
+      banner.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   });
+}
+
+/**
+ * Advances the UI to Step 2: Review Entry Fee
+ */
+function advanceToStep2(result, payload, isTeam) {
+  // 1. Update Stepper Progress Indicators
+  const step1 = document.getElementById("stepIndicator1");
+  const step2 = document.getElementById("stepIndicator2");
+
+  if (step1) {
+    step1.classList.remove("active");
+    step1.classList.add("completed");
+    const circle = step1.querySelector(".step-circle");
+    if (circle) circle.innerHTML = `<i class="fa-solid fa-check"></i>`;
+  }
+  if (step2) {
+    step2.classList.add("active");
+    step2.classList.remove("completed");
+    const circle = step2.querySelector(".step-circle");
+    if (circle) circle.innerHTML = `<span aria-current="step">2</span>`;
+  }
+
+  // 2. Hide Step 1 Card & Show Step 2 Review Card
+  const step1Card = document.getElementById("step1Card");
+  const step2Card = document.getElementById("step2Card");
+
+  if (step1Card) step1Card.style.display = "none";
+  if (step2Card) {
+    step2Card.style.display = "block";
+    step2Card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // 3. Populate Review Card Fields
+  const reviewRefCode = document.getElementById("reviewRefCode");
+  const reviewRegType = document.getElementById("reviewRegType");
+  const reviewDomain = document.getElementById("reviewDomain");
+  const reviewCollege = document.getElementById("reviewCollege");
+  const reviewDeptYear = document.getElementById("reviewDeptYear");
+  const reviewTeamNameRow = document.getElementById("reviewTeamNameRow");
+  const reviewTeamName = document.getElementById("reviewTeamName");
+  const reviewParticipantsTitle = document.getElementById("reviewParticipantsTitle");
+  const reviewMembersList = document.getElementById("reviewMembersList");
+  const reviewBaseFee = document.getElementById("reviewBaseFee");
+  const reviewTotalAmount = document.getElementById("reviewTotalAmount");
+
+  if (reviewRefCode) reviewRefCode.textContent = result.registration_id;
+  if (reviewRegType) reviewRegType.textContent = isTeam ? "Team Entry" : "Individual Registration";
+  if (reviewDomain) reviewDomain.textContent = payload.domain;
+
+  const leadCollege = isTeam ? payload.leader.college : payload.college;
+  const leadDept = isTeam ? payload.leader.department : payload.department;
+  const leadYear = isTeam ? payload.leader.year_of_study : payload.year_of_study;
+
+  if (reviewCollege) reviewCollege.textContent = leadCollege;
+  if (reviewDeptYear) reviewDeptYear.textContent = `${leadDept} (${leadYear})`;
+
+  // Render Member/Participant Cards
+  if (reviewMembersList) {
+    reviewMembersList.innerHTML = "";
+
+    if (isTeam) {
+      if (reviewTeamNameRow) reviewTeamNameRow.style.display = "block";
+      if (reviewTeamName) reviewTeamName.textContent = payload.team_name;
+      const totalCount = (payload.members ? payload.members.length : 0) + 1;
+      if (reviewParticipantsTitle) reviewParticipantsTitle.textContent = `Team Composition (${totalCount} Members)`;
+
+      // Team Leader Card
+      const leaderCard = document.createElement("div");
+      leaderCard.className = "review-member-card";
+      const leadInitial = (payload.leader.full_name || "L").charAt(0).toUpperCase();
+      leaderCard.innerHTML = `
+        <div class="review-member-info">
+          <div class="review-member-avatar">${escapeHtml(leadInitial)}</div>
+          <div>
+            <div class="review-member-name">${escapeHtml(payload.leader.full_name)}</div>
+            <div class="review-member-contact">${escapeHtml(payload.leader.email)} &bull; ${escapeHtml(payload.leader.phone)}</div>
+          </div>
+        </div>
+        <span class="review-member-role"><i class="fa-solid fa-crown" style="margin-right: 4px;"></i>Team Leader</span>
+      `;
+      reviewMembersList.appendChild(leaderCard);
+
+      // Additional Members
+      if (payload.members && payload.members.length > 0) {
+        payload.members.forEach((m, idx) => {
+          const memCard = document.createElement("div");
+          memCard.className = "review-member-card";
+          const mInitial = (m.full_name || `M${idx + 2}`).charAt(0).toUpperCase();
+          memCard.innerHTML = `
+            <div class="review-member-info">
+              <div class="review-member-avatar">${escapeHtml(mInitial)}</div>
+              <div>
+                <div class="review-member-name">${escapeHtml(m.full_name)}</div>
+                <div class="review-member-contact">${escapeHtml(m.email)} &bull; ${escapeHtml(m.phone)}</div>
+              </div>
+            </div>
+            <span class="review-member-role" style="background: #F1F5F9; color: #475569; border-color: #CBD5E1;">Member ${idx + 2}</span>
+          `;
+          reviewMembersList.appendChild(memCard);
+        });
+      }
+    } else {
+      if (reviewTeamNameRow) reviewTeamNameRow.style.display = "none";
+      if (reviewParticipantsTitle) reviewParticipantsTitle.textContent = "Participant Credentials";
+
+      const partCard = document.createElement("div");
+      partCard.className = "review-member-card";
+      const pInitial = (payload.full_name || "P").charAt(0).toUpperCase();
+      partCard.innerHTML = `
+        <div class="review-member-info">
+          <div class="review-member-avatar">${escapeHtml(pInitial)}</div>
+          <div>
+            <div class="review-member-name">${escapeHtml(payload.full_name)}</div>
+            <div class="review-member-contact">${escapeHtml(payload.email)} &bull; ${escapeHtml(payload.phone)}</div>
+          </div>
+        </div>
+        <span class="review-member-role">Individual Hacker</span>
+      `;
+      reviewMembersList.appendChild(partCard);
+    }
+  }
+
+  // Server-calculated Entry Fee
+  const calculatedFee = result.entry_fee || (isTeam ? REG_CONFIG.teamFee : REG_CONFIG.individualFee);
+  if (reviewBaseFee) reviewBaseFee.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
+  if (reviewTotalAmount) reviewTotalAmount.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
+
+  // Update Summary Sidebar if present
+  const summaryFeeEl = document.getElementById("summaryBaseFee");
+  const summaryTotalEl = document.getElementById("summaryTotalPrice");
+  if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
+  if (summaryTotalEl) summaryTotalEl.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
+
+  // 4. Wire Action Buttons
+  const btnProceed = document.getElementById("btnProceedToPayment");
+  if (btnProceed) {
+    btnProceed.onclick = () => {
+      window.location.href = result.redirect_url || `/payment?ref=${result.registration_id}`;
+    };
+  }
+
+  const btnEdit = document.getElementById("btnEditRegistration");
+  if (btnEdit) {
+    btnEdit.onclick = () => {
+      returnToStep1();
+    };
+  }
+}
+
+/**
+ * Reverts view back to Step 1 so participant can edit credentials
+ */
+function returnToStep1() {
+  const step1 = document.getElementById("stepIndicator1");
+  const step2 = document.getElementById("stepIndicator2");
+
+  if (step1) {
+    step1.classList.add("active");
+    step1.classList.remove("completed");
+    const circle = step1.querySelector(".step-circle");
+    if (circle) circle.innerHTML = `<span aria-current="step">1</span>`;
+  }
+  if (step2) {
+    step2.classList.remove("active");
+    step2.classList.remove("completed");
+    const circle = step2.querySelector(".step-circle");
+    if (circle) circle.textContent = "2";
+  }
+
+  const step1Card = document.getElementById("step1Card");
+  const step2Card = document.getElementById("step2Card");
+
+  if (step2Card) step2Card.style.display = "none";
+  if (step1Card) {
+    step1Card.style.display = "block";
+    step1Card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const submitBtn = document.getElementById("btnContinuePayment") || document.getElementById("btnSubmitRegistration");
+  if (submitBtn) {
+    submitBtn.disabled = false;
+  }
+}
+
+/**
+ * Helper to escape HTML characters
+ */
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 /**

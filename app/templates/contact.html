@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact &amp; Support — SYNEX 2026</title>
+  <meta name="description"
+    content="Get in touch with the SYNEX 2026 organizing committee for inquiries, sponsorship, mentorship, and logistical assistance.">
+
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/register.css">
+  <style>
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 3.5rem;
+      align-items: start;
+    }
+
+    .contact-info-card {
+      background: #FFFFFF;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .contact-method-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .contact-method-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .contact-method-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .contact-method-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .contact-method-desc {
+      font-size: 0.88rem;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-banner" role="status">
+    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    <span><strong>DEMO PREVIEW:</strong> Contact details and messaging interface are demonstration placeholders.
+      Messages are not sent to a live mail server.</span>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
+        <div class="brand-logo-icon">S</div>
+        <div class="brand-text">
+          <span class="brand-name">SYNEX</span>
+          <span class="brand-sub">Hackathon 2026</span>
+        </div>
+      </a>
+
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="index.html#about" class="nav-link">About</a></li>
+          <li><a href="index.html#domains" class="nav-link">Domains</a></li>
+          <li><a href="schedule.html" class="nav-link">Schedule</a></li>
+          <li><a href="rules.html" class="nav-link">Rules</a></li>
+          <li><a href="contact.html" class="nav-link active">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-cta">
+        <a href="register.html" class="btn btn-primary btn-sm">
+          <span>Register Now</span>
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false"
+          aria-controls="mobileNav">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="index.html#about" class="nav-link">About</a>
+    <a href="index.html#domains" class="nav-link">Domains</a>
+    <a href="schedule.html" class="nav-link">Schedule</a>
+    <a href="rules.html" class="nav-link">Rules</a>
+    <a href="contact.html" class="nav-link active">Contact</a>
+    <a href="register.html" class="btn btn-primary">Register Now</a>
+  </div>
+
+  <!-- Hero Header -->
+  <div
+    style="background: radial-gradient(100% 70% at 50% 0%, #EBF4FF 0%, #FFFFFF 100%); padding: 4rem 0 3rem 0; border-bottom: 1px solid var(--color-border); text-align: center;">
+    <div class="container">
+      <span class="section-tag">
+        <i class="fa-solid fa-headset"></i>
+        <span>Get in Touch</span>
+      </span>
+      <h1 style="font-size: 2.75rem; margin-bottom: 0.75rem;">Contact Organizing Team</h1>
+      <p style="font-size: 1.1rem; color: var(--color-text-secondary); max-width: 640px; margin: 0 auto;">
+        Have queries regarding participant eligibility, track problem statements, accommodations, or corporate
+        sponsorship? We are here to assist.
+      </p>
+    </div>
+  </div>
+
+  <!-- Main Contact Content -->
+  <main class="section">
+    <div class="container">
+      <div class="contact-grid">
+
+        <!-- Left: Contact Details & Venue Placeholders -->
+        <div>
+          <div class="contact-info-card">
+            <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--color-text-main);">
+              Hackathon Headquarters
+            </h2>
+
+            <!-- Item 1: Venue -->
+            <div class="contact-method-item">
+              <div class="contact-method-icon">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
+              <div>
+                <h3 class="contact-method-title">Venue &amp; Campus Location</h3>
+                <p class="contact-method-desc">
+                  SCAD Auditorium<br>
+                  SIMATS University<br>
+                  Chennai,Tamil Nadu
+                </p>
+              </div>
+            </div>
+
+            <!-- Item 2: Email -->
+            <div class="contact-method-item">
+              <div class="contact-method-icon">
+                <i class="fa-solid fa-envelope"></i>
+              </div>
+              <div>
+                <h3 class="contact-method-title">Official Inquiries Email</h3>
+                <p class="contact-method-desc">
+                  General: <code>contact@synexhackathon.org.demo</code><br>
+                  Sponsorship: <code>partners@synexhackathon.org.demo</code><br>
+                  Mentor Desk: <code>mentors@synexhackathon.org.demo</code>
+                </p>
+              </div>
+            </div>
+
+            <!-- Item 3: Helpline -->
+            <div class="contact-method-item">
+              <div class="contact-method-icon">
+                <i class="fa-solid fa-phone"></i>
+              </div>
+              <div>
+                <h3 class="contact-method-title">Participant Helpline</h3>
+                <p class="contact-method-desc">
+                  +91 (080) 555-0199 (Sample Landline)<br>
+                  +91 98765-43210 (Demo WhatsApp Desk)<br>
+                  Operational 09:00 AM – 07:00 PM IST
+                </p>
+              </div>
+            </div>
+
+            <!-- Item 4: Discord Community -->
+            <div class="contact-method-item">
+              <div class="contact-method-icon"
+                style="background: var(--color-secondary-light); color: var(--color-secondary);">
+                <i class="fa-brands fa-discord"></i>
+              </div>
+              <div>
+                <h3 class="contact-method-title">Live Discord Server</h3>
+                <p class="contact-method-desc">
+                  Instant Q&amp;A channels for tech issues, teammate recruitment, and announcements:<br>
+                  <a href="#discord" style="font-weight: 600;">discord.gg/synex-hackathon-demo</a>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick FAQ Jump -->
+          <div
+            style="background: var(--color-bg-alt); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.2rem;">
+                  Looking for Quick Answers?</h4>
+                <p style="font-size: 0.82rem; color: var(--color-text-secondary); margin: 0;">Check our frequently asked
+                  questions on the homepage.</p>
+              </div>
+              <a href="index.html#faq" class="btn btn-outline btn-sm">
+                <span>View FAQ</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Inquiry Form with Client Validation -->
+        <div>
+          <div class="form-card">
+            <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--color-text-main); margin-bottom: 0.5rem;">
+              Send an Inquiry Message
+            </h2>
+            <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+              Fill out this form and our student organizing committee will get back to your inquiry.
+            </p>
+
+            <!-- Notice Banner -->
+            <div class="alert alert-info" style="font-size: 0.8rem; line-height: 1.45; margin-bottom: 1.5rem;">
+              <i class="fa-solid fa-circle-info" style="font-size: 1rem; color: #0284C7;"></i>
+              <div>
+                <strong>Frontend Preview:</strong> Messages submitted through this form are validated on the client
+                side. Since backend email integration is scheduled for the next phase, submissions simulate an instant
+                receipt acknowledgement.
+              </div>
+            </div>
+
+            <!-- Form Success Banner (hidden by default) -->
+            <div class="alert alert-success" id="contactSuccessAlert" style="display: none;">
+              <i class="fa-solid fa-circle-check" style="font-size: 1.15rem; color: var(--color-success);"></i>
+              <div>
+                <strong>Message Received (Simulation):</strong> Thank you for reaching out! In production, a
+                confirmation receipt is automatically dispatched to your inbox.
+              </div>
+            </div>
+
+            <form id="contactInquiryForm" novalidate>
+              <div class="form-grid">
+                <div class="form-group form-group-full">
+                  <label class="form-label" for="contactName">
+                    <span>Your Full Name</span>
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="text" id="contactName" class="form-input" placeholder="e.g. Rahul Sharma" required
+                      autocomplete="name">
+                    <i class="fa-solid fa-user input-icon"></i>
+                  </div>
+                  <span class="field-error">Please enter your name.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="contactEmail">
+                    <span>Email Address</span>
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input type="email" id="contactEmail" class="form-input" placeholder="rahul@college.edu" required
+                      autocomplete="email">
+                    <i class="fa-solid fa-envelope input-icon"></i>
+                  </div>
+                  <span class="field-error">Please enter a valid email address.</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="contactSubject">
+                    <span>Inquiry Subject</span>
+                    <span class="required">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <select id="contactSubject" class="form-select" required>
+                      <option value="" disabled selected>Select inquiry category</option>
+                      <option value="registration">Registration / Fee Issue</option>
+                      <option value="rules">Rules &amp; Eligibility Clarification</option>
+                      <option value="sponsorship">Corporate Sponsorship Opportunity</option>
+                      <option value="mentorship">Volunteer Mentor Application</option>
+                      <option value="accommodation">Travel &amp; Accommodation Query</option>
+                      <option value="other">General Inquiries</option>
+                    </select>
+                    <i class="fa-solid fa-tag input-icon"></i>
+                  </div>
+                  <span class="field-error">Please select a subject category.</span>
+                </div>
+
+                <div class="form-group form-group-full">
+                  <label class="form-label" for="contactMessage">
+                    <span>Your Message</span>
+                    <span class="required">*</span>
+                  </label>
+                  <textarea id="contactMessage" class="form-textarea" rows="5"
+                    placeholder="Detail your query or feedback here..." required
+                    style="padding-left: 1rem; width: 100%;"></textarea>
+                  <span class="field-error">Please enter your message (at least 10 characters).</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Send Message (Preview)</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="index.html" class="brand" aria-label="SYNEX Homepage">
+            <div class="brand-logo-icon">S</div>
+            <div class="brand-text">
+              <span class="brand-name">SYNEX</span>
+              <span class="brand-sub">Hackathon 2026</span>
+            </div>
+          </a>
+          <p class="footer-desc">
+            A premier national 36-hour technology sprint uniting visionary developers, researchers, and designers to
+            create scalable societal solutions.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="index.html#about">About Event</a></li>
+            <li><a href="index.html#domains">Domains</a></li>
+            <li><a href="schedule.html">Schedule</a></li>
+            <li><a href="rules.html">Rules &amp; Guidelines</a></li>
+            <li><a href="contact.html">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Registration</h4>
+          <ul class="footer-links">
+            <li><a href="register.html">Individual Registration</a></li>
+            <li><a href="register.html">Team Registration</a></li>
+            <li><a href="payment.html">Payment Preview</a></li>
+            <li><a href="confirmation.html">Pass Status</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Administration</h4>
+          <ul class="footer-links">
+            <li><a href="admin-login.html">Organizer Login</a></li>
+            <li><a href="admin-dashboard.html">Dashboard Preview</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 SYNEX Hackathon. Frontend demonstration prototype.</div>
+        <div>
+          <a href="admin-login.html" class="footer-admin-link">
+            <i class="fa-solid fa-lock"></i> Admin Portal
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const contactForm = document.getElementById("contactInquiryForm");
+      const nameInput = document.getElementById("contactName");
+      const emailInput = document.getElementById("contactEmail");
+      const subjectSelect = document.getElementById("contactSubject");
+      const messageInput = document.getElementById("contactMessage");
+      const successAlert = document.getElementById("contactSuccessAlert");
+
+      // Clear errors on input
+      [nameInput, emailInput, subjectSelect, messageInput].forEach(inp => {
+        inp.addEventListener("input", () => {
+          const group = inp.closest(".form-group");
+          if (group) group.classList.remove("has-error");
+        });
+      });
+
+      contactForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        let valid = true;
+
+        if (!nameInput.value.trim()) {
+          nameInput.closest(".form-group").classList.add("has-error");
+          valid = false;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailInput.value.trim() || !emailRegex.test(emailInput.value.trim())) {
+          emailInput.closest(".form-group").classList.add("has-error");
+          valid = false;
+        }
+
+        if (!subjectSelect.value) {
+          subjectSelect.closest(".form-group").classList.add("has-error");
+          valid = false;
+        }
+
+        if (!messageInput.value.trim() || messageInput.value.trim().length < 5) {
+          messageInput.closest(".form-group").classList.add("has-error");
+          valid = false;
+        }
+
+        if (!valid) return;
+
+        const btnSubmit = contactForm.querySelector('button[type="submit"]');
+        const origBtnHtml = btnSubmit ? btnSubmit.innerHTML : "";
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Sending Message...`;
+        }
+
+        try {
+          const res = await fetch("/api/contact", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              name: nameInput.value.trim(),
+              email: emailInput.value.trim(),
+              subject: subjectSelect.options[subjectSelect.selectedIndex]?.text || subjectSelect.value,
+              message: messageInput.value.trim()
+            })
+          });
+
+          const data = await res.json();
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = origBtnHtml;
+          }
+
+          if (res.ok && data.success) {
+            successAlert.style.display = "flex";
+            const alertText = successAlert.querySelector("div");
+            if (alertText) {
+              alertText.innerHTML = `<strong>Message Sent:</strong> ${data.message || "Thank you for reaching out! Our organizing committee has received your message."}`;
+            }
+            contactForm.reset();
+            window.scrollTo({ top: contactForm.offsetTop - 100, behavior: "smooth" });
+          } else {
+            alert(data.error || "Failed to send message. Please try again.");
+          }
+        } catch (err) {
+          console.error("Contact submit error:", err);
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = origBtnHtml;
+          }
+          alert("Network error. Please check your connection and try again.");
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

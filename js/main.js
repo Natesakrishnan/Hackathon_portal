@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFaqAccordion();
   initSmoothScroll();
   highlightActiveNav();
+  syncConfigFromServer();
 });
 
 /**
@@ -98,7 +99,15 @@ function initCountdown() {
 
   if (!daysEl || !hoursEl || !minutesEl || !secondsEl) return;
 
-  const targetDate = new Date(window.SYNEX_CONFIG.eventDate).getTime();
+  let targetDate = new Date(window.SYNEX_CONFIG.eventDate).getTime();
+
+  window.updateCountdownTarget = function(newDateStr) {
+    if (!newDateStr) return;
+    targetDate = new Date(newDateStr).getTime();
+    if (gridEl) gridEl.style.display = '';
+    if (expiredMsgEl) expiredMsgEl.style.display = 'none';
+    update();
+  };
 
   function update() {
     const now = new Date().getTime();
@@ -203,3 +212,98 @@ function highlightActiveNav() {
     }
   });
 }
+
+/**
+ * Synchronizes client settings with authoritative server-side EventSettings
+ */
+async function syncConfigFromServer() {
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) return;
+    const cfg = await res.json();
+    if (!cfg) return;
+
+    if (cfg.event_name) {
+      window.SYNEX_CONFIG.eventName = cfg.event_name;
+    }
+    if (cfg.registration_deadline) {
+      window.SYNEX_CONFIG.eventDate = cfg.registration_deadline;
+      if (typeof window.updateCountdownTarget === 'function') {
+        window.updateCountdownTarget(cfg.registration_deadline);
+      }
+    }
+    if (cfg.prize_pool) {
+      window.SYNEX_CONFIG.prizePool = cfg.prize_pool;
+      document.querySelectorAll('.prize-pool-text, #heroPrizePool, [data-synex-prize]').forEach(el => {
+        el.textContent = cfg.prize_pool;
+      });
+    }
+    if (cfg.individual_fee !== undefined) {
+      window.SYNEX_CONFIG.fees.individual = cfg.individual_fee;
+    }
+    if (cfg.team_fee !== undefined) {
+      window.SYNEX_CONFIG.fees.team = cfg.team_fee;
+    }
+    const curr = cfg.currency === "INR" ? "₹" : (cfg.currency || "₹");
+    window.SYNEX_CONFIG.fees.currency = curr;
+    updatePublicFeeDisplays(cfg.individual_fee, cfg.team_fee, curr);
+  } catch (err) {
+    // Non-blocking fallback
+  }
+}
+
+/**
+ * Updates all public fee displays across any page on the portal
+ */
+function updatePublicFeeDisplays(indivFee, teamFee, currency = "₹") {
+  const indiv = indivFee !== undefined ? indivFee : (window.SYNEX_CONFIG?.fees?.individual ?? 299);
+  const team = teamFee !== undefined ? teamFee : (window.SYNEX_CONFIG?.fees?.team ?? 999);
+  const curr = currency || "₹";
+
+  // 1. Hero Entry Fee Badge (Home page)
+  document.querySelectorAll('#heroEntryFeeDisplay, [data-synex-fees="combined"]').forEach(el => {
+    el.textContent = `${curr}${indiv} Individual / ${curr}${team} Team`;
+  });
+
+  // 2. FAQ section (Home page)
+  document.querySelectorAll('#faqIndividualFee, .faq-indiv-fee-text').forEach(el => {
+    el.textContent = `Individual (${curr}${indiv})`;
+  });
+  document.querySelectorAll('#faqTeamFee, .faq-team-fee-text').forEach(el => {
+    el.textContent = `Team of 2 to 4 members (${curr}${team} total)`;
+  });
+
+  // 3. Rules page (Rule 2 and Rule 8)
+  document.querySelectorAll('.rule-indiv-fee-val, [data-fee-rule="individual"]').forEach(el => {
+    el.textContent = `${curr}${indiv}`;
+  });
+  document.querySelectorAll('.rule-team-fee-val, [data-fee-rule="team"]').forEach(el => {
+    el.textContent = `${curr}${team}`;
+  });
+
+  // 4. Registration page Type Pills
+  document.querySelectorAll('#pillIndividualFee, [data-fee-pill="individual"]').forEach(el => {
+    el.textContent = `${curr}${indiv}`;
+  });
+  document.querySelectorAll('#pillTeamFee, [data-fee-pill="team"]').forEach(el => {
+    el.textContent = `${curr}${team}`;
+  });
+
+  // 5. Registration Form dynamic configs & summary/review cards if on register page
+  if (typeof REG_CONFIG !== "undefined") {
+    REG_CONFIG.individualFee = indiv;
+    REG_CONFIG.teamFee = team;
+    REG_CONFIG.currency = curr;
+    const isTeam = document.querySelector('input[name="regType"]:checked')?.value === "team";
+    const currentFee = isTeam ? team : indiv;
+    const summaryFeeEl = document.getElementById("summaryBaseFee");
+    const summaryTotalEl = document.getElementById("summaryTotalPrice");
+    const reviewFeeEl = document.getElementById("reviewBaseFee");
+    const reviewTotalEl = document.getElementById("reviewTotalAmount");
+    if (summaryFeeEl) summaryFeeEl.textContent = `${curr}${currentFee}`;
+    if (summaryTotalEl) summaryTotalEl.textContent = `${curr}${currentFee}`;
+    if (reviewFeeEl) reviewFeeEl.textContent = `${curr}${currentFee}`;
+    if (reviewTotalEl) reviewTotalEl.textContent = `${curr}${currentFee}`;
+  }
+}
+window.updatePublicFeeDisplays = updatePublicFeeDisplays;

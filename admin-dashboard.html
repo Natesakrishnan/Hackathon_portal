@@ -78,19 +78,19 @@
           </a>
         </li>
         <li class="sidebar-item">
-          <a href="#reports" onclick="event.preventDefault(); alert('Report generation preview: Backend Flask report generator will be wired during server-side integration.');">
+          <a href="#reports" onclick="event.preventDefault(); document.getElementById('reportsSection').scrollIntoView({behavior:'smooth'});">
             <i class="fa-solid fa-chart-column"></i>
             <span>Reports</span>
           </a>
         </li>
         <li class="sidebar-item">
-          <a href="#announcements" onclick="event.preventDefault(); alert('Announcement engine preview: Push alerts will be sent via Discord webhook & email server.');">
+          <a href="#announcements" onclick="event.preventDefault(); document.getElementById('announcementsSection').scrollIntoView({behavior:'smooth'});">
             <i class="fa-solid fa-bullhorn"></i>
             <span>Announcements</span>
           </a>
         </li>
         <li class="sidebar-item">
-          <a href="#settings" onclick="event.preventDefault(); alert('Event configuration preview: Modify target deadlines and prize amounts in window.SYNEX_CONFIG.');">
+          <a href="#settings" onclick="event.preventDefault(); document.getElementById('settingsSection').scrollIntoView({behavior:'smooth'});">
             <i class="fa-solid fa-sliders"></i>
             <span>Event Settings</span>
           </a>
@@ -149,8 +149,8 @@
               <span class="metric-label">Total Regs</span>
               <div class="metric-icon-box"><i class="fa-solid fa-user-plus"></i></div>
             </div>
-            <div class="metric-val">428</div>
-            <span class="metric-sub">Sample demo total</span>
+            <div class="metric-val" id="metricTotalRegs">0</div>
+            <span class="metric-sub" id="metricTotalRegsSub">Live DB Total</span>
           </div>
 
           <!-- Card 2: Paid Registrations -->
@@ -159,8 +159,8 @@
               <span class="metric-label">Paid Regs</span>
               <div class="metric-icon-box"><i class="fa-solid fa-circle-check"></i></div>
             </div>
-            <div class="metric-val">386</div>
-            <span class="metric-sub">90.1% conversion rate</span>
+            <div class="metric-val" id="metricPaidRegs">0</div>
+            <span class="metric-sub" id="metricPaidRegsSub">Verified paid</span>
           </div>
 
           <!-- Card 3: Pending Payments -->
@@ -169,8 +169,8 @@
               <span class="metric-label">Pending</span>
               <div class="metric-icon-box"><i class="fa-solid fa-clock"></i></div>
             </div>
-            <div class="metric-val">27</div>
-            <span class="metric-sub">Awaiting gateway sync</span>
+            <div class="metric-val" id="metricPendingRegs">0</div>
+            <span class="metric-sub" id="metricPendingRegsSub">Awaiting payment</span>
           </div>
 
           <!-- Card 4: Failed Payments -->
@@ -179,8 +179,8 @@
               <span class="metric-label">Failed</span>
               <div class="metric-icon-box"><i class="fa-solid fa-circle-xmark"></i></div>
             </div>
-            <div class="metric-val">15</div>
-            <span class="metric-sub">Declined / Timeout</span>
+            <div class="metric-val" id="metricFailedRegs">0</div>
+            <span class="metric-sub" id="metricFailedRegsSub">Unsuccessful</span>
           </div>
 
           <!-- Card 5: Total Collection -->
@@ -189,8 +189,8 @@
               <span class="metric-label">Gross Revenue</span>
               <div class="metric-icon-box"><i class="fa-solid fa-indian-rupee-sign"></i></div>
             </div>
-            <div class="metric-val">₹2.84L</div>
-            <span class="metric-sub">Simulated collection</span>
+            <div class="metric-val" id="metricGrossRevenue">₹0</div>
+            <span class="metric-sub" id="metricGrossRevenueSub">Total collections</span>
           </div>
 
           <!-- Card 6: Total Teams -->
@@ -199,8 +199,8 @@
               <span class="metric-label">Total Teams</span>
               <div class="metric-icon-box"><i class="fa-solid fa-people-group"></i></div>
             </div>
-            <div class="metric-val">112</div>
-            <span class="metric-sub">Avg 3.4 hackers/team</span>
+            <div class="metric-val" id="metricTotalTeams">0</div>
+            <span class="metric-sub" id="metricTotalTeamsSub">Registered squads</span>
           </div>
         </div>
 
@@ -210,7 +210,7 @@
           <div class="chart-card">
             <div class="chart-header">
               <h2 class="chart-title">Daily Registration Influx (Past 7 Days)</h2>
-              <span class="badge badge-primary">Trend Preview</span>
+              <span class="badge badge-primary" id="badgeDailyTrend">Past 7 Days</span>
             </div>
             <div class="chart-canvas-container">
               <canvas id="trendsChart"></canvas>
@@ -221,7 +221,7 @@
           <div class="chart-card">
             <div class="chart-header">
               <h2 class="chart-title">Payment Distribution</h2>
-              <span class="badge badge-success">386 Paid</span>
+              <span class="badge badge-success" id="badgePaymentPaid">0 Paid</span>
             </div>
             <div class="chart-canvas-container">
               <canvas id="paymentStatusChart"></canvas>
@@ -290,6 +290,7 @@
                   <th>College / University</th>
                   <th>Domain</th>
                   <th>Amount</th>
+                  <th>Payment</th>
                   <th>Status</th>
                   <th>Registered Date</th>
                 </tr>
@@ -302,10 +303,305 @@
 
           <!-- Table Footer -->
           <div class="table-footer">
-            <span id="tableShowingCount">Showing 12 demo records</span>
+            <span id="tableShowingCount">Loading registrations...</span>
             <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-outline btn-sm" disabled style="opacity: 0.5;">Previous</button>
-              <button class="btn btn-outline btn-sm" disabled style="opacity: 0.5;">Next</button>
+              <button class="btn btn-outline btn-sm" id="btnPrevPage" disabled>Previous</button>
+              <button class="btn btn-outline btn-sm" id="btnNextPage" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEATURE 2: Real Report Generation Section -->
+        <div class="admin-section-card" id="reportsSection">
+          <div class="admin-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge">
+                <i class="fa-solid fa-chart-column"></i>
+              </div>
+              <div>
+                <h2>Real-Time Report Generation &amp; Export</h2>
+                <p>Generate certified CSV data reports sourced directly from verified database records.</p>
+              </div>
+            </div>
+            <div id="reportStatusBadge" class="badge badge-success" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">
+              <i class="fa-solid fa-shield-halved"></i> Formula-Injection Protected
+            </div>
+          </div>
+          <div class="admin-section-body">
+            <div id="reportsAlertBanner" class="admin-alert-banner"></div>
+            <div class="reports-download-grid">
+              <!-- Report Card 1 -->
+              <div class="report-download-card">
+                <div class="report-card-top">
+                  <span class="report-type-badge">Comprehensive</span>
+                  <h3>Full Registration Master CSV</h3>
+                  <p>Complete participant records, team member rosters, contact info, domains, fee audits, and gateway transaction IDs.</p>
+                </div>
+                <div class="report-card-footer">
+                  <span style="font-size: 0.8rem; color: var(--color-text-muted);"><i class="fa-solid fa-table"></i> All Registrations</span>
+                  <button type="button" class="btn btn-outline btn-sm btn-download-report" id="btnDownloadRegsReport" data-url="/api/admin/reports/registrations.csv">
+                    <i class="fa-solid fa-download"></i> <span>Download CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Report Card 2 -->
+              <div class="report-download-card">
+                <div class="report-card-top">
+                  <span class="report-type-badge" style="background: #E0E7FF; color: #3730A3;">Executive</span>
+                  <h3>Executive &amp; Financial Summary</h3>
+                  <p>High-level audit metrics: verified gross revenue, paid vs unpaid conversion rates, confirmed vs pending slots, and participant totals.</p>
+                </div>
+                <div class="report-card-footer">
+                  <span style="font-size: 0.8rem; color: var(--color-text-muted);"><i class="fa-solid fa-file-invoice-dollar"></i> Financial KPIs</span>
+                  <button type="button" class="btn btn-outline btn-sm btn-download-report" id="btnDownloadSummaryReport" data-url="/api/admin/reports/summary.csv">
+                    <i class="fa-solid fa-download"></i> <span>Download CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Report Card 3 -->
+              <div class="report-download-card">
+                <div class="report-card-top">
+                  <span class="report-type-badge" style="background: #FEF3C7; color: #92400E;">Analytics</span>
+                  <h3>Domain &amp; Track Breakdown</h3>
+                  <p>Distribution across all 8 hackathon tracks with individual/team breakdown, payment completion count, and track revenue totals.</p>
+                </div>
+                <div class="report-card-footer">
+                  <span style="font-size: 0.8rem; color: var(--color-text-muted);"><i class="fa-solid fa-chart-pie"></i> 8 Domains</span>
+                  <button type="button" class="btn btn-outline btn-sm btn-download-report" id="btnDownloadDomainReport" data-url="/api/admin/reports/domains.csv">
+                    <i class="fa-solid fa-download"></i> <span>Download CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Report Card 4: Paid Participants -->
+              <div class="report-download-card">
+                <div class="report-card-top">
+                  <span class="report-type-badge" style="background: #DCFCE7; color: #166534;">Verified Paid</span>
+                  <h3>Paid Participants &amp; Fee Report</h3>
+                  <p>Certified roster of all participants and teams who completed entry fee payment, including payment transaction IDs, methods, amounts, and contact credentials.</p>
+                </div>
+                <div class="report-card-footer">
+                  <span style="font-size: 0.8rem; color: var(--color-text-muted);"><i class="fa-solid fa-receipt"></i> Paid Entries Only</span>
+                  <button type="button" class="btn btn-outline btn-sm btn-download-report" id="btnDownloadPaidReport" data-url="/api/admin/reports/paid-participants.csv">
+                    <i class="fa-solid fa-download"></i> <span>Download CSV</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEATURE 1: Announcement Management Section -->
+        <div class="admin-section-card" id="announcementsSection">
+          <div class="admin-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge">
+                <i class="fa-solid fa-bullhorn"></i>
+              </div>
+              <div>
+                <h2>Broadcast Announcements &amp; Push Alerts</h2>
+                <p>Send persistent announcements to participants via server-side Discord webhook &amp; optional email server.</p>
+              </div>
+            </div>
+          </div>
+          <div class="admin-section-body">
+            <div id="announcementAlertBanner" class="admin-alert-banner"></div>
+            
+            <form id="announcementForm" onsubmit="event.preventDefault();">
+              <div class="admin-form-grid">
+                <div class="admin-form-group span-full">
+                  <label for="announcementTitle">Announcement Title <span style="color: var(--color-error);">*</span></label>
+                  <input type="text" id="announcementTitle" class="admin-form-control" placeholder="e.g., Round 1 Shortlist Announced / Mentor Hours Scheduled" maxlength="150" required>
+                  <span class="form-helper">Concise headline for notification push (3 - 150 characters).</span>
+                </div>
+
+                <div class="admin-form-group">
+                  <label for="announcementAudience">Target Audience <span style="color: var(--color-error);">*</span></label>
+                  <select id="announcementAudience" class="admin-form-control">
+                    <option value="all">All Registered Hackers (Default)</option>
+                    <option value="paid">Confirmed Paid Participants Only</option>
+                    <option value="teams">Team Leaders &amp; Teams</option>
+                    <option value="announcements">General Public Discord Channel</option>
+                  </select>
+                </div>
+
+                <div class="admin-form-group">
+                  <label>Push Notification Channels</label>
+                  <div class="admin-checkbox-group">
+                    <label class="admin-checkbox-label">
+                      <input type="checkbox" id="announcementSendDiscord" checked>
+                      <span><i class="fa-brands fa-discord" style="color: #5865F2;"></i> Discord Webhook</span>
+                    </label>
+                    <label class="admin-checkbox-label">
+                      <input type="checkbox" id="announcementSendEmail">
+                      <span><i class="fa-solid fa-envelope" style="color: #EA4335;"></i> Email Broadcast</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="admin-form-group span-full">
+                  <label for="announcementMessage">Announcement Content / Message <span style="color: var(--color-error);">*</span></label>
+                  <textarea id="announcementMessage" class="admin-form-control" rows="4" placeholder="Type the official announcement message here..." maxlength="5000" required></textarea>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                    <span class="form-helper">Supports markdown-formatted notifications and webhook embeds.</span>
+                    <span id="announcementCharCount" style="font-size: 0.75rem; color: var(--color-text-muted);">0 / 5000</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top: 1.25rem; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem;">
+                <button type="submit" class="btn btn-primary" id="btnSendAnnouncement">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span>Broadcast Announcement</span>
+                </button>
+              </div>
+            </form>
+
+            <!-- Recent Broadcast History -->
+            <div style="margin-top: 2rem;">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.75rem;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Recent Announcement Dispatches
+              </h3>
+              <div class="table-responsive">
+                <table class="announcement-history-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 25%;">Headline</th>
+                      <th>Message Preview</th>
+                      <th style="width: 15%;">Audience</th>
+                      <th style="width: 25%;">Delivery Status</th>
+                      <th style="width: 15%;">Dispatched</th>
+                    </tr>
+                  </thead>
+                  <tbody id="announcementsHistoryBody">
+                    <tr><td colspan="5" style="text-align: center; color: var(--color-text-muted); padding: 1.5rem;">Loading announcements log...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEATURE 3: Event Configuration Section -->
+        <div class="admin-section-card" id="settingsSection">
+          <div class="admin-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge">
+                <i class="fa-solid fa-sliders"></i>
+              </div>
+              <div>
+                <h2>Event Configuration &amp; Parameters</h2>
+                <p>Modify authoritative server-side settings: fees, target deadlines, and total prize pool.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" id="btnReloadSettings">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh Settings</span>
+            </button>
+          </div>
+          <div class="admin-section-body">
+            <div id="settingsAlertBanner" class="admin-alert-banner"></div>
+
+            <form id="eventSettingsForm" onsubmit="event.preventDefault();">
+              <div class="admin-form-grid">
+                <div class="admin-form-group">
+                  <label for="settingEventName">Official Event Name <span style="color: var(--color-error);">*</span></label>
+                  <input type="text" id="settingEventName" class="admin-form-control" placeholder="SYNEX 2026" required>
+                  <span class="form-helper">Displayed across public portal navigation and banners.</span>
+                </div>
+
+                <div class="admin-form-group">
+                  <label for="settingIndividualFee">Individual Entry Fee (INR ₹) <span style="color: var(--color-error);">*</span></label>
+                  <input type="number" id="settingIndividualFee" class="admin-form-control" min="0" max="500000" placeholder="299" required>
+                  <span class="form-helper">Authoritative fee enforced by server backend for solo hackers.</span>
+                </div>
+
+                <div class="admin-form-group">
+                  <label for="settingTeamFee">Team Entry Fee (INR ₹) <span style="color: var(--color-error);">*</span></label>
+                  <input type="number" id="settingTeamFee" class="admin-form-control" min="0" max="500000" placeholder="999" required>
+                  <span class="form-helper">Authoritative fee enforced by server backend for teams of 2 to 4 hackers.</span>
+                </div>
+
+                <div class="admin-form-group">
+                  <label for="settingDeadline">Registration Deadline <span style="color: var(--color-error);">*</span></label>
+                  <input type="datetime-local" id="settingDeadline" class="admin-form-control" required>
+                  <span class="form-helper">Synchronized with countdown timer on public portal.</span>
+                </div>
+
+                <div class="admin-form-group">
+                  <label for="settingPrizePool">Total Prize Pool <span style="color: var(--color-error);">*</span></label>
+                  <input type="text" id="settingPrizePool" class="admin-form-control" placeholder="₹2,50,000" required>
+                  <span class="form-helper">Featured prize money highlighted across public marketing pages.</span>
+                </div>
+
+                <div class="admin-form-group">
+                  <label for="settingRegistrationOpen">Registration Status <span style="color: var(--color-error);">*</span></label>
+                  <select id="settingRegistrationOpen" class="admin-form-control">
+                    <option value="true">Open — Accepting New Registrations</option>
+                    <option value="false">Closed — Registration Concluded</option>
+                  </select>
+                  <span class="form-helper">Controls whether participant registration form accepts submissions.</span>
+                </div>
+              </div>
+
+              <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem;">
+                <button type="submit" class="btn btn-primary" id="btnSaveSettings">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Save Configuration</span>
+                </button>
+              </div>
+            </form>
+
+            <!-- Public Site Content: Rules & Schedule Management Card -->
+            <div class="content-management-card" style="margin-top: 2rem; padding: 1.25rem 1.5rem; border: 1px solid var(--color-border); background: #F8FAFC; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                  <h4 style="color: var(--color-text-main); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.25rem 0;">
+                    <i class="fa-solid fa-file-pen" style="color: var(--color-primary);"></i> Public Portal Content: Rules &amp; Schedule
+                  </h4>
+                  <p style="color: var(--color-text-secondary); font-size: 0.82rem; margin: 0;">
+                    Directly modify rules, guidelines, eligibility rubrics, and the 36-hour schedule timeline published on the public site.
+                  </p>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                <button type="button" class="btn btn-outline" id="btnEditRulesModal" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                  <i class="fa-solid fa-scale-balanced" style="color: #2563EB;"></i>
+                  <span>Edit Event Rules</span>
+                </button>
+                <button type="button" class="btn btn-outline" id="btnEditScheduleModal" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                  <i class="fa-solid fa-calendar-days" style="color: #059669;"></i>
+                  <span>Edit Event Schedule</span>
+                </button>
+                <a href="/rules" target="_blank" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--color-text-muted);">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  <span>View Live Rules</span>
+                </a>
+                <a href="/schedule" target="_blank" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--color-text-muted);">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                  <span>View Live Schedule</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Danger Zone: Reset Participants Data -->
+            <div class="danger-zone-card" style="margin-top: 2rem; padding: 1.25rem 1.5rem; border: 1px solid #FECACA; background: #FFF5F5; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                  <h4 style="color: #991B1B; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.25rem 0;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Danger Zone: Reset Participant Records
+                  </h4>
+                  <p style="color: #7F1D1D; font-size: 0.82rem; margin: 0;">
+                    Permanently delete all participant registrations, teams, member rosters, and payment transactions from the database.
+                  </p>
+                </div>
+                <button type="button" class="btn btn-danger" id="btnResetParticipants" style="background: #DC2626; color: #FFFFFF; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s;">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>Reset All Participants</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -313,6 +609,171 @@
       </main>
     </div>
 
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div class="team-modal-backdrop" id="resetConfirmModal" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle">
+    <div class="team-modal-dialog" style="max-width: 480px;">
+      <div class="team-modal-header" style="border-bottom: 1px solid #FECACA; background: #FFF5F5;">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon" style="background: #FEE2E2; color: #DC2626;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="resetModalTitle" style="color: #991B1B;">Reset Participant Records</h2>
+            <span class="team-modal-ref" style="color: #B91C1C;">Irreversible Action</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseResetModal" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body" style="padding: 1.5rem;">
+        <p style="color: #334155; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem;">
+          Are you sure you want to <strong>permanently delete all participant records</strong>?
+        </p>
+        <ul style="color: #64748B; font-size: 0.82rem; line-height: 1.6; padding-left: 1.25rem; margin-bottom: 1.25rem;">
+          <li>All participant profiles and contact info</li>
+          <li>All team squads and registered members</li>
+          <li>All registration entries and fee records</li>
+          <li>All payment transactions and order histories</li>
+        </ul>
+        <div style="background: #FEF2F2; border-left: 4px solid #EF4444; padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.8rem; color: #991B1B;">
+          <strong>Warning:</strong> This action cannot be undone. Event configuration and administrator credentials will be preserved.
+        </div>
+      </div>
+
+      <div class="team-modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; background: #F8FAFC; border-top: 1px solid #E2E8F0;">
+        <button type="button" class="btn btn-outline btn-sm" id="btnCancelResetModal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-sm" id="btnConfirmReset" style="background: #DC2626; color: #FFFFFF; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Yes, Delete All Records</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Rules Modal -->
+  <div class="team-modal-backdrop" id="editRulesModal" role="dialog" aria-modal="true" aria-labelledby="editRulesModalTitle">
+    <div class="team-modal-dialog" style="max-width: 780px; max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="team-modal-header" style="border-bottom: 1px solid var(--color-border); background: #F8FAFC;">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon" style="background: #EFF6FF; color: #2563EB;">
+            <i class="fa-solid fa-scale-balanced"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="editRulesModalTitle">Edit Public Event Rules &amp; Guidelines</h2>
+            <span class="team-modal-ref" style="color: var(--color-text-muted);">Synchronized with /rules.html</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseRulesModal" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body" style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+        <div id="rulesModalAlertBanner" class="admin-alert-banner"></div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <label for="rulesNoticeBannerInput" style="font-size: 0.88rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.35rem;">
+            Public Header Notice Banner
+          </label>
+          <input type="text" id="rulesNoticeBannerInput" class="admin-form-control" placeholder="e.g., OFFICIAL GUIDELINES: Rules, eligibility guidelines, and evaluation criteria for SYNEX 2026.">
+          <span style="font-size: 0.78rem; color: var(--color-text-muted);">Notice shown at the very top of the public rules page.</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0;">
+            Rule Sections &amp; Guidelines
+          </h3>
+          <button type="button" class="btn btn-outline btn-sm" id="btnAddRuleBlock">
+            <i class="fa-solid fa-plus"></i> <span>Add New Rule</span>
+          </button>
+        </div>
+
+        <div id="rulesBlocksList" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Populated dynamically by admin.js -->
+        </div>
+      </div>
+
+      <div class="team-modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: #F8FAFC; border-top: 1px solid var(--color-border);">
+        <button type="button" class="btn btn-outline btn-sm" id="btnResetRulesDefault" style="color: var(--color-error); border-color: #FECACA;">
+          <i class="fa-solid fa-rotate-left"></i> <span>Reset to Defaults</span>
+        </button>
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" class="btn btn-outline btn-sm" id="btnCancelRulesModal">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnSaveRules">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Save &amp; Publish Rules</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Schedule Modal -->
+  <div class="team-modal-backdrop" id="editScheduleModal" role="dialog" aria-modal="true" aria-labelledby="editScheduleModalTitle">
+    <div class="team-modal-dialog" style="max-width: 840px; max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="team-modal-header" style="border-bottom: 1px solid var(--color-border); background: #F8FAFC;">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon" style="background: #ECFDF5; color: #059669;">
+            <i class="fa-solid fa-calendar-days"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="editScheduleModalTitle">Edit Public Event Schedule &amp; Agenda</h2>
+            <span class="team-modal-ref" style="color: var(--color-text-muted);">Synchronized with /schedule.html</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseScheduleModal" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body" style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+        <div id="scheduleModalAlertBanner" class="admin-alert-banner"></div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <label for="scheduleNoticeBannerInput" style="font-size: 0.88rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.35rem;">
+            Public Header Notice Banner
+          </label>
+          <input type="text" id="scheduleNoticeBannerInput" class="admin-form-control" placeholder="e.g., OFFICIAL TIMELINE: 36-hour schedule for mentoring checkpoints, sprints, and jury demonstrations.">
+          <span style="font-size: 0.78rem; color: var(--color-text-muted);">Notice shown at the very top of the public schedule page.</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0;">
+            Timeline Milestones
+          </h3>
+          <button type="button" class="btn btn-outline btn-sm" id="btnAddScheduleMilestone">
+            <i class="fa-solid fa-plus"></i> <span>Add Milestone</span>
+          </button>
+        </div>
+
+        <div id="scheduleMilestonesList" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Populated dynamically by admin.js -->
+        </div>
+      </div>
+
+      <div class="team-modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: #F8FAFC; border-top: 1px solid var(--color-border);">
+        <button type="button" class="btn btn-outline btn-sm" id="btnResetScheduleDefault" style="color: var(--color-error); border-color: #FECACA;">
+          <i class="fa-solid fa-rotate-left"></i> <span>Reset to Defaults</span>
+        </button>
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" class="btn btn-outline btn-sm" id="btnCancelScheduleModal">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnSaveSchedule">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Save &amp; Publish Schedule</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Team & Participant Details Modal -->

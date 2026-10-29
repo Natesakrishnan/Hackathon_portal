@@ -137,7 +137,7 @@
               </div>
               <div class="pass-item">
                 <span class="pass-item-label">Demo Fee Paid</span>
-                <span class="pass-item-val" id="passFee">₹299 (Simulated)</span>
+                <span class="pass-item-val" id="passFee">₹{{ individual_fee }} (Simulated)</span>
               </div>
             </div>
 
@@ -254,62 +254,125 @@
   <!-- Scripts -->
   <script src="js/main.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       const successCard = document.getElementById("confirmSuccessState");
       const unavailCard = document.getElementById("confirmUnavailableState");
 
-      // Verify payment status and draft session
-      let isSuccess = false;
-      let draft = null;
+      // Check URL query param first
+      const urlParams = new URLSearchParams(window.location.search);
+      let refId = urlParams.get("ref");
+      let reg = null;
 
-      try {
-        const paymentStatus = sessionStorage.getItem("synex_payment_status");
-        const rawDraft = sessionStorage.getItem("synex_registration_draft");
-        if (paymentStatus === "demo_success" && rawDraft) {
-          draft = JSON.parse(rawDraft);
-          if (draft && draft.participantName) {
-            isSuccess = true;
-          }
-        }
-      } catch (e) {
-        console.error("Error reading confirmation state:", e);
+      if (!refId) {
+        try {
+          refId = sessionStorage.getItem("synex_registration_ref");
+        } catch (e) {}
       }
 
-      if (!isSuccess) {
+      if (refId) {
+        try {
+          const res = await fetch(`/api/registrations/${refId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.registration) {
+              reg = data.registration;
+            }
+          }
+        } catch (err) {
+          console.warn("Could not fetch registration from API:", err);
+        }
+      }
+
+      // Fallback to draft in session
+      if (!reg) {
+        try {
+          const rawDraft = sessionStorage.getItem("synex_registration_draft");
+          if (rawDraft) {
+            const draft = JSON.parse(rawDraft);
+            if (draft && draft.participantName) {
+              reg = {
+                public_id: draft.referenceId,
+                registration_type: (draft.type || "individual").toLowerCase(),
+                domain: draft.domain,
+                entry_fee: draft.totalAmount,
+                payment_status: "paid",
+                participant: {
+                  full_name: draft.participantName,
+                  college: draft.college,
+                },
+                team: draft.type === "Team" ? {
+                  team_name: draft.teamName,
+                  members: draft.members || []
+                } : null
+              };
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!reg) {
         if (successCard) successCard.style.display = "none";
         if (unavailCard) unavailCard.style.display = "block";
         return;
       }
 
-      // Populate valid demo confirmation pass
+      // Populate pass details
       if (successCard) successCard.style.display = "block";
       if (unavailCard) unavailCard.style.display = "none";
 
-      document.getElementById("passRefId").textContent = draft.referenceId || "SYN-DEMO-00000";
+      const publicId = reg.public_id || refId || "SYNEX-000000";
+      const isTeam = (reg.registration_type || "").toLowerCase() === "team";
+      const pName = reg.participant ? reg.participant.full_name : "Participant";
+      const college = reg.participant ? reg.participant.college : "N/A";
+      const teamName = reg.team ? reg.team.team_name : null;
+      const fee = reg.entry_fee || (isTeam ? (window.SYNEX_CONFIG?.fees?.team || 999) : (window.SYNEX_CONFIG?.fees?.individual || 299));
+
+      document.getElementById("passRefId").textContent = publicId;
       
       const passName = document.getElementById("passName");
-      if (draft.type === "Team" && draft.teamName) {
-        passName.textContent = `${draft.teamName} (Lead: ${draft.participantName})`;
-      } else {
-        passName.textContent = draft.participantName;
+      if (passName) {
+        if (isTeam && teamName) {
+          passName.textContent = `${teamName} (Lead: ${pName})`;
+        } else {
+          passName.textContent = pName;
+        }
       }
 
-      document.getElementById("passType").textContent = draft.type === "Team"
-        ? `Team (${draft.teamSize || 3} Members)`
-        : "Individual";
+      const passType = document.getElementById("passType");
+      if (passType) {
+        passType.textContent = isTeam
+          ? `Team Registration (${reg.team && reg.team.members ? reg.team.members.length : 3} Members)`
+          : "Individual Registration";
+      }
 
-      document.getElementById("passDomain").textContent = draft.domain || "AI & Machine Learning";
-      document.getElementById("passCollege").textContent = draft.college || "N/A";
-      document.getElementById("passFee").textContent = `${draft.currency || "₹"}${draft.totalAmount} (Demo)`;
+      const passDomain = document.getElementById("passDomain");
+      if (passDomain) passDomain.textContent = reg.domain || "AI & Machine Learning";
 
-      // If team members exist, display them
-      if (draft.type === "Team" && Array.isArray(draft.members) && draft.members.length > 0) {
+      const passCollege = document.getElementById("passCollege");
+      if (passCollege) passCollege.textContent = college;
+
+      const passFee = document.getElementById("passFee");
+      if (passFee) passFee.textContent = `₹${fee} (Paid & Confirmed)`;
+
+      // Team Members Listing
+      if (isTeam && reg.team && Array.isArray(reg.team.members) && reg.team.members.length > 0) {
         const teamRow = document.getElementById("passTeamMembersRow");
         const listDiv = document.getElementById("passMembersList");
         if (teamRow && listDiv) {
           teamRow.style.display = "block";
-          listDiv.textContent = draft.members.map(m => `${m.name} (${m.email})`).join(" • ");
+          listDiv.textContent = reg.team.members
+            .filter(m => m.role !== "leader")
+            .map(m => `${m.name || m.full_name} (${m.email})`)
+            .join(" • ");
         }
+      }
+
+      // Wire Print Pass Button
+      const btnPrint = document.getElementById("btnPrintPass");
+      if (btnPrint) {
+        btnPrint.addEventListener("click", () => {
+          window.print();
+        });
       }
     });
   </script>

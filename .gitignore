@@ -1,0 +1,22 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+venv/
+env/
+.venv/
+
+# Environment Variables
+.env
+
+# SQLite databases
+*.db
+*.sqlite
+instance/
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/

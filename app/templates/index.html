@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SYNEX 2026 — National Innovation Hackathon</title>
+  <meta name="description" content="Join SYNEX 2026, the premier 36-hour national innovation hackathon. Build the future with ₹2,50,000+ in prizes, world-class mentorship, and 1,200+ creators.">
+
+  <!-- Favicon / Brand Icon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-banner" role="status">
+    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    <span><strong>DEMO PREVIEW:</strong> SYNEX Hackathon Portal — Frontend Architecture Preview. Event dates, fees, and prizes are sample content.</span>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="topNav">
+    <div class="container nav-container">
+      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
+        <div class="brand-logo-icon">S</div>
+        <div class="brand-text">
+          <span class="brand-name">SYNEX</span>
+          <span class="brand-sub">Hackathon 2026</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link active">Home</a></li>
+          <li><a href="#about" class="nav-link">About</a></li>
+          <li><a href="#domains" class="nav-link">Domains</a></li>
+          <li><a href="schedule.html" class="nav-link">Schedule</a></li>
+          <li><a href="rules.html" class="nav-link">Rules</a></li>
+          <li><a href="contact.html" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-cta">
+        <a href="register.html" class="btn btn-primary" id="navRegisterBtn">
+          <span>Register Now</span>
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileNav">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div class="mobile-nav" id="mobileNav" aria-label="Mobile Navigation">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="#about" class="nav-link">About</a>
+    <a href="#domains" class="nav-link">Domains</a>
+    <a href="schedule.html" class="nav-link">Schedule</a>
+    <a href="rules.html" class="nav-link">Rules</a>
+    <a href="contact.html" class="nav-link">Contact</a>
+    <a href="register.html" class="btn btn-primary">
+      <span>Register Now</span>
+      <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+    </a>
+  </div>
+
+  <main>
+    <!-- Section B: Hero Section -->
+    <section class="hero" id="home">
+      <div class="container hero-content">
+        <div class="hero-left">
+          <div class="hero-badge-group">
+            <span class="hero-pill">
+              <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+              <span>Nov 14 – 15, 2026</span>
+            </span>
+            <span class="hero-pill">
+              <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+              <span>Bengaluru &amp; Hybrid</span>
+            </span>
+            <span class="hero-pill">
+              <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+              <span>36-Hour Sprint</span>
+            </span>
+          </div>
+
+          <h1 class="hero-title">
+            BUILD THE FUTURE.<br>
+            <span class="text-gradient">ONE IDEA AT A TIME.</span>
+          </h1>
+
+          <p class="hero-desc">
+            Join innovators, developers, designers, and problem-solvers to create meaningful solutions, collaborate with talented minds, and turn your ideas into reality.
+          </p>
+
+          <div class="hero-actions">
+            <a href="register.html" class="btn btn-primary btn-lg" id="heroRegisterBtn">
+              <span>Register Now</span>
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+            <a href="#about" class="btn btn-outline btn-lg" id="heroExploreBtn">
+              <i class="fa-solid fa-compass" aria-hidden="true"></i>
+              <span>Explore Event</span>
+            </a>
+          </div>
+
+          <div class="hero-meta">
+            <div class="hero-meta-item">
+              <div class="hero-meta-icon">
+                <i class="fa-solid fa-trophy" aria-hidden="true"></i>
+              </div>
+              <div class="hero-meta-text">
+                <span class="hero-meta-label">Prize Pool</span>
+                <span class="hero-meta-val">₹2,50,000 INR</span>
+              </div>
+            </div>
+            <div class="hero-meta-item">
+              <div class="hero-meta-icon">
+                <i class="fa-solid fa-ticket" aria-hidden="true"></i>
+              </div>
+              <div class="hero-meta-text">
+                <span class="hero-meta-label">Entry From</span>
+                <span class="hero-meta-val" id="heroEntryFeeDisplay" data-synex-fees="combined">₹{{ individual_fee }} Individual / ₹{{ team_fee }} Team</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero Right: Countdown & Quick Overview Card -->
+        <div class="hero-right">
+          <div class="hero-card">
+            <div class="hero-card-header">
+              <span class="section-tag">
+                <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                <span>Kickoff Countdown</span>
+              </span>
+              <h2 class="hero-card-title">Hacking Begins In</h2>
+              <p class="hero-card-sub">Registration closes 48 hours prior to start</p>
+            </div>
+
+            <!-- Countdown Grid -->
+            <div class="countdown-grid" id="countdownGrid" aria-label="Event Countdown Timer">
+              <div class="countdown-box">
+                <div class="countdown-num" id="countdownDays">00</div>
+                <div class="countdown-label">Days</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-num" id="countdownHours">00</div>
+                <div class="countdown-label">Hours</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-num" id="countdownMinutes">00</div>
+                <div class="countdown-label">Minutes</div>
+              </div>
+              <div class="countdown-box">
+                <div class="countdown-num" id="countdownSeconds">00</div>
+                <div class="countdown-label">Seconds</div>
+              </div>
+            </div>
+
+            <!-- Expired Message (hidden by default) -->
+            <div class="countdown-expired-msg" id="countdownExpired"></div>
+
+            <div class="hero-card-stats">
+              <div class="hero-quick-stat">
+                <div class="hero-quick-icon">
+                  <i class="fa-solid fa-users" aria-hidden="true"></i>
+                </div>
+                <div class="hero-quick-text">
+                  <span class="hero-quick-num">300 Teams</span>
+                  <span class="hero-quick-label">Capacity limit</span>
+                </div>
+              </div>
+              <div class="hero-quick-stat">
+                <div class="hero-quick-icon">
+                  <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+                </div>
+                <div class="hero-quick-text">
+                  <span class="hero-quick-num">50+ Colleges</span>
+                  <span class="hero-quick-label">Participating</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section C: Event Statistics -->
+    <section class="section section-alt" id="stats">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fa-solid fa-user-astronaut" aria-hidden="true"></i>
+            </div>
+            <div class="stat-number">1,200+</div>
+            <div class="stat-label">Expected Participants</div>
+            <div class="stat-sub">Engineers, designers &amp; builders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+            </div>
+            <div class="stat-number">300</div>
+            <div class="stat-label">Team Capacity</div>
+            <div class="stat-sub">2 to 4 members per team</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fa-solid fa-stopwatch" aria-hidden="true"></i>
+            </div>
+            <div class="stat-number">36</div>
+            <div class="stat-label">Hours of Hacking</div>
+            <div class="stat-sub">Non-stop sprint &amp; mentorship</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
+            </div>
+            <div class="stat-number">₹2.5L</div>
+            <div class="stat-label">Total Prize Pool</div>
+            <div class="stat-sub">Cash rewards &amp; cloud credits</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section D: About the Hackathon -->
+    <section class="section" id="about">
+      <div class="container">
+        <div class="about-grid">
+          <div class="about-info">
+            <span class="section-tag">
+              <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
+              <span>About SYNEX</span>
+            </span>
+            <h2 class="section-title">Fostering Groundbreaking Solutions For Real-World Challenges</h2>
+            <p>
+              SYNEX 2026 is an intensive, high-energy hackathon designed to empower student innovators and tech pioneers. Over 36 exhilarating hours, teams will conceptualize, build, and deploy production-ready prototypes across 8 multidisciplinary domains.
+            </p>
+            <p>
+              Whether you are an experienced systems programmer, an AI enthusiast, an IoT hardware tinkerer, or a product designer, SYNEX provides the ideal launchpad to validate your hypotheses with veteran industry mentors and venture scouts.
+            </p>
+
+            <div class="about-features">
+              <div class="about-feature-item">
+                <div class="about-feature-icon">
+                  <i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <h3 class="about-feature-title">Industry Mentorship</h3>
+                  <p class="about-feature-desc">Round-the-clock guidance from seasoned engineers and tech leaders.</p>
+                </div>
+              </div>
+              <div class="about-feature-item">
+                <div class="about-feature-icon">
+                  <i class="fa-solid fa-rocket" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <h3 class="about-feature-title">Incubation Pipeline</h3>
+                  <p class="about-feature-desc">Direct acceleration pathways and angel connect for top-ranking teams.</p>
+                </div>
+              </div>
+              <div class="about-feature-item">
+                <div class="about-feature-icon">
+                  <i class="fa-solid fa-network-wired" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <h3 class="about-feature-title">Tech Networking</h3>
+                  <p class="about-feature-desc">Connect with hundreds of like-minded innovators across institutions.</p>
+                </div>
+              </div>
+              <div class="about-feature-item">
+                <div class="about-feature-icon">
+                  <i class="fa-solid fa-award" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <h3 class="about-feature-title">Verified Badges</h3>
+                  <p class="about-feature-desc">Official participation credentials and physical swag packages.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="about-highlight-box">
+            <h3 class="about-highlight-title">Why Compete in SYNEX 2026?</h3>
+            <p class="about-highlight-p">
+              We bridge academic rigor with commercial viability. Gain access to cloud infrastructure credits, API sponsorships, live code review checkpoints, and high-impact jury panels.
+            </p>
+            <div class="about-pills">
+              <span class="about-pill"><i class="fa-solid fa-check"></i> 100% IP Retention</span>
+              <span class="about-pill"><i class="fa-solid fa-check"></i> Free Meals &amp; Energy Fuel</span>
+              <span class="about-pill"><i class="fa-solid fa-check"></i> High-Speed 1Gbps Fiber</span>
+              <span class="about-pill"><i class="fa-solid fa-check"></i> Live API Sandboxes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section E: Domains (IMPORTANT: Strictly named Domains, NOT Themes) -->
+    <section class="section section-alt" id="domains">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">
+            <i class="fa-solid fa-cubes" aria-hidden="true"></i>
+            <span>Innovation Tracks</span>
+          </span>
+          <h2 class="section-title">Explore Our 8 Hackathon Domains</h2>
+          <p class="section-desc">
+            Choose from cutting-edge technological domains. You may tackle specific problem statements or build an open-ended disruption within your selected domain.
+          </p>
+        </div>
+
+        <div class="domains-grid">
+          <!-- Domain 1 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-brain" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Artificial Intelligence &amp; Machine Learning</h3>
+            <p class="domain-desc">
+              Harness LLMs, computer vision, neural speech models, and predictive analytics to solve complex societal problems.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">GenAI</span>
+              <span class="domain-tag">Computer Vision</span>
+              <span class="domain-tag">Agents</span>
+            </div>
+          </div>
+
+          <!-- Domain 2 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-code" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Web Development</h3>
+            <p class="domain-desc">
+              Create lightning-fast, accessible, responsive full-stack applications, distributed platforms, and progressive web systems.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">Full-Stack</span>
+              <span class="domain-tag">Microservices</span>
+              <span class="domain-tag">PWA</span>
+            </div>
+          </div>
+
+          <!-- Domain 3 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Cybersecurity</h3>
+            <p class="domain-desc">
+              Develop robust zero-trust defense architectures, automated threat detection, cryptographic verification, and privacy tools.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">Zero-Trust</span>
+              <span class="domain-tag">Cryptography</span>
+              <span class="domain-tag">SecOps</span>
+            </div>
+          </div>
+
+          <!-- Domain 4 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-microchip" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Internet of Things (IoT)</h3>
+            <p class="domain-desc">
+              Bridge hardware sensors and cloud telemetry for industrial automation, connected mobility, and edge compute nodes.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">Edge Computing</span>
+              <span class="domain-tag">Sensors</span>
+              <span class="domain-tag">Embedded</span>
+            </div>
+          </div>
+
+          <!-- Domain 5 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-heart-pulse" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Healthcare Technology</h3>
+            <p class="domain-desc">
+              Reinvent digital diagnostics, patient triage, telemedicine telemetry, medical imaging, and accessible assistive hardware.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">HealthTech</span>
+              <span class="domain-tag">Diagnostics</span>
+              <span class="domain-tag">Accessibility</span>
+            </div>
+          </div>
+
+          <!-- Domain 6 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-coins" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Financial Technology (FinTech)</h3>
+            <p class="domain-desc">
+              Architect next-generation payment rails, algorithmic risk mitigation, decentralized ledgers, and financial inclusion tools.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">Payments</span>
+              <span class="domain-tag">Fraud Detection</span>
+              <span class="domain-tag">DeFi</span>
+            </div>
+          </div>
+
+          <!-- Domain 7 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-city" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Smart Cities &amp; Sustainability</h3>
+            <p class="domain-desc">
+              Design energy optimization grids, intelligent traffic management systems, water conservation, and circular waste tech.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">CleanTech</span>
+              <span class="domain-tag">Smart Grid</span>
+              <span class="domain-tag">Mobility</span>
+            </div>
+          </div>
+
+          <!-- Domain 8 -->
+          <div class="domain-card">
+            <div class="domain-icon-wrapper">
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+            </div>
+            <h3 class="domain-title">Open Innovation</h3>
+            <p class="domain-desc">
+              Have an audacious cross-disciplinary concept that defies traditional categories? The open innovation track is your playground.
+            </p>
+            <div class="domain-tags">
+              <span class="domain-tag">Cross-Domain</span>
+              <span class="domain-tag">Moonshots</span>
+              <span class="domain-tag">Wildcard</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section F: Event Schedule Preview -->
+    <section class="section" id="schedule">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">
+            <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+            <span>Timeline</span>
+          </span>
+          <h2 class="section-title">36 Hours of Non-Stop Innovation</h2>
+          <p class="section-desc">
+            A high-velocity journey packed with structured mentoring checkpoints, code sprints, and jury demonstrations.
+          </p>
+        </div>
+
+        <div class="timeline">
+          <!-- Item 1 -->
+          <div class="timeline-item">
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <div class="timeline-info">
+                <span class="timeline-time-badge">Day 1 — 08:30 AM</span>
+                <h3 class="timeline-title">Participant Check-in &amp; Kit Distribution</h3>
+                <p class="timeline-desc">Physical registration verification, badge issuance, and desk allocations.</p>
+              </div>
+              <span class="timeline-tag">Check-in</span>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="timeline-item">
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <div class="timeline-info">
+                <span class="timeline-time-badge">Day 1 — 10:00 AM</span>
+                <h3 class="timeline-title">Opening Ceremony &amp; Problem Briefing</h3>
+                <p class="timeline-desc">Keynote address by chief guests and official release of specialized track problem statements.</p>
+              </div>
+              <span class="timeline-tag">Keynote</span>
+            </div>
+          </div>
+
+          <!-- Item 3 -->
+          <div class="timeline-item">
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <div class="timeline-info">
+                <span class="timeline-time-badge">Day 1 — 11:30 AM</span>
+                <h3 class="timeline-title">Hacking Begins</h3>
+                <p class="timeline-desc">Timer starts! Repositories initialized, architecture locked, and sprint begins.</p>
+              </div>
+              <span class="timeline-tag">Sprint Kickoff</span>
+            </div>
+          </div>
+
+          <!-- Item 4 -->
+          <div class="timeline-item">
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <div class="timeline-info">
+                <span class="timeline-time-badge">Day 1 — 06:00 PM</span>
+                <h3 class="timeline-title">Mentoring Checkpoint 1 (Ideation &amp; Architecture)</h3>
+                <p class="timeline-desc">One-on-one reviews with domain specialists to refine feasibility and scope.</p>
+              </div>
+              <span class="timeline-tag">Mentorship</span>
+            </div>
+          </div>
+
+          <!-- Item 5 -->
+          <div class="timeline-item">
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <div class="timeline-info">
+                <span class="timeline-time-badge">Day 2 — 09:00 AM</span>
+                <h3 class="timeline-title">Mentoring Checkpoint 2 (Prototype Testing)</h3>
+                <p class="timeline-desc">Evaluation of core working modules, database models, and API integrations.</p>
+              </div>
+              <span class="timeline-tag">Checkpoint</span>
+            </div>
+          </div>
+
+          <!-- Item 6 -->
+          <div class="timeline-item">
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <div class="timeline-info">
+                <span class="timeline-time-badge">Day 2 — 05:00 PM</span>
+                <h3 class="timeline-title">Final Project Submission &amp; Code Freeze</h3>
+                <p class="timeline-desc">Submission of GitHub repositories, pitch decks, and 2-minute demonstration videos.</p>
+              </div>
+              <span class="timeline-tag">Code Freeze</span>
+            </div>
+          </div>
+
+          <!-- Item 7 -->
+          <div class="timeline-item">
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <div class="timeline-info">
+                <span class="timeline-time-badge">Day 2 — 06:30 PM</span>
+                <h3 class="timeline-title">Grand Finale Presentations &amp; Awards Ceremony</h3>
+                <p class="timeline-desc">Top 10 shortlisted finalists pitch live to jury followed by winner announcements.</p>
+              </div>
+              <span class="timeline-tag">Finale</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 3rem;">
+          <a href="schedule.html" class="btn btn-outline-primary btn-lg">
+            <span>View Full Detailed Schedule</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section G: Prizes and Benefits -->
+    <section class="section section-alt" id="prizes">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">
+            <i class="fa-solid fa-trophy" aria-hidden="true"></i>
+            <span>Rewards &amp; Recognition</span>
+          </span>
+          <h2 class="section-title">Prizes Worth ₹2,50,000+</h2>
+          <p class="section-desc">
+            Lucrative cash rewards, cloud infrastructure credits, direct investor access, and coveted incubation spots.
+          </p>
+        </div>
+
+        <div class="prizes-grid">
+          <!-- 2nd Prize -->
+          <div class="prize-card prize-second">
+            <div class="prize-badge-icon">
+              <i class="fa-solid fa-medal" aria-hidden="true"></i>
+            </div>
+            <h3 class="prize-rank">Second Prize</h3>
+            <div class="prize-amount">₹75,000</div>
+            <ul class="prize-perks">
+              <li><i class="fa-solid fa-circle-check"></i> ₹75,000 Cash Prize</li>
+              <li><i class="fa-solid fa-circle-check"></i> Silver Winners Trophy &amp; Medals</li>
+              <li><i class="fa-solid fa-circle-check"></i> $2,500 Cloud Credits per team</li>
+              <li><i class="fa-solid fa-circle-check"></i> Fast-track Accelerator Interview</li>
+            </ul>
+            <a href="register.html" class="btn btn-outline">Compete For This</a>
+          </div>
+
+          <!-- 1st Prize (Featured) -->
+          <div class="prize-card prize-first featured">
+            <div class="prize-ribbon">GRAND CHAMPION</div>
+            <div class="prize-badge-icon">
+              <i class="fa-solid fa-crown" aria-hidden="true"></i>
+            </div>
+            <h3 class="prize-rank">First Prize</h3>
+            <div class="prize-amount">₹1,20,000</div>
+            <ul class="prize-perks">
+              <li><i class="fa-solid fa-circle-check"></i> ₹1,20,000 Cash Award</li>
+              <li><i class="fa-solid fa-circle-check"></i> Rolling Championship Trophy</li>
+              <li><i class="fa-solid fa-circle-check"></i> $5,000 Cloud Infrastructure Credits</li>
+              <li><i class="fa-solid fa-circle-check"></i> Direct Seed Incubation Eligibility</li>
+              <li><i class="fa-solid fa-circle-check"></i> 1-on-1 VC Pitch Session</li>
+            </ul>
+            <a href="register.html" class="btn btn-primary">Register For Grand Prize</a>
+          </div>
+
+          <!-- 3rd Prize -->
+          <div class="prize-card prize-third">
+            <div class="prize-badge-icon">
+              <i class="fa-solid fa-award" aria-hidden="true"></i>
+            </div>
+            <h3 class="prize-rank">Third Prize</h3>
+            <div class="prize-amount">₹35,000</div>
+            <ul class="prize-perks">
+              <li><i class="fa-solid fa-circle-check"></i> ₹35,000 Cash Prize</li>
+              <li><i class="fa-solid fa-circle-check"></i> Bronze Trophy &amp; Certificates</li>
+              <li><i class="fa-solid fa-circle-check"></i> $1,500 Cloud Credits per team</li>
+              <li><i class="fa-solid fa-circle-check"></i> Mentorship Sprint Support</li>
+            </ul>
+            <a href="register.html" class="btn btn-outline">Compete For This</a>
+          </div>
+        </div>
+
+        <!-- Additional Category Benefits -->
+        <div class="benefits-grid">
+          <div class="benefit-card">
+            <div class="benefit-icon"><i class="fa-solid fa-venus"></i></div>
+            <div>
+              <h4 class="benefit-title">All-Women Track (₹10,000)</h4>
+              <p class="benefit-desc">Special cash prize recognizing top-performing all-women innovators.</p>
+            </div>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon"><i class="fa-solid fa-palette"></i></div>
+            <div>
+              <h4 class="benefit-title">Best UI/UX Design (₹10,000)</h4>
+              <p class="benefit-desc">Honoring the team with the most accessible, intuitive interface design.</p>
+            </div>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon"><i class="fa-solid fa-certificate"></i></div>
+            <div>
+              <h4 class="benefit-title">Verified Certificates</h4>
+              <p class="benefit-desc">Official cryptographically-verifiable participation credentials for all.</p>
+            </div>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-icon"><i class="fa-solid fa-shirt"></i></div>
+            <div>
+              <h4 class="benefit-title">Exclusive Swag Kit</h4>
+              <p class="benefit-desc">SYNEX premium t-shirt, stickers, tech lanyard, and partner goodies.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section H: Rules and Guidelines Preview -->
+    <section class="section" id="rules">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">
+            <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i>
+            <span>Guidelines Preview</span>
+          </span>
+          <h2 class="section-title">Participation Rules at a Glance</h2>
+          <p class="section-desc">
+            Fair play, academic integrity, and collaboration are fundamental to the spirit of SYNEX.
+          </p>
+        </div>
+
+        <div class="rules-preview-grid">
+          <div class="rules-preview-card">
+            <div class="rules-card-icon"><i class="fa-solid fa-id-card"></i></div>
+            <h3 class="rules-card-title">Eligibility Criteria</h3>
+            <p class="rules-card-desc">Open to all currently enrolled undergraduate, postgraduate, and diploma students from recognized institutions across India.</p>
+          </div>
+          <div class="rules-preview-card">
+            <div class="rules-card-icon"><i class="fa-solid fa-users-gear"></i></div>
+            <h3 class="rules-card-title">Team Structure</h3>
+            <p class="rules-card-desc">Individual entries or teams consisting of 2 to 4 members. Inter-college and inter-departmental teams are warmly welcomed.</p>
+          </div>
+          <div class="rules-preview-card">
+            <div class="rules-card-icon"><i class="fa-solid fa-code-commit"></i></div>
+            <h3 class="rules-card-title">Originality &amp; Code</h3>
+            <p class="rules-card-desc">All code must be authored during the 36-hour sprint. Open-source libraries are permitted, but pre-built proprietary apps are banned.</p>
+          </div>
+          <div class="rules-preview-card">
+            <div class="rules-card-icon"><i class="fa-solid fa-lock-open"></i></div>
+            <h3 class="rules-card-title">100% IP Ownership</h3>
+            <p class="rules-card-desc">Participants retain complete, unencumbered ownership of all intellectual property, source code, and assets developed during the event.</p>
+          </div>
+          <div class="rules-preview-card">
+            <div class="rules-card-icon"><i class="fa-solid fa-handshake-angle"></i></div>
+            <h3 class="rules-card-title">Code of Conduct</h3>
+            <p class="rules-card-desc">We foster a welcoming, safe, and harassment-free environment for everyone, regardless of gender, identity, or background.</p>
+          </div>
+          <div class="rules-preview-card">
+            <div class="rules-card-icon"><i class="fa-solid fa-hourglass-end"></i></div>
+            <h3 class="rules-card-title">Strict Deadlines</h3>
+            <p class="rules-card-desc">Git repositories and project submission forms must be finalized before the 05:00 PM code freeze on Day 2.</p>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <a href="rules.html" class="btn btn-outline-primary btn-lg">
+            <span>Read Full Rules &amp; Evaluation Criteria</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section I: Interactive FAQ Accordion -->
+    <section class="section section-alt" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">
+            <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+            <span>Common Questions</span>
+          </span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+          <p class="section-desc">
+            Everything you need to know about participating, registrations, logistics, and eligibility.
+          </p>
+        </div>
+
+        <div class="faq-list" role="region" aria-label="FAQ Accordion">
+          <!-- Q1 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Who is eligible to participate in SYNEX 2026?</span>
+              <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Any student currently enrolled in an undergraduate, postgraduate, or research program in engineering, design, management, or pure sciences is eligible. Recent graduates (class of 2026) are also welcome with a valid student ID.
+              </p>
+            </div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Can I register as an individual or do I need a team?</span>
+              <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Both options are supported! You can register as an <strong id="faqIndividualFee" class="faq-indiv-fee-text">Individual (₹{{ individual_fee }})</strong> if you wish to hack solo, or as a <strong id="faqTeamFee" class="faq-team-fee-text">Team of 2 to 4 members (₹{{ team_fee }} total)</strong>. We also host a virtual team-formation mixer on Discord prior to kickoff for solo participants looking to form teams.
+              </p>
+            </div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Is the registration fee refundable?</span>
+              <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Registration fees cover official kits, venue amenities, continuous meals, and infrastructure. Due to advance logistics bookings, entry fees are non-refundable. However, team member substitutions can be requested up to 72 hours before the event.
+              </p>
+            </div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>What should participants bring to the venue?</span>
+              <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Bring your laptop, chargers, extension cords, hardware development boards (if competing in IoT track), a valid college identification card, and personal toiletries. High-speed Wi-Fi, power ports, food, refreshments, and sleeping zones are arranged.
+              </p>
+            </div>
+          </div>
+
+          <!-- Q5 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>How are projects submitted and evaluated?</span>
+              <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Submissions are handled via our portal by providing a public GitHub repository with commit history, a live deploy URL or APK, and a brief pitch deck. Our judging rubric awards 25% for Innovation, 25% for Technical Complexity, 20% for Practical Viability, 15% for User Experience, and 15% for Pitch Quality.
+              </p>
+            </div>
+          </div>
+
+          <!-- Q6 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Can we participate remotely if we cannot travel?</span>
+              <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Yes! SYNEX 2026 offers a hybrid track. Remote participants can join mentoring calls and jury presentations via Zoom/Discord while enjoying parity in judging criteria and special online category awards.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section J: Call to Action -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-box">
+          <h2 class="cta-title">READY TO BUILD SOMETHING AMAZING?</h2>
+          <p class="cta-desc">
+            Secure your spot among 1,200+ forward-thinking creators. Elevate your portfolio, gain lifetime connections, and compete for ₹2.5 Lakhs in prizes.
+          </p>
+          <div class="cta-actions">
+            <a href="register.html" class="btn btn-primary btn-lg" id="ctaRegisterBtn">
+              <span>Register Now</span>
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+            <a href="contact.html" class="btn btn-outline btn-lg" style="color: #FFFFFF; border-color: rgba(255,255,255,0.4); background: transparent;">
+              <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+              <span>Have Questions? Contact Us</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Section K: Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="index.html" class="brand" aria-label="SYNEX Homepage">
+            <div class="brand-logo-icon">S</div>
+            <div class="brand-text">
+              <span class="brand-name">SYNEX</span>
+              <span class="brand-sub">Hackathon 2026</span>
+            </div>
+          </a>
+          <p class="footer-desc">
+            A premier national 36-hour technology sprint uniting visionary developers, researchers, and designers to create scalable societal solutions.
+          </p>
+          <div class="footer-socials" aria-label="Social media links">
+            <a href="#github" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+            <a href="#discord" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
+            <a href="#linkedin" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            <a href="#x" aria-label="X / Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#about">About Event</a></li>
+            <li><a href="#domains">Domains</a></li>
+            <li><a href="schedule.html">Schedule</a></li>
+            <li><a href="rules.html">Rules &amp; Guidelines</a></li>
+            <li><a href="contact.html">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Registration</h4>
+          <ul class="footer-links">
+            <li><a href="register.html">Individual Registration</a></li>
+            <li><a href="register.html">Team Registration</a></li>
+            <li><a href="rules.html#fees">Fee Breakdown</a></li>
+            <li><a href="payment.html">Payment Preview</a></li>
+            <li><a href="confirmation.html">Pass Status</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-title">Event Inquiries</h4>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>Tech Campus Auditorium, Bengaluru, KA 560001</span>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-envelope"></i>
+            <span>contact@synexhackathon.org.demo</span>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-phone"></i>
+            <span>+91 (080) 555-0199 (Sample Support)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          &copy; 2026 SYNEX National Hackathon. All rights reserved. Sample demonstration frontend.
+        </div>
+        <div>
+          <!-- Discreet Admin Login Link -->
+          <a href="admin-login.html" class="footer-admin-link" id="footerAdminLink">
+            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+            <span>Admin Portal Preview</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -66,9 +66,9 @@
 <body>
 
   <!-- Demo Notice Banner -->
-  <div class="demo-banner" role="status">
+  <div class="demo-banner" role="status" id="scheduleNoticeBanner">
     <i class="fa-solid fa-clock" aria-hidden="true"></i>
-    <span><strong>SAMPLE TIMELINE:</strong> Event dates, room allocations, and session times are sample placeholders for demonstration.</span>
+    <span id="scheduleNoticeBannerText">{% if schedule_data and schedule_data.notice_banner %}{{ schedule_data.notice_banner }}{% else %}<strong>SAMPLE TIMELINE:</strong> Event dates, room allocations, and session times are sample placeholders for demonstration.{% endif %}</span>
   </div>
 
   <!-- Navigation Bar -->
@@ -159,7 +159,22 @@
           <span>Pre-Hackathon Milestones</span>
         </h2>
 
-        <div class="timeline">
+        <div class="timeline" id="timeline-day-pre">
+          {% if schedule_data and schedule_data.milestones %}
+            {% for item in schedule_data.milestones if item.phase == 'day-pre' %}
+              <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <div class="timeline-info">
+                    <span class="timeline-time-badge">{{ item.time }}</span>
+                    <h3 class="timeline-title">{{ item.title }}</h3>
+                    <p class="timeline-desc">{{ item.desc }}</p>
+                  </div>
+                  <span class="timeline-tag">{{ item.tag }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
           <div class="timeline-item">
             <div class="timeline-marker"></div>
             <div class="timeline-content">
@@ -195,6 +210,7 @@
               <span class="timeline-tag">Virtual Call</span>
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
 
@@ -205,7 +221,22 @@
           <span>Saturday, November 14, 2026 — Sprint Kickoff</span>
         </h2>
 
-        <div class="timeline">
+        <div class="timeline" id="timeline-day-1">
+          {% if schedule_data and schedule_data.milestones %}
+            {% for item in schedule_data.milestones if item.phase == 'day-1' %}
+              <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <div class="timeline-info">
+                    <span class="timeline-time-badge">{{ item.time }}</span>
+                    <h3 class="timeline-title">{{ item.title }}</h3>
+                    <p class="timeline-desc">{{ item.desc }}</p>
+                  </div>
+                  <span class="timeline-tag">{{ item.tag }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
           <div class="timeline-item">
             <div class="timeline-marker"></div>
             <div class="timeline-content">
@@ -289,6 +320,7 @@
               <span class="timeline-tag">Recreation Area</span>
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
 
@@ -299,7 +331,22 @@
           <span>Sunday, November 15, 2026 — Sprints &amp; Grand Finale</span>
         </h2>
 
-        <div class="timeline">
+        <div class="timeline" id="timeline-day-2">
+          {% if schedule_data and schedule_data.milestones %}
+            {% for item in schedule_data.milestones if item.phase == 'day-2' %}
+              <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <div class="timeline-info">
+                    <span class="timeline-time-badge">{{ item.time }}</span>
+                    <h3 class="timeline-title">{{ item.title }}</h3>
+                    <p class="timeline-desc">{{ item.desc }}</p>
+                  </div>
+                  <span class="timeline-tag">{{ item.tag }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
           <div class="timeline-item">
             <div class="timeline-marker"></div>
             <div class="timeline-content">
@@ -383,6 +430,7 @@
               <span class="timeline-tag" style="background: #FEF3C7; color: #B45309; border-color: #FCD34D;">Prize Gala</span>
             </div>
           </div>
+          {% endif %}
         </div>
       </div>
 
@@ -431,6 +479,40 @@
           }
         });
       });
+
+      // Dynamic client-side sync from /api/public/schedule
+      fetch("/api/public/schedule")
+        .then(res => res.json())
+        .then(res => {
+          if (res && res.success && res.data && res.data.milestones && res.data.milestones.length > 0) {
+            const bannerText = document.getElementById("scheduleNoticeBannerText");
+            if (bannerText && res.data.notice_banner) {
+              bannerText.textContent = res.data.notice_banner;
+            }
+            ["day-pre", "day-1", "day-2"].forEach(phase => {
+              const container = document.getElementById(`timeline-${phase}`);
+              if (container) {
+                const phaseItems = res.data.milestones.filter(m => m.phase === phase);
+                if (phaseItems.length > 0) {
+                  container.innerHTML = phaseItems.map(m => `
+                    <div class="timeline-item">
+                      <div class="timeline-marker"></div>
+                      <div class="timeline-content">
+                        <div class="timeline-info">
+                          <span class="timeline-time-badge">${m.time}</span>
+                          <h3 class="timeline-title">${m.title}</h3>
+                          <p class="timeline-desc">${m.desc}</p>
+                        </div>
+                        <span class="timeline-tag">${m.tag}</span>
+                      </div>
+                    </div>
+                  `).join("");
+                }
+              }
+            });
+          }
+        })
+        .catch(() => {});
     });
   </script>
 </body>

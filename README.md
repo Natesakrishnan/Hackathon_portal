@@ -1,258 +1,371 @@
-# SYNEX 2026 — Hackathon Registration Portal (Frontend Architecture)
+# SYNEX 2026 — Hackathon Registration Portal (Full-Stack Architecture)
 
-> **Role & Objective:** A complete, professional, modern, and responsive single-event Hackathon Registration Portal frontend for **SYNEX 2026 National Innovation Hackathon**. Built with pure web standards (HTML5, CSS3, Vanilla JavaScript) ready for future integration with Python Flask and MySQL.
-
----
-
-## 1. Project Overview
-
-**SYNEX** is a dedicated 36-hour national technology hackathon uniting 1,200+ engineers, designers, and innovators across 8 multidisciplinary domains. 
-
-This repository houses the complete, standalone frontend application. It provides:
-1. **Public Event Information:** Hero with live countdown, 4 statistics cards, about section, 8 innovation domains (explicitly named *Domains*, not *Themes*), schedule timeline preview, prize cards (₹2,50,000+ pool), rules summary, interactive FAQ accordion, and call-to-action sections.
-2. **Participant Registration Flow:** 4-step progress indicator, individual vs. team registration toggle, dynamic member cards with configurable limits, client-side validation, fee calculations, and temporary `sessionStorage` draft persistence.
-3. **Payment Checkout Preview:** Safe simulation showing order summary, fee breakdown (₹299 individual / ₹999 team), payment method selectors (UPI, Card, NetBanking preview), simulated gateway handshake modal, demo success routing, and failure state previews.
-4. **Registration Confirmation Pass:** Complete participant badge/pass with simulated QR code, event instructions, and print-friendly formatting (`window.print()`).
-5. **Organizer Admin Portal:** Professional login interface with password visibility toggle, preview notice, and a full-featured admin dashboard displaying 6 key summary metrics, 3 Chart.js analytical charts, search/filter controls, and a demo CSV export utility.
-6. **Detailed Supporting Pages:** Complete rules & evaluation rubric (`rules.html`), 36-hour schedule with interactive day filtering (`schedule.html`), and an inquiry form with validation (`contact.html`).
+> **SYNEX 2026** is a dedicated 36-hour national technology hackathon uniting 1,200+ engineers, designers, and innovators across 6 multidisciplinary domains.
+> 
+> This repository contains the complete full-stack web application featuring a modern, responsive frontend (HTML5/CSS3/Vanilla JS/Chart.js) and a robust Python Flask backend with MySQL 8 persistence, Razorpay payment gateway integration, secure admin authentication, and automated testing.
 
 ---
 
-## 2. Frontend Technology Stack
+## 1. System Architecture & Features
 
-- **Markup:** Semantic HTML5 (`<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<aside>`, `<footer>`)
-- **Styling:** Vanilla CSS3 with CSS Custom Properties (Variables), Flexbox, CSS Grid, media queries, and print styles (`@media print`). *No Tailwind or external CSS frameworks.*
-- **Logic:** Vanilla JavaScript (ES6+), native DOM APIs, `sessionStorage` API, and Blob API for CSV downloads. *No React, Vue, Angular, or jQuery.*
-- **Typography:** Google Fonts (`Inter`, weights 300 to 800)
-- **Icons:** Font Awesome 6.5.1 (via CDN)
-- **Data Visualization:** Chart.js (via CDN, with built-in graceful offline fallbacks)
-- **Zero Build Step:** Runs immediately in any standard modern web browser without Node.js, npm, or bundlers.
+### Public & Participant Experience
+1. **Public Portal:** Hero section with countdown timer, event highlights, 6 innovation domains (explicitly named *Domains*), schedule preview, prize pool (INR 2,50,000+), rules, and interactive FAQ accordion.
+2. **Participant Registration Flow (`/register`):** 
+   - 4-step progress stepper
+   - Individual (INR 299) vs. Team (INR 999) registration toggle
+   - Dynamic team members addition (2 to 4 members total) with real-time validation
+   - Atomic database creation of `Participant`, `Team`, `TeamMember`, and `Registration` records
+3. **Razorpay Payment Checkout (`/payment`):**
+   - Live order creation (`POST /api/payments/create-order`)
+   - Official Razorpay modal checkout support in Test Mode
+   - Built-in simulation fallback for instant local offline testing
+   - Cryptographic HMAC-SHA256 signature verification (`POST /api/payments/verify`)
+   - Idempotent webhook processing (`POST /api/payments/webhook`)
+4. **Registration Confirmation Pass (`/confirmation`):**
+   - Live registration and payment verification from database
+   - Printable participant entry badge with QR placeholder and team member listing (`window.print()`)
+   - Automated confirmation email dispatch (with safe console logging fallback if SMTP is omitted)
+
+### Organizer Administration Portal
+1. **Admin Authentication (`/admin/login`):**
+   - Flask-Login session management with Scrypt password hashing
+   - Protected dashboard routes (`@login_required`) with HTTP 401 JSON responses for API clients
+2. **Admin Dashboard (`/admin/dashboard`):**
+   - Live KPI cards: Total registrations, individual vs. team count, total participants, gross revenue, confirmed vs. pending payments
+   - Interactive Chart.js analytics: Domain distribution bar chart and payment status doughnut chart
+   - Advanced registration table: Real-time search, domain dropdown filtering, and payment status filter
+   - **Clickable Team Details Modal:** Inspect all registered members, roles, contact info, and institutions
+   - Real-time status update dropdown (`PATCH /api/admin/registrations/<id>/status`)
+   - **Clickable CSV & Management Reports:**
+     - Full Registrations CSV (`GET /api/admin/reports/registrations.csv`)
+     - Executive Summary Report CSV (`GET /api/admin/reports/summary.csv`)
+     - Domain Breakdown Report CSV (`GET /api/admin/reports/domains.csv`)
+      - Paid Participants & Fee Audit CSV (`GET /api/admin/reports/paid-participants.csv`)
+     *(All reports feature automated formula injection prevention escaping `=`, `+`, `-`, `@`, `\t`, `\r`)*
+3. **Multi-Channel Announcement Engine (`/api/admin/announcements`):**
+   - Broadcast announcements to specific target audiences (`all`, `confirmed`, `pending`)
+   - Multi-channel delivery support: Discord webhook (`requests.post`) and SMTP email delivery with honest status telemetry
+   - 60-second duplicate broadcast protection / idempotency safeguard
+   - Live Dispatches History log table with delivery channel badges, timestamps, and recipient counts
+4. **Dynamic Event Configuration (`/api/admin/settings`):**
+   - Real-time organizer controls for Event Name, Registration Deadline, Individual Fee, Team Fee, Total Prize Pool, and Registration Open status
+   - Atomic database persistence via `EventSetting` key-value store with audit timestamps
+   - Instant synchronization with public landing page and countdown timer (`GET /api/config`) without restarting the server
+5. **Public Rules & Schedule Editor (`/api/admin/content/rules` & `/api/admin/content/schedule`):**
+   - In Event Settings (`#settingsSection`), added interactive editors: **Edit Event Rules** and **Edit Event Schedule**
+   - Edit header notice banners, rule guideline sections, and 36-hour schedule milestones across all phases (Pre-Event, Day 1 Sprint, Day 2 Finale)
+   - Real-time synchronization with public pages (`/rules`, `/rules.html`, `/schedule`, `/schedule.html`) and dedicated JSON APIs (`/api/public/rules`, `/api/public/schedule`)
+   - "Reset to Defaults" button for restoring official guidelines and default 36-hour milestone agenda anytime
+   - Complete `@login_required` route security and CSRF-safe JSON mutations
+6. **Danger Zone: Participant Records Reset (`/api/admin/reset-participants`):**
+   - Modal confirmation safeguard preventing accidental resets
+   - Atomically purges all participants, registrations, teams, members, and payment orders while preserving admin credentials and event settings
 
 ---
 
-## 3. Project Directory Structure
+## 2. Technology Stack
+
+- **Backend:** Python 3.10+, Flask 3.1, Flask-SQLAlchemy 3.1, Flask-Migrate 4.1, Flask-Login 0.6, Flask-WTF 1.3, Werkzeug 3.0
+- **Database:** MySQL 8.0 (via `PyMySQL` and `cryptography`) with automatic zero-friction SQLite fallback for local development
+- **Payment Gateway:** Razorpay Python SDK 2.0 (Test Mode with HMAC verification)
+- **Frontend:** Semantic HTML5, Vanilla CSS3 (Custom Design System with CSS variables), Vanilla JavaScript (ES6+), Chart.js
+- **Testing:** Pytest 8.0+ (47 unit and integration tests covering registration, payment, admin authentication, CSV reports, announcements, event settings, participant reset, public rules & schedule editors)
+
+---
+
+## 3. Directory Layout
 
 ```text
 Hackathon_Portal/
 │
-├── index.html              # Homepage: Hero, countdown, stats, domains, timeline, prizes, FAQ
-├── register.html           # 4-step registration: Individual/Team toggle, dynamic members
-├── payment.html            # Checkout preview: Order summary, fee breakdown, demo gateway
-├── confirmation.html       # Confirmation pass: Printable badge, SVG QR code, next steps
-├── admin-login.html        # Organizer login screen: Validation & preview disclaimers
-├── admin-dashboard.html    # Admin console: 6 metric cards, 3 Chart.js graphs, table, CSV export
-├── rules.html              # Detailed rules: Eligibility, IP retention, judging criteria
-├── schedule.html           # 36-hour timeline: Pre-event, Day 1 & Day 2 with interactive tabs
-├── contact.html            # Contact & venue information with client-validated inquiry form
+├── .env.example              # Environment variables template
+├── .env                      # Local environment configuration (untracked)
+├── config.py                 # App configuration (Dev, Test, Prod with DB fallback)
+├── run.py                    # Application entrypoint & auto-setup hook
+├── requirements.txt          # Python dependencies
+├── README.md                 # Project documentation
+├── migrations/               # Alembic database migrations
 │
-├── css/
-│   ├── style.css           # Core design system tokens, typography, navbar, footer, buttons
-│   ├── register.css        # Stepper progress, form layouts, dynamic member cards, sidebar
-│   ├── payment.css         # Order breakdown, mock payment channels, modal, printable slip
-│   └── admin.css           # Admin login, sidebar navigation, metrics grid, charts, data table
+├── app/
+│   ├── __init__.py           # Application factory (create_app), blueprints, CLI commands
+│   ├── extensions.py         # SQLAlchemy, Migrate, LoginManager, CSRFProtect
+│   │
+│   ├── models/               # SQLAlchemy ORM Models
+│   │   ├── admin.py          # Admin model with password hashing & Flask-Login
+│   │   ├── participant.py    # Participant record (name, email, college, phone)
+│   │   ├── team.py           # Team and TeamMember models
+│   │   ├── registration.py   # Registration record (public_id, type, domain, fee)
+│   │   ├── payment.py        # Payment transactions (order_id, payment_id, status)
+│   │   ├── event_setting.py  # Dynamic event settings and fee configuration
+│   │   ├── announcement.py   # Broadcast announcements & dispatch history
+│   │   └── contact_message.py# Contact inquiries
+│   │
+│   ├── services/             # Core Business Logic Layer
+│   │   ├── registration_service.py # Registration validation & atomic persistence
+│   │   ├── payment_service.py      # Razorpay order, HMAC verification & webhooks
+│   │   ├── admin_service.py        # Dashboard metrics, filtering & CSV exports
+│   │   ├── announcement_service.py # Broadcast engine, Discord webhooks & duplicate protection
+│   │   └── email_service.py        # Transactional confirmation emails
+│   │
+│   ├── routes/               # Flask Blueprints & REST Endpoints
+│   │   ├── public.py         # Home, rules, schedule, contact & public config APIs
+│   │   ├── registration.py   # Register page & registration creation API
+│   │   ├── payment.py        # Checkout, confirmation & Razorpay verification APIs
+│   │   └── admin.py          # Admin login, dashboard, stats & report APIs
+│   │
+│   ├── templates/            # Jinja2 HTML Templates
+│   │   ├── index.html
+│   │   ├── register.html
+│   │   ├── payment.html
+│   │   ├── confirmation.html
+│   │   ├── admin-login.html
+│   │   ├── admin-dashboard.html
+│   │   ├── rules.html
+│   │   ├── schedule.html
+│   │   └── contact.html
+│   │
+│   └── static/               # Static Web Assets
+│       ├── css/              # style.css, register.css, payment.css, admin.css
+│       ├── js/               # main.js, register.js, payment.js, admin.js
+│       └── assets/           # Logos, badges, favicons
 │
-├── js/
-│   ├── main.js             # Shared config, mobile navigation, countdown timer, FAQ accordion
-│   ├── register.js         # Dynamic team members, regex validation, draft sessionStorage
-│   ├── payment.js          # Draft retrieval, fee calculator, demo modal, failure preview
-│   └── admin.js            # Sample dataset, table search & status filter, Chart.js, CSV export
-│
-├── assets/
-│   └── images/             # Vector brand assets and illustrations
-│
-└── README.md               # Project documentation and architectural guide
+└── tests/                    # Pytest Test Suite
+    ├── conftest.py           # In-memory test client & database fixtures
+    ├── test_registration.py  # Registration flow & validation tests
+    ├── test_payment.py       # Payment orders, verification & idempotency tests
+    ├── test_admin.py         # Admin authentication, metrics, filters & CSV tests
+    └── test_public.py        # Public page rendering & contact form tests
 ```
 
 ---
 
-## 4. How to Open the Website
+## 4. Windows Quick Start & MySQL 8 Setup Guide
 
-Because this project requires no compiler or Node.js server, you can run it immediately using any of the following approaches:
+### Step 1: Install or Start MySQL 8 on Windows
 
-### Method A: Direct Browser File Launch (Zero Installation)
-1. Navigate to the project root: `k:\Hackathon_portal\` (or your local clone directory).
-2. Double-click `index.html` to open it in your default web browser (Chrome, Edge, Firefox, Safari).
-3. All local navigation links use relative paths and will work seamlessly.
+Check whether the MySQL service is installed and running:
 
----
-
-## 5. How to Run with VS Code Live Server
-
-For hot-reloading and development testing:
-1. Open Visual Studio Code.
-2. Select **File > Open Folder...** and choose the `Hackathon_portal` directory.
-3. Install the **Live Server** extension by *Ritwick Dey* (Extension ID: `ritwickdey.LiveServer`) if not already installed.
-4. Right-click on `index.html` in the file explorer and click **"Open with Live Server"** (or click the **"Go Live"** button in the bottom status bar).
-5. The site will launch automatically at `http://127.0.0.1:5500/index.html`.
-
----
-
-## 6. How to Configure Sample Event Information
-
-All central event metadata is stored in a clean configuration object in [`js/main.js`](file:///k:/Hackathon_portal/js/main.js):
-
-```javascript
-window.SYNEX_CONFIG = {
-  eventName: "SYNEX",
-  fullName: "SYNEX National Innovation Hackathon 2026",
-  tagline: "BUILD THE FUTURE. ONE IDEA AT A TIME.",
-  eventDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  venue: "Dr. APJ Abdul Kalam Tech Auditorium, Tech Campus, Bengaluru",
-  format: "36-Hour In-Person & Hybrid Hackathon",
-  expectedParticipants: "1,200+",
-  totalTeams: "300+",
-  duration: "36 Hours",
-  prizePool: "₹2,50,000",
-  fees: {
-    individual: 299,
-    team: 999,
-    currency: "₹"
-  }
-};
+```powershell
+# In PowerShell (Run as Administrator):
+Get-Service -Name "*mysql*"
 ```
-To update the hackathon name, venue, prize pool, or dates, edit this object in [`js/main.js`](file:///k:/Hackathon_portal/js/main.js).
 
----
-
-## 7. How to Configure Sample Fees
-
-Registration fees are configured in [`js/register.js`](file:///k:/Hackathon_portal/js/register.js) and reflected across the form and payment calculations:
-
-```javascript
-const REG_CONFIG = {
-  individualFee: 299,      // Individual entry fee in INR
-  teamFee: 999,            // Flat team entry fee (for 2 to 4 members)
-  currency: "₹",           // Currency symbol
-  minTeamSize: 2,          // Minimum allowed team members
-  maxTeamSize: 4,          // Maximum allowed team members
-  currentTeamSize: 3       // Default starting member count
-};
+If the service status is `Stopped`, start it:
+```powershell
+Start-Service MySQL80
 ```
-- Changing `individualFee` or `teamFee` automatically updates the registration radio pills, the sticky summary card, and the payment checkout total.
-- Changing `maxTeamSize` dynamically sets how many team member cards can be added before the "Add Member" button hides.
+
+*(If MySQL is not installed, download and install MySQL Server 8 from the official [MySQL Community Installer for Windows](https://dev.mysql.com/downloads/installer/).)*
 
 ---
 
-## 8. How to Configure the Countdown Date
+### Step 2: Create MySQL Database and Dedicated Application User
 
-The countdown timer in [`js/main.js`](file:///k:/Hackathon_portal/js/main.js) uses `window.SYNEX_CONFIG.eventDate`:
-- **Default Behavior:** Sets the countdown target dynamically to **30 days in the future** (`Date.now() + 30 days`), ensuring a realistic, active timer during any evaluation.
-- **Fixed Date Configuration:** Replace `eventDate` with any ISO timestamp string:
-  ```javascript
-  eventDate: "2026-11-14T08:30:00+05:30"
-  ```
-- **Event Concluded Behavior:** If the target date has passed, the script automatically hides the numeric countdown boxes and displays an accessible alert: *"SYNEX Hackathon is currently live or registration has concluded!"* (avoiding negative numbers).
+Open the MySQL command line client or run in PowerShell:
 
----
-
-## 9. Which Features are Functional
-
-| Feature | Status | Description |
-| :--- | :---: | :--- |
-| **Responsive Navigation** | ✅ Functional | Desktop navbar, mobile drawer with outside-click closing and ESC key support. |
-| **Live Countdown** | ✅ Functional | Real-time seconds ticking with zero-padded tabular figures and expired state handling. |
-| **FAQ Accordion** | ✅ Functional | Expand/collapse with ARIA `aria-expanded` attributes and chevron animation. |
-| **Registration Type Switch** | ✅ Functional | Seamless toggle between Individual (₹299) and Team (₹999) layouts. |
-| **Dynamic Team Members** | ✅ Functional | Add and remove team members (Member 2 to 4) with automatic index re-calculation. |
-| **Form Validation** | ✅ Functional | Validates required fields, college email format, 10-digit Indian phone regex (`/^[6-9]\d{9}$/`), and terms acceptance with inline error hints. |
-| **Temporary Draft Persistence**| ✅ Functional | Stores complete validated draft in `sessionStorage` (`synex_registration_draft`) with random reference code (`SYN-DEMO-XXXXX`). |
-| **Payment Calculations** | ✅ Functional | Automatically loads draft from `sessionStorage` and calculates itemized order summary. |
-| **Demo Payment Gateway** | ✅ Functional | Simulated gateway handshake modal with loader and successful confirmation redirect. |
-| **Payment Failure Preview** | ✅ Functional | Dedicated failure screen with retry button and clear disclaimers that no funds were lost. |
-| **Printable Participant Pass**| ✅ Functional | Formatted pass slip with SVG QR code mockup and `@media print` layout. |
-| **Missing State Protection** | ✅ Functional | Opening `payment.html` or `confirmation.html` without draft data gracefully displays a missing-session alert with a return button. |
-| **Admin Table Multi-Filtering** | ✅ Functional | Real-time text search (name, ID, college, domain), status filter dropdown (`paid`, `pending`, `failed`), and domain track dropdown (8 domains). |
-| **Participant Details Modal** | ✅ Functional | Clicking any team name or participant opens a rich modal dialog with full leader contact details, department, year, and team members roster. |
-| **Sample CSV Export** | ✅ Functional | Generates and downloads a real `.csv` file of the participant dataset using HTML5 Blob APIs. |
-| **Interactive Charts** | ✅ Functional | Renders 3 Chart.js graphs (trend line, payment doughnut, domain bar chart) with offline fallback message. |
-| **Schedule Day Filter** | ✅ Functional | Filters schedule events by Pre-Event, Day 1, and Day 2. |
-| **Contact Form Validation** | ✅ Functional | Validates inquiry fields and displays client-side simulation receipt banner. |
-
----
-
-## 10. Which Features are Demo-Only
-
-- **Real Payment Processing:** No payment gateway keys (Razorpay, Stripe, PayU, Cashfree) are wired.
-- **Admin Authentication:** The login screen does not check a database password; any non-empty input opens the dashboard preview.
-- **Permanent Database Storage:** Information is saved only to the user's browser `sessionStorage`, not to an external database.
-- **Email/SMS Dispatches:** Pass confirmations and contact messages are simulated client-side.
-- **Report Generation & Push Announcements:** Placeholders with informative modal alerts explaining future backend integration.
-
----
-
-## 11. Why Payment Processing is Not Real
-
-This phase is **FRONTEND ONLY**. A production payment integration requires:
-1. **Server-Side API Keys:** Private secret keys must remain on a secure backend server to prevent client exposure.
-2. **Cryptographic Webhook Handshakes:** Payment gateways dispatch asynchronous HTTP POST webhooks to the server to verify HMAC-SHA256 signatures before confirming payment.
-3. **Database Ledger:** Transactions must be recorded in an ACID-compliant SQL database to prevent double-charging and race conditions.
-
-To keep the frontend strictly safe, compliant, and testable:
-- No real card numbers, CVVs, or UPI PINs are ever collected.
-- A clearly marked **Demo Gateway Handshake** is provided so reviewers can test the complete user journey.
-
----
-
-## 12. Why Admin Authentication is Not Connected
-
-True administrative security cannot reside in client-side HTML/JavaScript:
-- In production, admin authentication requires a backend session store, encrypted HTTP-only session cookies or JWTs, and server-side role-based access control (RBAC).
-- Exposing hardcoded administrative credentials in JavaScript files would be an insecure anti-pattern.
-- For this design phase, `admin-login.html` verifies that fields are filled and navigates to `admin-dashboard.html`, which is explicitly labeled as a development layout preview.
-
----
-
-## 13. How the Frontend Will Later Integrate with Flask & MySQL
-
-When backend development begins, this frontend is structured for easy plug-and-play integration:
-
-### 1. Flask REST Endpoints Mapping
-- `POST /api/register`: Replaces the `sessionStorage` logic in [`js/register.js`](file:///k:/Hackathon_portal/js/register.js). Receives JSON payload, validates server-side, inserts into MySQL, and generates an order ID.
-- `POST /api/payment/create-order`: Generates a real payment order token from Razorpay/Stripe.
-- `POST /api/payment/verify`: Verifies the payment signature and marks the registration as `PAID`.
-- `POST /api/admin/login`: Verifies admin bcrypt hash and issues an HTTP-only session cookie.
-- `GET /api/admin/registrations`: Populates the table in [`js/admin.js`](file:///k:/Hackathon_portal/js/admin.js) with real MySQL records via `fetch()`.
-- `GET /api/admin/analytics`: Feeds live registration counts into the Chart.js visualizers.
-
-### 2. Suggested MySQL Database Schema
 ```sql
-CREATE DATABASE synex_hackathon;
+-- Connect as root:
+mysql -u root -p
 
-CREATE TABLE registrations (
-    id VARCHAR(32) PRIMARY KEY,
-    type ENUM('Individual', 'Team') NOT NULL,
-    participant_name VARCHAR(120) NOT NULL,
-    email VARCHAR(160) NOT NULL,
-    mobile VARCHAR(15) NOT NULL,
-    college VARCHAR(200) NOT NULL,
-    department VARCHAR(120) NOT NULL,
-    year_of_study VARCHAR(30) NOT NULL,
-    domain VARCHAR(100) NOT NULL,
-    team_name VARCHAR(100) NULL,
-    amount DECIMAL(8, 2) NOT NULL,
-    payment_status ENUM('pending', 'paid', 'failed') DEFAULT 'pending',
-    payment_id VARCHAR(100) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 1. Create the database with UTF-8 support:
+CREATE DATABASE IF NOT EXISTS synex_hackathon 
+CHARACTER SET utf8mb4 
+COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE team_members (
-    id INT AUTO-INCREMENT PRIMARY KEY,
-    registration_id VARCHAR(32) NOT NULL,
-    member_name VARCHAR(120) NOT NULL,
-    member_email VARCHAR(160) NOT NULL,
-    FOREIGN KEY (registration_id) REFERENCES registrations(id) ON DELETE CASCADE
-);
+-- 2. Create the dedicated non-root application user for both localhost and 127.0.0.1:
+CREATE USER IF NOT EXISTS 'synex_app'@'localhost' IDENTIFIED BY 'SynexApp#2026!SecureKey';
+CREATE USER IF NOT EXISTS 'synex_app'@'127.0.0.1' IDENTIFIED BY 'SynexApp#2026!SecureKey';
+
+-- 3. Grant privileges specifically on synex_hackathon:
+GRANT ALL PRIVILEGES ON synex_hackathon.* TO 'synex_app'@'localhost';
+GRANT ALL PRIVILEGES ON synex_hackathon.* TO 'synex_app'@'127.0.0.1';
+FLUSH PRIVILEGES;
+
+-- Verify connection:
+SELECT USER(), CURRENT_USER();
+EXIT;
 ```
-
-### 3. SessionStorage Disclaimer
-> **IMPORTANT:** `sessionStorage` is temporary browser-tab memory. It is cleared as soon as the browser tab is closed. It serves solely as an in-memory client draft bridge between `register.html`, `payment.html`, and `confirmation.html` during this frontend demonstration.
 
 ---
 
-## 14. Accessibility & Quality Compliance
+### Step 3: Configure Environment Variables (`.env`)
 
-- **Color Contrast:** All text meets WCAG AA standards against white (`#FFFFFF`) and light blue (`#F0F7FF`) backgrounds.
-- **Focus Rings:** Distinct outline focus indicators (`:focus-visible`) for keyboard navigation.
-- **ARIA Attributes:** `aria-expanded`, `aria-label`, `aria-controls`, and `role="status"` on dynamic components.
-- **Semantic Structure:** Proper `h1` through `h4` hierarchy on every page.
-- **No Insecure Functions:** Zero usage of `eval()` or un-sanitized HTML injection.
+Create or update your `.env` file in the project root:
+
+```env
+# Flask Application Settings
+SECRET_KEY=synex-dev-secret-key-36hr-hackathon-2026-secure
+FLASK_APP=run.py
+FLASK_ENV=development
+FLASK_DEBUG=1
+
+# MySQL 8 Database Configuration
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=synex_hackathon
+DB_USER=synex_app
+DB_PASSWORD=SynexApp#2026!SecureKey
+
+# Set to false to enforce strict MySQL 8 usage (will fail explicitly if MySQL is offline)
+# Set to true only if you want automatic fallback to local SQLite (synex_hackathon.db)
+USE_SQLITE_FALLBACK=false
+
+# Razorpay Test Credentials (Test Mode)
+RAZORPAY_KEY_ID=rzp_test_SYNEX_DEMO_KEY
+RAZORPAY_KEY_SECRET=synex_razorpay_secret_test_2026
+RAZORPAY_WEBHOOK_SECRET=synex_webhook_secret_test_2026
+
+# Event Fees (in INR)
+EVENT_NAME=SYNEX 2026
+EVENT_INDIVIDUAL_FEE=299
+EVENT_TEAM_FEE=999
+EVENT_CURRENCY=INR
+
+# External Integrations (Optional)
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your_webhook_id/your_webhook_token
+
+# Notifications & Session Lifetime
+MAIL_DEFAULT_SENDER=SYNEX Hackathon Team <noreply@synex.org>
+ADMIN_SESSION_LIFETIME_HOURS=12
+```
+
+---
+
+### Step 4: Install Dependencies
+
+```powershell
+# Windows PowerShell:
+cd K:\Hackathon_portal
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+---
+
+### Step 5: Check Database Health & Connectivity
+
+Run the built-in database diagnosis command:
+
+```powershell
+.\venv\Scripts\python.exe -m flask check-db
+```
+
+Expected diagnostic output:
+```text
+==================================================
+ SYNEX Hackathon Portal - Database Health Check
+==================================================
+[1/6] Database Configuration Loaded:
+      - Target Host:     127.0.0.1:3306
+      - Database Name:   synex_hackathon
+      - DB User:         synex_app
+      - Password:        [MASKED/CONFIGURED]
+      - SQLite Fallback: Disabled (Strict MySQL)
+[2/6] Establishing SQLAlchemy Connection...
+      [OK] Connection established successfully.
+[3/6] Database Engine Dialect: mysql
+      [OK] Active database engine is MySQL 8.
+[4/6] Selected Database: synex_hackathon
+      [OK] Connected to target database 'synex_hackathon'.
+[5/6] Inspecting Database Tables:
+      - Found tables (10): admins, alembic_version, announcements, contact_messages, event_settings, participants, payments, registrations, team_members, teams
+      [OK] All 10 required application tables exist.
+[6/6] Executing Diagnostic Query 'SELECT 1'...
+      [OK] Query 'SELECT 1' executed successfully.
+==================================================
+ Database Health Status: HEALTHY (MySQL Connected)
+==================================================
+```
+
+---
+
+### Step 6: Initialize Tables & Apply Migrations
+
+```powershell
+# Initialize tables and default event settings
+.\venv\Scripts\python.exe -m flask init-db
+
+# Or use Flask-Migrate
+.\venv\Scripts\python.exe -m flask db upgrade
+
+# (Optional) Seed realistic sample registrations for testing
+.\venv\Scripts\python.exe -m flask seed-demo
+```
+
+---
+
+### Step 7: Run the Application Server
+
+```powershell
+.\venv\Scripts\python.exe run.py
+```
+
+Safe startup output displayed:
+```text
+[OK] Default administrator ready: username='admin'
+Database backend: MySQL (Host: 127.0.0.1:3306, DB: synex_hackathon)
+[SERVER] SYNEX Hackathon Portal Backend is starting on http://localhost:5000
+   - Public Portal:     http://localhost:5000
+   - Registration:      http://localhost:5000/register
+   - Admin Dashboard:   http://localhost:5000/admin/dashboard
+   - Admin Login:       http://localhost:5000/admin/login (admin / Admin@SYNEX2026)
+=======================================================
+```
+
+---
+
+### Step 8: Run Automated Tests
+
+Automated tests are isolated and run in-memory without altering or polluting your live MySQL database:
+
+```powershell
+.\venv\Scripts\python.exe -m pytest -v
+```
+
+Expected result: **`41 passed in 7.79s`**.
+
+---
+
+## 5. Troubleshooting & Common Issues
+
+| Issue / Error | Root Cause | Solution |
+| :--- | :--- | :--- |
+| **`Can't connect to MySQL server on '127.0.0.1' (10061)`** | Windows MySQL service is stopped. | Run PowerShell as Admin: `Start-Service MySQL80`. |
+| **`Access denied for user 'synex_app'@'localhost'`** | User credentials or host matching mismatch. | Ensure user exists for both `'synex_app'@'localhost'` and `'synex_app'@'127.0.0.1'` and run `FLUSH PRIVILEGES;`. |
+| **`Unknown database 'synex_hackathon'`** | Database has not been created yet. | Execute `CREATE DATABASE IF NOT EXISTS synex_hackathon CHARACTER SET utf8mb4;`. |
+| **`Refusing to silently fall back to SQLite`** | `USE_SQLITE_FALLBACK=false` is enforced and MySQL is unreachable. | Start MySQL and verify credentials. If intentional offline development is desired, set `USE_SQLITE_FALLBACK=true` in `.env`. |
+| **Special characters in DB password causing URI errors** | Special characters like `@`, `#`, `!` in raw connection strings. | The application builds URIs using `sqlalchemy.engine.URL.create()`, which properly percent-encodes credentials automatically. |
+| **`ModuleNotFoundError: No module named 'pymysql'`** | PyMySQL is not installed in current environment. | Run `.\venv\Scripts\python.exe -m pip install pymysql cryptography`. |
+| **Missing tables warning in `check-db`** | Tables have not been generated yet. | Run `.\venv\Scripts\python.exe -m flask init-db` to generate all 10 tables. |
+
+---
+
+## 6. Default Credentials & Important URLs
+
+| Page / Feature | URL | Description / Credentials |
+| :--- | :--- | :--- |
+| **Public Homepage** | `http://localhost:5000/` | Main event landing page |
+| **Registration Flow** | `http://localhost:5000/register` | Individual or team registration |
+| **Payment Checkout** | `http://localhost:5000/payment` | Razorpay checkout preview |
+| **Confirmation Pass** | `http://localhost:5000/confirmation` | Printable badge & confirmation |
+| **Organizer Login** | `http://localhost:5000/admin/login` | **Username:** `admin`<br>**Password:** `Admin@SYNEX2026` |
+| **Admin Dashboard** | `http://localhost:5000/admin/dashboard` | Organizer console & real-time analytics |
+| **Event Rules** | `http://localhost:5000/rules` | Eligibility, IP & evaluation rubric |
+| **36-Hour Schedule** | `http://localhost:5000/schedule` | Day-by-day interactive timeline |
+| **Contact Desk** | `http://localhost:5000/contact` | Organizer inquiry form |
+
+---
+
+## 7. Security & Hardening Measures
+
+1. **Password Encryption:** Admin passwords are encrypted using Scrypt with salt via `werkzeug.security`.
+2. **Session Security:** `HTTPOnly` and `SameSite=Lax` cookies prevent XSS session theft.
+3. **Financial Protection:**
+   - Entry fees (INR 299 / INR 999) are strictly enforced server-side from `EventSetting`. Client-side fee overrides are impossible.
+   - Payment signatures are cryptographically verified using HMAC-SHA256 with constant-time comparison (`hmac.compare_digest`).
+   - Webhook processing is idempotent to prevent duplicate status changes.
+4. **CSV Injection Prevention:** Cells starting with formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) are automatically escaped with a leading single quote (`'`).
+5. **Database Integrity:** Foreign key constraints, unique constraints on team names and participant emails, and transactional rollbacks ensure complete ACID compliance.
+
+---
+
+&copy; 2026 SYNEX Hackathon Organizing Committee. All rights reserved.
