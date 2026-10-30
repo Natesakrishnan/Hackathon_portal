@@ -935,5 +935,100 @@ def test_admin_smtp_settings_crud(admin_client):
     assert updated["use_ssl"] is True
 
 
+def test_confidential_settings_locked_by_default_for_standard_admin(client):
+    """Standard admin cannot access confidential event settings without unlocking."""
+    # Login as standard admin
+    login_res = client.post(
+        "/api/admin/login",
+        json={"username": "admin", "password": "Admin@SYNEX2026"},
+    )
+    assert login_res.status_code == 200
+
+    # Status check indicates settings are locked
+    status_res = client.get("/api/admin/settings/status")
+    assert status_res.status_code == 200
+    assert status_res.get_json()["is_unlocked"] is False
+
+    # Attempting to access settings returns 403 Forbidden
+    settings_res = client.get("/api/admin/settings")
+    assert settings_res.status_code == 403
+    assert settings_res.get_json()["settings_locked"] is True
+
+    # Attempting to update settings returns 403
+    put_res = client.put("/api/admin/settings", json={"individual_fee": 350})
+    assert put_res.status_code == 403
+
+    # Attempting to access SMTP credentials returns 403
+    smtp_res = client.get("/api/admin/email/settings")
+    assert smtp_res.status_code == 403
+
+    # Attempting to reset participant records returns 403
+    reset_res = client.post("/api/admin/reset-participants")
+    assert reset_res.status_code == 403
+
+
+def test_confidential_settings_unlock_and_lock_lifecycle(client):
+    """Unlocking with krish@01 / @asdfg123 grants access, and locking revokes it."""
+    # Login as standard admin
+    client.post(
+        "/api/admin/login",
+        json={"username": "admin", "password": "Admin@SYNEX2026"},
+    )
+
+    # Invalid credentials rejected
+    fail_res = client.post(
+        "/api/admin/settings/unlock",
+        json={"username": "krish@01", "password": "WrongPassword!"},
+    )
+    assert fail_res.status_code == 401
+
+    # Non-settings account cannot unlock
+    unauth_res = client.post(
+        "/api/admin/settings/unlock",
+        json={"username": "admin", "password": "Admin@SYNEX2026"},
+    )
+    assert unauth_res.status_code == 403
+
+    # Valid krish@01 credentials unlock settings
+    unlock_res = client.post(
+        "/api/admin/settings/unlock",
+        json={"username": "krish@01", "password": "@asdfg123"},
+    )
+    assert unlock_res.status_code == 200
+    assert unlock_res.get_json()["is_unlocked"] is True
+
+    # Settings are now accessible
+    settings_res = client.get("/api/admin/settings")
+    assert settings_res.status_code == 200
+    assert "settings" in settings_res.get_json()
+
+    # Re-locking settings
+    lock_res = client.post("/api/admin/settings/lock")
+    assert lock_res.status_code == 200
+    assert lock_res.get_json()["is_unlocked"] is False
+
+    # Settings are locked again
+    locked_check = client.get("/api/admin/settings")
+    assert locked_check.status_code == 403
+
+
+def test_confidential_settings_direct_login_as_krish(client):
+    """Direct login as krish@01 automatically unlocks event settings."""
+    login_res = client.post(
+        "/api/admin/login",
+        json={"username": "krish@01", "password": "@asdfg123"},
+    )
+    assert login_res.status_code == 200
+
+    status_res = client.get("/api/admin/settings/status")
+    assert status_res.status_code == 200
+    assert status_res.get_json()["is_unlocked"] is True
+
+    # Settings accessible immediately
+    settings_res = client.get("/api/admin/settings")
+    assert settings_res.status_code == 200
+
+
+
 
 

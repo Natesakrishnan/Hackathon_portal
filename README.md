@@ -345,6 +345,7 @@ Expected result: **`41 passed in 7.79s`**.
 | **Payment Checkout** | `http://localhost:5000/payment` | Razorpay checkout preview |
 | **Confirmation Pass** | `http://localhost:5000/confirmation` | Printable badge & confirmation |
 | **Organizer Login** | `http://localhost:5000/admin/login` | **Username:** `admin`<br>**Password:** `Admin@SYNEX2026` |
+| **Event Settings (Confidential)** | `http://localhost:5000/admin/dashboard#settings` | **Username:** `krish@01`<br>**Password:** `@asdfg123` |
 | **Admin Dashboard** | `http://localhost:5000/admin/dashboard` | Organizer console & real-time analytics |
 | **Event Rules** | `http://localhost:5000/rules` | Eligibility, IP & evaluation rubric |
 | **36-Hour Schedule** | `http://localhost:5000/schedule` | Day-by-day interactive timeline |
@@ -362,6 +363,10 @@ Expected result: **`41 passed in 7.79s`**.
    - Webhook processing is idempotent to prevent duplicate status changes.
 4. **CSV Injection Prevention:** Cells starting with formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) are automatically escaped with a leading single quote (`'`).
 5. **Database Integrity:** Foreign key constraints, unique constraints on team names and participant emails, and transactional rollbacks ensure complete ACID compliance.
+6. **Confidential Event Settings Vault:**
+   - Authoritative event configurations (entry fees, prize pool, registration deadline, live Resend API keys, SMTP passwords, public rules & schedule editor, and the participant database reset danger zone) are protected behind a dedicated confidential credential vault (`krish@01` / `@asdfg123`).
+   - Standard organizers (`admin`) cannot view or modify these parameters without secondary authentication.
+   - All backend configuration and data wipe endpoints enforce `@settings_auth_required` with immediate 403 Forbidden protection.
 
 ---
 

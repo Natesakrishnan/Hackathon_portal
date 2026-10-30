@@ -614,14 +614,69 @@
                 <p>Modify authoritative server-side settings: fees, target deadlines, and total prize pool.</p>
               </div>
             </div>
-            <button type="button" class="btn btn-outline btn-sm" id="btnReloadSettings">
-              <i class="fa-solid fa-rotate"></i> <span>Refresh Settings</span>
-            </button>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <button type="button" class="btn btn-outline btn-sm" id="btnReloadSettings" style="display: none;">
+                <i class="fa-solid fa-rotate"></i> <span>Refresh Settings</span>
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnLockSettings" style="display: none; color: #DC2626; border-color: #FECACA;">
+                <i class="fa-solid fa-lock"></i> <span>Lock Settings</span>
+              </button>
+            </div>
           </div>
           <div class="admin-section-body">
-            <div id="settingsAlertBanner" class="admin-alert-banner"></div>
+            <!-- Confidential Lock Gate (Shown when settings are locked) -->
+            <div id="settingsLockedGate" style="padding: 2.5rem 1.5rem; text-align: center;">
+              <div style="width: 58px; height: 58px; border-radius: 50%; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1.25rem auto; box-shadow: 0 4px 14px rgba(37,99,235,0.15);">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--color-text-main); margin: 0 0 0.5rem 0;">
+                Confidential Event Settings Vault
+              </h3>
+              <p style="color: var(--color-text-secondary); font-size: 0.9rem; max-width: 520px; margin: 0 auto 1.75rem auto; line-height: 1.5;">
+                Access to registration fees, prize distribution, live API keys, public guidelines editor, and participant database reset is confidential. Please authenticate with the Event Settings Administrator credentials to unlock.
+              </p>
 
-            <form id="eventSettingsForm" onsubmit="event.preventDefault();">
+              <div style="max-width: 420px; margin: 0 auto; background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 10px; padding: 1.75rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: left;">
+                <div id="settingsUnlockAlert" class="admin-alert-banner" style="display: none; margin-bottom: 1rem;"></div>
+
+                <form id="settingsUnlockForm" onsubmit="event.preventDefault();">
+                  <div class="admin-form-group" style="margin-bottom: 1rem;">
+                    <label for="settingsUnlockUsername" style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-main); display: block; margin-bottom: 0.35rem;">
+                      Confidential Username <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <div style="position: relative;">
+                      <i class="fa-solid fa-user-shield" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--color-text-muted); font-size: 0.88rem;"></i>
+                      <input type="text" id="settingsUnlockUsername" class="admin-form-control" value="krish@01" placeholder="krish@01" style="padding-left: 36px;" required autocomplete="username">
+                    </div>
+                  </div>
+
+                  <div class="admin-form-group" style="margin-bottom: 1.25rem;">
+                    <label for="settingsUnlockPassword" style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-main); display: block; margin-bottom: 0.35rem;">
+                      Confidential Password <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <div style="position: relative;">
+                      <i class="fa-solid fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--color-text-muted); font-size: 0.88rem;"></i>
+                      <input type="password" id="settingsUnlockPassword" class="admin-form-control" placeholder="••••••••" style="padding-left: 36px;" required autocomplete="current-password">
+                    </div>
+                  </div>
+
+                  <button type="submit" id="btnUnlockSettings" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; padding: 0.75rem;">
+                    <i class="fa-solid fa-lock-open"></i>
+                    <span>Unlock Event Settings</span>
+                  </button>
+                </form>
+
+                <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed var(--color-border); text-align: center; font-size: 0.78rem; color: var(--color-text-muted);">
+                  <i class="fa-solid fa-circle-check" style="color: #10B981;"></i> Restricted to: <strong>krish@01</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Unlocked Content (Shown only when unlocked) -->
+            <div id="settingsUnlockedContent" style="display: none;">
+              <div id="settingsAlertBanner" class="admin-alert-banner"></div>
+
+              <form id="eventSettingsForm" onsubmit="event.preventDefault();">
               <div class="admin-form-grid">
                 <div class="admin-form-group">
                   <label for="settingEventName">Official Event Name <span style="color: var(--color-error);">*</span></label>
@@ -839,6 +894,7 @@
                 </button>
               </div>
             </div>
+            </div> <!-- /#settingsUnlockedContent -->
           </div>
         </div>
 

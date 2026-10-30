@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import wraps
 from flask import (
     Blueprint,
     render_template,
@@ -8,6 +9,7 @@ from flask import (
     url_for,
     Response,
     current_app,
+    session,
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
@@ -75,6 +77,8 @@ def dashboard():
 @admin_bp.route("/admin/logout", methods=["GET", "POST"])
 @admin_bp.route("/api/admin/logout", methods=["GET", "POST"])
 def logout():
+    session.pop("event_settings_unlocked", None)
+    session.pop("event_settings_locked", None)
     logout_user()
     if request.is_json or request.path.startswith("/api/"):
         return jsonify({"success": True, "redirect_url": "/admin/login"})
@@ -107,11 +111,109 @@ def api_admin_login():
     db.session.commit()
     login_user(admin, remember=True)
 
+    # Manage confidential event settings unlock state upon login
+    session.pop("event_settings_locked", None)
+    if admin.username == "krish@01" or getattr(admin, "role", "") == "settings_admin":
+        session["event_settings_unlocked"] = True
+    else:
+        session.pop("event_settings_unlocked", None)
+
     return jsonify({
         "success": True,
         "message": "Login successful",
         "redirect_url": "/admin/dashboard",
         "admin": admin.to_dict(),
+        "event_settings_unlocked": session.get("event_settings_unlocked", False),
+    }), 200
+
+
+def is_settings_unlocked():
+    """Checks whether the event settings vault is currently unlocked for this session."""
+    if not current_user.is_authenticated:
+        return False
+    if session.get("event_settings_locked") is True:
+        return False
+    if session.get("event_settings_unlocked") is True:
+        return True
+    if current_user.username == "krish@01" or getattr(current_user, "role", "") == "settings_admin":
+        return True
+    return False
+
+
+def settings_auth_required(f):
+    """Decorator guarding confidential event settings routes."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({"success": False, "error": "Authentication required."}), 401
+        if not is_settings_unlocked():
+            return jsonify({
+                "success": False,
+                "error": "Event settings are confidential. Please authenticate with the event settings administrator credentials to unlock.",
+                "settings_locked": True,
+            }), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@admin_bp.route("/api/admin/settings/status", methods=["GET"])
+@login_required
+def api_settings_status():
+    """Returns current unlock status of confidential event settings."""
+    unlocked = is_settings_unlocked()
+    return jsonify({
+        "success": True,
+        "is_unlocked": unlocked,
+        "settings_admin_user": "krish@01",
+        "current_user": current_user.username,
+    }), 200
+
+
+@admin_bp.route("/api/admin/settings/unlock", methods=["POST"])
+@login_required
+def api_settings_unlock():
+    """
+    Verifies confidential event settings credentials (krish@01 / @asdfg123)
+    and unlocks settings access for the active session.
+    """
+    data = request.get_json(silent=True) or request.form.to_dict()
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+
+    if not username or not password:
+        return jsonify({"success": False, "error": "Confidential username and password are required."}), 400
+
+    admin = Admin.query.filter(
+        (Admin.username == username) | (Admin.email == username)
+    ).first()
+
+    if not admin or not admin.check_password(password):
+        return jsonify({"success": False, "error": "Invalid confidential credentials for event settings."}), 401
+
+    if admin.username != "krish@01" and getattr(admin, "role", "") != "settings_admin":
+        return jsonify({"success": False, "error": "This account does not have confidential event settings privileges."}), 403
+
+    session.pop("event_settings_locked", None)
+    session["event_settings_unlocked"] = True
+
+    return jsonify({
+        "success": True,
+        "message": "Event settings vault successfully unlocked.",
+        "is_unlocked": True,
+    }), 200
+
+
+@admin_bp.route("/api/admin/settings/lock", methods=["POST"])
+@login_required
+def api_settings_lock():
+    """Locks confidential event settings for the active session."""
+    session.pop("event_settings_unlocked", None)
+    session["event_settings_locked"] = True
+
+    return jsonify({
+        "success": True,
+        "message": "Event settings locked. Confidential access protected.",
+        "is_unlocked": False,
     }), 200
 
 
@@ -306,6 +408,7 @@ def api_clear_announcements():
 
 @admin_bp.route("/api/admin/settings", methods=["GET"])
 @login_required
+@settings_auth_required
 def api_get_settings():
     """Returns current persistent event configuration from database."""
     return jsonify({
@@ -323,6 +426,7 @@ def api_get_settings():
 
 @admin_bp.route("/api/admin/settings", methods=["PUT", "PATCH"])
 @login_required
+@settings_auth_required
 def api_update_settings():
     """
     Validates and persists updated event configuration.
@@ -422,6 +526,7 @@ def api_update_settings():
 
 @admin_bp.route("/api/admin/reset-participants", methods=["POST"])
 @login_required
+@settings_auth_required
 def api_reset_participants():
     """
     Permanently deletes all participant registrations, teams, members, and payment records.
@@ -438,6 +543,7 @@ def api_reset_participants():
 
 @admin_bp.route("/api/admin/content/rules", methods=["GET"])
 @login_required
+@settings_auth_required
 def api_get_admin_rules():
     """Fetches current public event rules for the admin editor."""
     content = get_rules_content()
@@ -446,6 +552,7 @@ def api_get_admin_rules():
 
 @admin_bp.route("/api/admin/content/rules", methods=["PUT"])
 @login_required
+@settings_auth_required
 def api_update_admin_rules():
     """Updates and publishes public event rules."""
     data = request.get_json() or {}
@@ -456,6 +563,7 @@ def api_update_admin_rules():
 
 @admin_bp.route("/api/admin/content/rules/reset", methods=["POST"])
 @login_required
+@settings_auth_required
 def api_reset_admin_rules():
     """Resets public event rules back to default."""
     success, message = reset_rules_to_default()
@@ -464,6 +572,7 @@ def api_reset_admin_rules():
 
 @admin_bp.route("/api/admin/content/schedule", methods=["GET"])
 @login_required
+@settings_auth_required
 def api_get_admin_schedule():
     """Fetches current public event schedule for the admin editor."""
     content = get_schedule_content()
@@ -472,6 +581,7 @@ def api_get_admin_schedule():
 
 @admin_bp.route("/api/admin/content/schedule", methods=["PUT"])
 @login_required
+@settings_auth_required
 def api_update_admin_schedule():
     """Updates and publishes public event schedule."""
     data = request.get_json() or {}
@@ -482,6 +592,7 @@ def api_update_admin_schedule():
 
 @admin_bp.route("/api/admin/content/schedule/reset", methods=["POST"])
 @login_required
+@settings_auth_required
 def api_reset_admin_schedule():
     """Resets public event schedule back to default."""
     success, message = reset_schedule_to_default()
@@ -710,6 +821,7 @@ def api_admin_send_email():
 
 @admin_bp.route("/api/admin/email/settings", methods=["GET"])
 @login_required
+@settings_auth_required
 def api_get_smtp_settings():
     """Returns current email delivery configuration with sensitive credentials masked."""
     cfg = get_smtp_config()
@@ -733,6 +845,7 @@ def api_get_smtp_settings():
 
 @admin_bp.route("/api/admin/email/settings", methods=["PUT", "POST"])
 @login_required
+@settings_auth_required
 def api_update_smtp_settings():
     """Updates and saves SMTP email settings into EventSetting."""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -742,6 +855,7 @@ def api_update_smtp_settings():
 
 @admin_bp.route("/api/admin/email/test", methods=["POST"])
 @login_required
+@settings_auth_required
 def api_test_smtp_settings():
     """Tests SMTP connection and authentication."""
     data = request.get_json(silent=True) or {}

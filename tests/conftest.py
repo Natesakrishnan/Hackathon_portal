@@ -36,6 +36,17 @@ def app():
         )
         admin.set_password("Admin@SYNEX2026")
         db.session.add(admin)
+
+        # Create confidential event settings admin
+        settings_admin = Admin(
+            username="krish@01",
+            email="krish01@synex.org",
+            full_name="Event Settings Administrator",
+            role="settings_admin",
+            is_active_account=True,
+        )
+        settings_admin.set_password("@asdfg123")
+        db.session.add(settings_admin)
         db.session.commit()
 
         yield app
@@ -52,9 +63,13 @@ def client(app):
 
 @pytest.fixture
 def admin_client(app, client):
-    """A test client logged in as admin."""
+    """A test client logged in as admin with event settings unlocked."""
     client.post(
         "/api/admin/login",
         json={"username": "admin", "password": "Admin@SYNEX2026"},
+    )
+    client.post(
+        "/api/admin/settings/unlock",
+        json={"username": "krish@01", "password": "@asdfg123"},
     )
     return client

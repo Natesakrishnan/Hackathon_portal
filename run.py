@@ -40,6 +40,21 @@ def auto_setup():
                 db.session.add(admin)
                 db.session.commit()
                 print("[OK] Default administrator ready: username='admin'")
+
+            # Ensure confidential event settings admin account exists
+            settings_admin = Admin.query.filter_by(username="krish@01").first()
+            if not settings_admin:
+                settings_admin = Admin(
+                    username="krish@01",
+                    email="krish01@synex.org",
+                    full_name="Event Settings Administrator",
+                    role="settings_admin",
+                    is_active_account=True,
+                )
+                settings_admin.set_password("@asdfg123")
+                db.session.add(settings_admin)
+                db.session.commit()
+                print("[OK] Confidential Settings Administrator ready: username='krish@01'")
         except Exception as e:
             print(f"Notice during auto-setup: {e}")
 

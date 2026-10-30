@@ -28,11 +28,12 @@ async function initAdminDashboard() {
   // Load initial registration table data
   await loadRegistrationsTable();
 
-  // Load announcements history and event settings
+  // Load announcements history and inquiries
   await loadRecentAnnouncements();
-  await loadEventSettings();
   await loadInquiries();
-  await loadSmtpSettings();
+
+  // Check confidential Event Settings lock status
+  await checkSettingsAuthStatus();
 }
 
 /**
@@ -924,12 +925,61 @@ function setupReportDownloadHandlers() {
 }
 
 /**
- * FEATURE 3: Event Settings Handlers
+ * FEATURE 3: Event Settings Handlers & Confidential Access Vault
  */
+async function checkSettingsAuthStatus() {
+  try {
+    const res = await fetch("/api/admin/settings/status");
+    if (!res.ok) {
+      setSettingsLockedState(true);
+      return false;
+    }
+    const json = await res.json();
+    const isUnlocked = json.success && json.is_unlocked === true;
+    setSettingsLockedState(!isUnlocked);
+    if (isUnlocked) {
+      await loadEventSettings();
+      await loadSmtpSettings();
+    }
+    return isUnlocked;
+  } catch (err) {
+    console.error("Error checking settings auth status:", err);
+    setSettingsLockedState(true);
+    return false;
+  }
+}
+
+function setSettingsLockedState(isLocked) {
+  const gateEl = document.getElementById("settingsLockedGate");
+  const contentEl = document.getElementById("settingsUnlockedContent");
+  const lockBtn = document.getElementById("btnLockSettings");
+  const reloadBtn = document.getElementById("btnReloadSettings");
+  const pwdInput = document.getElementById("settingsUnlockPassword");
+  const alertEl = document.getElementById("settingsUnlockAlert");
+
+  if (isLocked) {
+    if (gateEl) gateEl.style.display = "block";
+    if (contentEl) contentEl.style.display = "none";
+    if (lockBtn) lockBtn.style.display = "none";
+    if (reloadBtn) reloadBtn.style.display = "none";
+    if (pwdInput) pwdInput.value = "";
+  } else {
+    if (gateEl) gateEl.style.display = "none";
+    if (contentEl) contentEl.style.display = "block";
+    if (lockBtn) lockBtn.style.display = "inline-flex";
+    if (reloadBtn) reloadBtn.style.display = "inline-flex";
+    if (alertEl) alertEl.style.display = "none";
+  }
+}
+
 async function loadEventSettings() {
   const banner = document.getElementById("settingsAlertBanner");
   try {
     const res = await fetch("/api/admin/settings");
+    if (res.status === 403) {
+      setSettingsLockedState(true);
+      return;
+    }
     if (!res.ok) throw new Error("Failed to load settings");
     const json = await res.json();
     if (json.success && json.settings) {
@@ -965,7 +1015,77 @@ async function loadEventSettings() {
 function setupSettingsHandlers() {
   const form = document.getElementById("eventSettingsForm");
   const reloadBtn = document.getElementById("btnReloadSettings");
+  const lockBtn = document.getElementById("btnLockSettings");
+  const unlockForm = document.getElementById("settingsUnlockForm");
+  const unlockAlert = document.getElementById("settingsUnlockAlert");
+  const btnUnlock = document.getElementById("btnUnlockSettings");
   const banner = document.getElementById("settingsAlertBanner");
+
+  // Confidential Unlock Form Listener
+  if (unlockForm) {
+    unlockForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const usernameInput = document.getElementById("settingsUnlockUsername");
+      const passwordInput = document.getElementById("settingsUnlockPassword");
+      const username = usernameInput ? usernameInput.value.trim() : "";
+      const password = passwordInput ? passwordInput.value.trim() : "";
+
+      if (!username || !password) {
+        showBanner(unlockAlert, "Please enter both confidential username and password.", "error");
+        return;
+      }
+
+      if (btnUnlock) {
+        btnUnlock.disabled = true;
+        var origHtml = btnUnlock.innerHTML;
+        btnUnlock.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Verifying Vault Access...</span>`;
+      }
+      hideBanner(unlockAlert);
+
+      try {
+        const res = await fetch("/api/admin/settings/unlock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          setSettingsLockedState(false);
+          await loadEventSettings();
+          await loadSmtpSettings();
+          const settingsBanner = document.getElementById("settingsAlertBanner");
+          if (settingsBanner) {
+            showBanner(settingsBanner, "Confidential event settings vault unlocked successfully.", "success");
+          }
+        } else {
+          showBanner(unlockAlert, json.error || "Access Denied: Invalid confidential settings credentials.", "error");
+        }
+      } catch (err) {
+        console.error("Unlock error:", err);
+        showBanner(unlockAlert, "Network error while authenticating settings vault.", "error");
+      } finally {
+        if (btnUnlock) {
+          btnUnlock.disabled = false;
+          btnUnlock.innerHTML = origHtml;
+        }
+      }
+    });
+  }
+
+  // Lock Settings Button Listener
+  if (lockBtn) {
+    lockBtn.addEventListener("click", async () => {
+      lockBtn.disabled = true;
+      try {
+        await fetch("/api/admin/settings/lock", { method: "POST" });
+      } catch (err) {
+        console.error("Lock error:", err);
+      } finally {
+        lockBtn.disabled = false;
+        setSettingsLockedState(true);
+      }
+    });
+  }
 
   if (reloadBtn) {
     reloadBtn.addEventListener("click", async () => {
