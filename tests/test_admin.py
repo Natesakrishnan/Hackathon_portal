@@ -192,10 +192,9 @@ def test_announcements_validation(admin_client):
 def test_announcements_unconfigured_honest_status(admin_client, app):
     """
     Test announcement persistence and honest reporting when integrations are unconfigured.
-    Discord and Email should honestly report not configured without claiming delivery.
+    Email should honestly report not configured without claiming delivery.
     """
     with app.app_context():
-        app.config["DISCORD_WEBHOOK_URL"] = None
         app.config["MAIL_USERNAME"] = None
         app.config["MAIL_PASSWORD"] = None
 
@@ -205,7 +204,6 @@ def test_announcements_unconfigured_honest_status(admin_client, app):
             "title": "Unconfigured Integration Broadcast",
             "message": "Testing honest reporting of unconfigured external channels.",
             "target_audience": "all",
-            "send_discord": True,
             "send_email": True,
         },
     )
@@ -215,8 +213,7 @@ def test_announcements_unconfigured_honest_status(admin_client, app):
 
     # Assert honest reporting
     delivery = data["delivery"]
-    assert delivery["discord"]["sent"] is False
-    assert "not configured" in delivery["discord"]["status"].lower()
+    assert "discord" not in delivery
     assert delivery["email"]["sent"] is False
     assert "not configured" in delivery["email"]["status"].lower()
 
@@ -224,36 +221,26 @@ def test_announcements_unconfigured_honest_status(admin_client, app):
     from app.models.announcement import Announcement
     announcement = Announcement.query.filter_by(title="Unconfigured Integration Broadcast").first()
     assert announcement is not None
-    assert announcement.discord_sent is False
     assert announcement.email_sent is False
 
 
-def test_announcements_discord_delivery_success(admin_client, app):
-    """Test successful Discord webhook delivery when webhook URL is configured."""
-    from unittest.mock import patch, MagicMock
-
-    with app.app_context():
-        app.config["DISCORD_WEBHOOK_URL"] = "https://discord.com/api/webhooks/test/mock"
-
-    mock_resp = MagicMock()
-    mock_resp.status_code = 204
-
-    with patch("requests.post", return_value=mock_resp) as mock_post:
-        res = admin_client.post(
-            "/api/admin/announcements",
-            json={
-                "title": "Discord Broadcast Test",
-                "message": "Congratulations to all finalists of Round 1!",
-                "target_audience": "all",
-                "send_discord": True,
-                "send_email": False,
-            },
-        )
-        assert res.status_code == 201
-        data = res.get_json()
-        assert data["delivery"]["discord"]["sent"] is True
-        assert "Delivered successfully" in data["delivery"]["discord"]["status"]
-        assert mock_post.called
+def test_announcements_portal_publishing_success(admin_client, app):
+    """Test successful announcement publishing to the portal without email delivery."""
+    res = admin_client.post(
+        "/api/admin/announcements",
+        json={
+            "title": "Portal Broadcast Test",
+            "message": "Congratulations to all finalists of Round 1!",
+            "target_audience": "all",
+            "send_email": False,
+        },
+    )
+    assert res.status_code == 201
+    data = res.get_json()
+    assert data["success"] is True
+    assert "delivery" in data
+    assert data["delivery"]["email"]["sent"] is False
+    assert "Portal: Published" in data["announcement"]["delivery_status"]
 
 
 def test_announcements_duplicate_prevention(admin_client):
@@ -262,7 +249,6 @@ def test_announcements_duplicate_prevention(admin_client):
         "title": "Unique Announcement Headline",
         "message": "Important message regarding hackathon venue check-in.",
         "target_audience": "all",
-        "send_discord": False,
         "send_email": False,
     }
 
@@ -286,7 +272,6 @@ def test_announcements_list_history(admin_client):
             "title": "History Check Broadcast",
             "message": "Testing retrieval of historical announcements.",
             "target_audience": "all",
-            "send_discord": False,
             "send_email": False,
         },
     )
@@ -298,6 +283,31 @@ def test_announcements_list_history(admin_client):
     assert isinstance(data["announcements"], list)
     assert len(data["announcements"]) >= 1
     assert data["announcements"][0]["title"] == "History Check Broadcast"
+
+
+def test_announcements_clear(admin_client):
+    """Test DELETE /api/admin/announcements clears all announcement history."""
+    # Seed an announcement
+    admin_client.post(
+        "/api/admin/announcements",
+        json={
+            "title": "Clearable Broadcast",
+            "message": "Testing clearing of announcement messages.",
+            "target_audience": "all",
+            "send_email": False,
+        },
+    )
+
+    del_res = admin_client.delete("/api/admin/announcements")
+    assert del_res.status_code == 200
+    del_data = del_res.get_json()
+    assert del_data["success"] is True
+    assert del_data["cleared_count"] >= 1
+
+    # Verify history is now empty
+    get_res = admin_client.get("/api/admin/announcements")
+    assert get_res.status_code == 200
+    assert len(get_res.get_json()["announcements"]) == 0
 
 
 # ==============================================================================
@@ -756,6 +766,174 @@ def test_admin_schedule_content_crud(admin_client, client):
     # Verify reset back to default milestones
     verify_res = admin_client.get("/api/admin/content/schedule")
     assert len(verify_res.get_json()["data"]["milestones"]) >= 5
+
+
+def test_inquiries_list_and_filter(admin_client):
+    """Test listing, searching, and filtering inquiry messages in the admin portal."""
+    from app.extensions import db
+    from app.models.contact_message import ContactMessage
+
+    # Seed test inquiries
+    msg1 = ContactMessage(
+        name="Alice Hacker",
+        email="alice@test.com",
+        subject="Eligibility Question",
+        message="Can high school students participate?",
+        is_read=False,
+    )
+    msg2 = ContactMessage(
+        name="Bob Builder",
+        email="bob@test.com",
+        subject="Team Size Limit",
+        message="Can a team have 5 members?",
+        is_read=True,
+    )
+    db.session.add_all([msg1, msg2])
+    db.session.commit()
+
+    # 1. Fetch all
+    res = admin_client.get("/api/admin/inquiries")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert data["total"] >= 2
+    assert data["unread_count"] >= 1
+
+    # 2. Filter unread
+    res_unread = admin_client.get("/api/admin/inquiries?status=unread")
+    assert res_unread.status_code == 200
+    unread_items = res_unread.get_json()["inquiries"]
+    assert any(m["email"] == "alice@test.com" for m in unread_items)
+
+    # 3. Search query
+    res_search = admin_client.get("/api/admin/inquiries?search=Eligibility")
+    assert res_search.status_code == 200
+    search_items = res_search.get_json()["inquiries"]
+    assert any(m["email"] == "alice@test.com" for m in search_items)
+
+
+def test_inquiry_detail_and_auto_read(admin_client):
+    """Test viewing inquiry detail auto-marks as read and toggle status works."""
+    from app.extensions import db
+    from app.models.contact_message import ContactMessage
+
+    msg = ContactMessage(
+        name="Charlie Dev",
+        email="charlie@test.com",
+        subject="Venue Question",
+        message="Is accommodation provided during the 36 hours?",
+        is_read=False,
+    )
+    db.session.add(msg)
+    db.session.commit()
+
+    # View inquiry
+    res = admin_client.get(f"/api/admin/inquiries/{msg.id}")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert data["inquiry"]["is_read"] is True
+
+    # Verify persisted in database
+    db_msg = ContactMessage.query.get(msg.id)
+    assert db_msg.is_read is True
+
+    # Toggle status to unread
+    toggle_res = admin_client.patch(f"/api/admin/inquiries/{msg.id}/status", json={"is_read": False})
+    assert toggle_res.status_code == 200
+    assert toggle_res.get_json()["inquiry"]["is_read"] is False
+
+
+def test_inquiry_reply_email(admin_client):
+    """Test replying to an inquiry via email and updating inquiry record."""
+    from app.extensions import db
+    from app.models.contact_message import ContactMessage
+
+    msg = ContactMessage(
+        name="Diana Prince",
+        email="diana@themyscira.com",
+        subject="Project Submission Deadline",
+        message="What is the exact minute cutoff for submission?",
+        is_read=False,
+    )
+    db.session.add(msg)
+    db.session.commit()
+
+    reply_res = admin_client.post(
+        f"/api/admin/inquiries/{msg.id}/reply",
+        json={
+            "subject": "Re: Project Submission Deadline",
+            "message": "Hi Diana, submissions close sharply at 12:00 PM on Sunday."
+        }
+    )
+    assert reply_res.status_code == 200
+    data = reply_res.get_json()
+    assert data["success"] is True
+    assert data["inquiry"]["is_replied"] is True
+    assert "Hi Diana" in data["inquiry"]["reply_message"]
+
+    # Verify DB state
+    updated_msg = ContactMessage.query.get(msg.id)
+    assert updated_msg.reply_message is not None
+    assert updated_msg.replied_at is not None
+    assert updated_msg.is_read is True
+
+
+def test_admin_direct_send_email_and_logs(admin_client):
+    """Test composing and dispatching direct email and verifying outbox logs."""
+    res = admin_client.post(
+        "/api/admin/send-email",
+        json={
+            "to_email": "direct-recipient@example.com",
+            "subject": "[SYNEX 2026] Important Mentor Assignment",
+            "message": "You have been assigned Dr. Alan Turing as your domain mentor."
+        }
+    )
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert data["email_log"] is not None
+    assert data["email_log"]["recipient"] == "direct-recipient@example.com"
+
+    # Verify in logs endpoint
+    logs_res = admin_client.get("/api/admin/email/logs")
+    assert logs_res.status_code == 200
+    logs = logs_res.get_json()["logs"]
+    assert any(l["recipient"] == "direct-recipient@example.com" for l in logs)
+
+
+def test_admin_smtp_settings_crud(admin_client):
+    """Test fetching and updating SMTP email configuration."""
+    # 1. Fetch current settings
+    get_res = admin_client.get("/api/admin/email/settings")
+    assert get_res.status_code == 200
+    settings = get_res.get_json()["settings"]
+    assert "host" in settings
+    assert "port" in settings
+
+    # 2. Update settings
+    put_res = admin_client.put(
+        "/api/admin/email/settings",
+        json={
+            "host": "mail.synex.org",
+            "port": 465,
+            "username": "admin@synex.org",
+            "default_sender": "SYNEX Team <admin@synex.org>",
+            "use_tls": False,
+            "use_ssl": True
+        }
+    )
+    assert put_res.status_code == 200
+    assert put_res.get_json()["success"] is True
+
+    # 3. Verify updated values
+    verify_res = admin_client.get("/api/admin/email/settings")
+    updated = verify_res.get_json()["settings"]
+    assert updated["host"] == "mail.synex.org"
+    assert updated["port"] == 465
+    assert updated["username"] == "admin@synex.org"
+    assert updated["use_ssl"] is True
+
 
 
 

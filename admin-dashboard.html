@@ -84,6 +84,13 @@
           </a>
         </li>
         <li class="sidebar-item">
+          <a href="#inquiries" onclick="event.preventDefault(); document.getElementById('inquiriesSection').scrollIntoView({behavior:'smooth'});">
+            <i class="fa-solid fa-envelope-open-text"></i>
+            <span>Inquiries</span>
+            <span class="badge" id="inquiriesUnreadBadge" style="margin-left: auto; display: none; background: #EF4444; color: #FFF; font-size: 0.72rem; padding: 2px 7px; border-radius: 999px; font-weight: 700;">0</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
           <a href="#announcements" onclick="event.preventDefault(); document.getElementById('announcementsSection').scrollIntoView({behavior:'smooth'});">
             <i class="fa-solid fa-bullhorn"></i>
             <span>Announcements</span>
@@ -393,6 +400,117 @@
           </div>
         </div>
 
+        <!-- FEATURE 5: Inquiries & Messages Section -->
+        <div class="admin-section-card" id="inquiriesSection">
+          <div class="admin-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background: #EFF6FF; color: #2563EB;">
+                <i class="fa-solid fa-envelope-open-text"></i>
+              </div>
+              <div>
+                <h2>Inquiries &amp; Contact Messages</h2>
+                <p>Direct inquiries submitted by hackers, team leaders, and visitors via the public contact portal.</p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <button type="button" class="btn btn-primary btn-sm" id="btnOpenComposeEmail" style="display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-paper-plane"></i> <span>Compose Email</span>
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnReloadInquiries">
+                <i class="fa-solid fa-rotate"></i> <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+          <div class="admin-section-body">
+            <div id="inquiryAlertBanner" class="admin-alert-banner"></div>
+
+            <!-- Quick Inquiry Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem;">
+                <div style="font-size: 0.78rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase;">Total Messages</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-text-main); margin-top: 0.25rem;" id="statTotalInquiries">0</div>
+              </div>
+              <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 1rem;">
+                <div style="font-size: 0.78rem; font-weight: 600; color: #991B1B; text-transform: uppercase;">Unread Inquiries</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #DC2626; margin-top: 0.25rem;" id="statUnreadInquiries">0</div>
+              </div>
+              <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 1rem;">
+                <div style="font-size: 0.78rem; font-weight: 600; color: #166534; text-transform: uppercase;">Replied Inquiries</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #16A34A; margin-top: 0.25rem;" id="statRepliedInquiries">0</div>
+              </div>
+            </div>
+
+            <!-- Inquiries Search & Filter Bar -->
+            <div class="table-controls" style="margin-bottom: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 0.75rem; flex: 1; min-width: 260px; max-width: 500px;">
+                <div style="position: relative; flex: 1;">
+                  <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--color-text-muted); font-size: 0.85rem;"></i>
+                  <input type="text" id="inquiriesSearchInput" class="admin-form-control" placeholder="Search inquiries by name, email, subject..." style="padding-left: 2.25rem;">
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <label for="inquiriesStatusFilter" style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary); white-space: nowrap;">Status:</label>
+                <select id="inquiriesStatusFilter" class="admin-form-control" style="width: auto; min-width: 140px;">
+                  <option value="all">All Inquiries</option>
+                  <option value="unread">Unread Only</option>
+                  <option value="read">Read (Pending Reply)</option>
+                  <option value="replied">Replied via Email</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Inquiries Table -->
+            <div class="table-responsive">
+              <table class="announcement-history-table">
+                <thead>
+                  <tr>
+                    <th style="width: 22%;">Inquirer</th>
+                    <th style="width: 22%;">Subject</th>
+                    <th>Message Snippet</th>
+                    <th style="width: 14%;">Received</th>
+                    <th style="width: 12%;">Status</th>
+                    <th style="width: 16%; text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="inquiriesTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--color-text-muted); padding: 2rem;">Loading inquiries...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Outbox / Activity toggle drawer -->
+            <div style="margin-top: 2rem; border-top: 1px solid var(--color-border); padding-top: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--color-text-main); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                  <i class="fa-solid fa-clock-rotate-left" style="color: var(--color-primary);"></i> Outbound Email Activity &amp; Outbox Log
+                </h4>
+                <button type="button" class="btn btn-outline btn-sm" id="btnToggleOutboxLog">
+                  <i class="fa-solid fa-list-check"></i> <span id="outboxToggleText">Show Outbox Log</span>
+                </button>
+              </div>
+              <div id="outboxLogContainer" style="display: none;">
+                <div class="table-responsive">
+                  <table class="announcement-history-table" style="font-size: 0.82rem;">
+                    <thead>
+                      <tr>
+                        <th>Recipient</th>
+                        <th>Subject</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Sent / Recorded At</th>
+                      </tr>
+                    </thead>
+                    <tbody id="outboxLogTableBody">
+                      <tr><td colspan="5" style="text-align: center; color: var(--color-text-muted); padding: 1rem;">No recent outbound email activity.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
         <!-- FEATURE 1: Announcement Management Section -->
         <div class="admin-section-card" id="announcementsSection">
           <div class="admin-section-header">
@@ -402,7 +520,7 @@
               </div>
               <div>
                 <h2>Broadcast Announcements &amp; Push Alerts</h2>
-                <p>Send persistent announcements to participants via server-side Discord webhook &amp; optional email server.</p>
+                <p>Publish persistent announcements to the portal &amp; optional participant email broadcast.</p>
               </div>
             </div>
           </div>
@@ -423,20 +541,15 @@
                     <option value="all">All Registered Hackers (Default)</option>
                     <option value="paid">Confirmed Paid Participants Only</option>
                     <option value="teams">Team Leaders &amp; Teams</option>
-                    <option value="announcements">General Public Discord Channel</option>
                   </select>
                 </div>
 
                 <div class="admin-form-group">
-                  <label>Push Notification Channels</label>
+                  <label>Notification Channels</label>
                   <div class="admin-checkbox-group">
                     <label class="admin-checkbox-label">
-                      <input type="checkbox" id="announcementSendDiscord" checked>
-                      <span><i class="fa-brands fa-discord" style="color: #5865F2;"></i> Discord Webhook</span>
-                    </label>
-                    <label class="admin-checkbox-label">
                       <input type="checkbox" id="announcementSendEmail">
-                      <span><i class="fa-solid fa-envelope" style="color: #EA4335;"></i> Email Broadcast</span>
+                      <span><i class="fa-solid fa-envelope" style="color: #EA4335;"></i> Email Broadcast to Participants</span>
                     </label>
                   </div>
                 </div>
@@ -445,7 +558,7 @@
                   <label for="announcementMessage">Announcement Content / Message <span style="color: var(--color-error);">*</span></label>
                   <textarea id="announcementMessage" class="admin-form-control" rows="4" placeholder="Type the official announcement message here..." maxlength="5000" required></textarea>
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
-                    <span class="form-helper">Supports markdown-formatted notifications and webhook embeds.</span>
+                    <span class="form-helper">Supports markdown-formatted notifications and portal updates.</span>
                     <span id="announcementCharCount" style="font-size: 0.75rem; color: var(--color-text-muted);">0 / 5000</span>
                   </div>
                 </div>
@@ -461,9 +574,14 @@
 
             <!-- Recent Broadcast History -->
             <div style="margin-top: 2rem;">
-              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.75rem;">
-                <i class="fa-solid fa-clock-rotate-left"></i> Recent Announcement Dispatches
-              </h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0;">
+                  <i class="fa-solid fa-clock-rotate-left"></i> Recent Announcement Dispatches
+                </h3>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnClearAnnouncements" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">
+                  <i class="fa-solid fa-trash-can"></i> Clear History
+                </button>
+              </div>
               <div class="table-responsive">
                 <table class="announcement-history-table">
                   <thead>
@@ -584,6 +702,124 @@
                   <span>View Live Schedule</span>
                 </a>
               </div>
+            </div>
+
+            <!-- Outgoing Email Delivery Configuration Card -->
+            <div class="smtp-management-card" style="margin-top: 2rem; padding: 1.25rem 1.5rem; border: 1px solid var(--color-border); background: #F8FAFC; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                  <h4 style="color: var(--color-text-main); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.25rem 0;">
+                    <i class="fa-solid fa-envelope-circle-check" style="color: #2563EB;"></i> Outgoing Email Delivery Settings
+                  </h4>
+                  <p style="color: var(--color-text-secondary); font-size: 0.82rem; margin: 0;">
+                    Configure email provider to send inquiry replies, confirmation receipts, and outbound broadcasts.
+                  </p>
+                </div>
+                <div id="smtpStatusBadge">
+                  <span class="badge" style="background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 600;">
+                    <i class="fa-solid fa-circle-info"></i> Checking Email Status...
+                  </span>
+                </div>
+              </div>
+
+              <div id="smtpAlertBanner" class="admin-alert-banner"></div>
+
+              <form id="smtpSettingsForm" onsubmit="event.preventDefault();">
+                <!-- Delivery Provider Selector -->
+                <div style="margin-bottom: 1.25rem; background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 6px; padding: 0.85rem 1rem;">
+                  <label style="font-size: 0.82rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.5rem;">
+                    EMAIL DELIVERY METHOD
+                  </label>
+                  <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer; font-weight: 600; color: #1E293B;">
+                      <input type="radio" name="emailProviderRadio" value="resend" id="providerRadioResend">
+                      <span>Resend HTTPS API <span style="font-size: 0.75rem; background: #DCFCE7; color: #166534; padding: 2px 6px; border-radius: 3px; font-weight: 700;">Recommended &bull; Port 443</span></span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer; font-weight: 600; color: #1E293B;">
+                      <input type="radio" name="emailProviderRadio" value="smtp" id="providerRadioSmtp">
+                      <span>Standard SMTP Server <span style="font-size: 0.75rem; background: #F1F5F9; color: #475569; padding: 2px 6px; border-radius: 3px;">Ports 587 / 465</span></span>
+                    </label>
+                  </div>
+                  <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted);">
+                    <i class="fa-solid fa-lightbulb" style="color: #F59E0B;"></i>
+                    <strong>ISP Port Blocking Note:</strong> Many Indian residential &amp; campus ISPs block raw SMTP ports (587, 465, 2525). Resend uses standard HTTPS (port 443) which connects reliably without timeouts.
+                  </div>
+                </div>
+
+                <!-- Resend Fields Group -->
+                <div id="resendFieldsGroup" style="background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 6px; padding: 1rem; margin-bottom: 1.25rem;">
+                  <div class="admin-form-group" style="margin-bottom: 0.85rem;">
+                    <label for="resendApiKey">Resend API Key <span style="color: var(--color-error);">*</span></label>
+                    <input type="password" id="resendApiKey" class="admin-form-control" placeholder="re_123456789_abcdef... (Leave blank to keep existing)">
+                    <span class="form-helper">
+                      Free API key from <a href="https://resend.com" target="_blank" rel="noopener" style="color: #2563EB; text-decoration: underline;">resend.com</a> (Includes 100 free live emails/day, zero card required).
+                    </span>
+                  </div>
+                  <div class="admin-form-group">
+                    <label for="resendSender">Sender Header</label>
+                    <input type="text" id="resendSender" class="admin-form-control" placeholder="SYNEX Hackathon &lt;onboarding@resend.dev&gt;">
+                    <span class="form-helper">Use <code>SYNEX Hackathon &lt;onboarding@resend.dev&gt;</code> for testing, or your verified domain.</span>
+                  </div>
+                </div>
+
+                <!-- SMTP Fields Group -->
+                <div id="smtpFieldsGroup" style="display: none;">
+                  <div class="admin-form-grid">
+                    <div class="admin-form-group">
+                      <label for="smtpHost">SMTP Host Server <span style="color: var(--color-error);">*</span></label>
+                      <input type="text" id="smtpHost" class="admin-form-control" placeholder="smtp.gmail.com">
+                      <span class="form-helper">e.g., smtp.gmail.com or smtp.office365.com</span>
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="smtpPort">SMTP Port <span style="color: var(--color-error);">*</span></label>
+                      <input type="number" id="smtpPort" class="admin-form-control" placeholder="587" min="1" max="65535">
+                      <span class="form-helper">587 (STARTTLS) or 465 (SSL)</span>
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="smtpUsername">SMTP Username / Email <span style="color: var(--color-error);">*</span></label>
+                      <input type="text" id="smtpUsername" class="admin-form-control" placeholder="organizer@synex2026.org">
+                      <span class="form-helper">Your sending email address or SMTP login username.</span>
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="smtpPassword">SMTP Password / App Password</label>
+                      <input type="password" id="smtpPassword" class="admin-form-control" placeholder="•••••••••••• (Leave blank to keep existing)">
+                      <span class="form-helper">For Gmail, use a 16-character Google App Password.</span>
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="smtpSender">Default From Sender Header</label>
+                      <input type="text" id="smtpSender" class="admin-form-control" placeholder="SYNEX Hackathon Team &lt;organizer@synex2026.org&gt;">
+                      <span class="form-helper">Friendly sender header seen in recipient inbox.</span>
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label>Security &amp; Encryption</label>
+                      <div class="admin-checkbox-group" style="padding-top: 0.5rem;">
+                        <label class="admin-checkbox-label">
+                          <input type="checkbox" id="smtpUseTls" checked>
+                          <span>STARTTLS (Recommended for Port 587)</span>
+                        </label>
+                        <label class="admin-checkbox-label">
+                          <input type="checkbox" id="smtpUseSsl">
+                          <span>SSL (Recommended for Port 465)</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                  <button type="button" class="btn btn-outline btn-sm" id="btnTestSmtp">
+                    <i class="fa-solid fa-vial"></i> <span>Test Mail Connection</span>
+                  </button>
+                  <button type="submit" class="btn btn-primary btn-sm" id="btnSaveSmtp">
+                    <i class="fa-solid fa-floppy-disk"></i> <span>Save Email Settings</span>
+                  </button>
+                </div>
+              </form>
             </div>
 
             <!-- Danger Zone: Reset Participants Data -->
@@ -846,6 +1082,178 @@
           <i class="fa-solid fa-check"></i>
           <span>Done</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View & Reply to Inquiry Modal -->
+  <div class="team-modal-backdrop" id="inquiryModal" role="dialog" aria-modal="true" aria-labelledby="inquiryModalTitle">
+    <div class="team-modal-dialog" style="max-width: 680px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="team-modal-header" style="border-bottom: 1px solid var(--color-border); background: #F8FAFC;">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon" style="background: #EFF6FF; color: #2563EB;">
+            <i class="fa-solid fa-envelope-open-text"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="inquiryModalTitle">Inquiry Message</h2>
+            <span class="team-modal-ref" id="inquiryModalRef">Received: Loading...</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseInquiryModal" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body" style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+        <div id="inquiryModalAlertBanner" class="admin-alert-banner"></div>
+
+        <!-- Live Delivery vs Simulation Status Indicator -->
+        <div id="inquiryDeliveryStatusBanner" style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.82rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1rem;"></i>
+            <span id="inquiryDeliveryStatusText">Checking live email configuration...</span>
+          </div>
+          <a href="#settings" id="inquiryDeliveryConfigLink" style="font-size: 0.78rem; font-weight: 700; color: #B45309; text-decoration: underline; white-space: nowrap;">Configure Live Delivery</a>
+        </div>
+
+        <!-- Sender info box -->
+        <div style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <div style="font-size: 1rem; font-weight: 700; color: var(--color-text-main);" id="inquirySenderName">Name</div>
+              <div style="font-size: 0.85rem; color: var(--color-primary); margin-top: 2px;">
+                <i class="fa-solid fa-envelope"></i> <a href="#" id="inquirySenderEmail" style="color: var(--color-primary); text-decoration: underline;">email@domain.com</a>
+              </div>
+            </div>
+            <div id="inquiryStatusBadgeContainer"></div>
+          </div>
+          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--color-border);">
+            <div style="font-size: 0.82rem; color: var(--color-text-muted); font-weight: 600;">SUBJECT:</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin-top: 2px;" id="inquirySubject">Subject</div>
+          </div>
+        </div>
+
+        <!-- Message Body -->
+        <div style="margin-bottom: 1.5rem;">
+          <label style="font-size: 0.82rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Message Body:</label>
+          <div style="background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; font-size: 0.92rem; line-height: 1.6; color: #334155; white-space: pre-wrap; margin-top: 0.35rem;" id="inquiryMessageBody">
+            Loading...
+          </div>
+        </div>
+
+        <!-- Previous Reply Box (if replied) -->
+        <div id="inquiryPreviousReplyBox" style="display: none; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="font-size: 0.82rem; font-weight: 700; color: #166534; display: flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-reply"></i> Sent Reply Record
+            </div>
+            <div style="font-size: 0.78rem; color: #15803D;" id="inquiryRepliedAtTime">Replied at...</div>
+          </div>
+          <div style="font-size: 0.88rem; line-height: 1.5; color: #1E293B; white-space: pre-wrap;" id="inquiryPreviousReplyText"></div>
+        </div>
+
+        <!-- Reply Form -->
+        <div style="border-top: 1px solid var(--color-border); padding-top: 1.25rem;">
+          <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-solid fa-paper-plane" style="color: var(--color-primary);"></i> Send Email Reply to Inquirer
+          </h4>
+          <form id="inquiryReplyForm" onsubmit="event.preventDefault();">
+            <input type="hidden" id="inquiryReplyId">
+            <div style="margin-bottom: 0.85rem;">
+              <label for="inquiryReplySubject" style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">
+                Reply Email Subject
+              </label>
+              <input type="text" id="inquiryReplySubject" class="admin-form-control" required>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label for="inquiryReplyMessage" style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary); display: block; margin-bottom: 0.25rem;">
+                Reply Message
+              </label>
+              <textarea id="inquiryReplyMessage" class="admin-form-control" rows="4" placeholder="Write your personalized response to the inquirer..." required></textarea>
+              <span class="form-helper">This reply will be sent directly to the inquirer's email address and recorded in the database.</span>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+              <button type="submit" class="btn btn-primary btn-sm" id="btnSendInquiryReply" style="display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-paper-plane"></i> <span>Send Reply via Email</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="team-modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1.5rem; background: #F8FAFC; border-top: 1px solid var(--color-border);">
+        <button type="button" class="btn btn-outline btn-sm" id="btnToggleInquiryStatusModal">
+          <i class="fa-solid fa-envelope"></i> <span>Toggle Read/Unread</span>
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btnInquiryCloseFooter">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direct Compose Email Modal -->
+  <div class="team-modal-backdrop" id="composeEmailModal" role="dialog" aria-modal="true" aria-labelledby="composeEmailModalTitle">
+    <div class="team-modal-dialog" style="max-width: 600px; max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="team-modal-header" style="border-bottom: 1px solid var(--color-border); background: #F8FAFC;">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon" style="background: #EFF6FF; color: #2563EB;">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="composeEmailModalTitle">Compose Outbound Email</h2>
+            <span class="team-modal-ref" style="color: var(--color-text-muted);">Direct message to any participant or inquirer</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseComposeEmailModal" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body" style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+        <div id="composeEmailAlertBanner" class="admin-alert-banner"></div>
+
+        <!-- Live Delivery vs Simulation Status Indicator -->
+        <div id="composeDeliveryStatusBanner" style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.82rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1rem;"></i>
+            <span id="composeDeliveryStatusText">Checking live email configuration...</span>
+          </div>
+          <a href="#settings" id="composeDeliveryConfigLink" style="font-size: 0.78rem; font-weight: 700; color: #B45309; text-decoration: underline; white-space: nowrap;">Configure Live Delivery</a>
+        </div>
+
+        <form id="composeEmailForm" onsubmit="event.preventDefault();">
+          <div class="admin-form-group" style="margin-bottom: 1rem;">
+            <label for="composeToEmail" style="font-size: 0.85rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">
+              Recipient Email Address <span style="color: var(--color-error);">*</span>
+            </label>
+            <input type="email" id="composeToEmail" class="admin-form-control" placeholder="e.g. participant@university.edu" required>
+          </div>
+
+          <div class="admin-form-group" style="margin-bottom: 1rem;">
+            <label for="composeSubject" style="font-size: 0.85rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">
+              Subject <span style="color: var(--color-error);">*</span>
+            </label>
+            <input type="text" id="composeSubject" class="admin-form-control" placeholder="e.g., [SYNEX 2026] Important update regarding your entry" required>
+          </div>
+
+          <div class="admin-form-group" style="margin-bottom: 1rem;">
+            <label for="composeMessage" style="font-size: 0.85rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">
+              Message Content <span style="color: var(--color-error);">*</span>
+            </label>
+            <textarea id="composeMessage" class="admin-form-control" rows="6" placeholder="Type your email message here..." required></textarea>
+            <span class="form-helper">Official branded header and footer will be automatically attached.</span>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-outline btn-sm" id="btnCancelComposeEmail">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitComposeEmail" style="display: flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-paper-plane"></i> <span>Send Email Now</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

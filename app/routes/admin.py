@@ -27,6 +27,16 @@ from app.services.admin_service import (
 from app.services.announcement_service import (
     create_and_dispatch_announcement,
     get_recent_announcements,
+    clear_announcements,
+)
+from app.models.contact_message import ContactMessage
+from app.models.email_log import EmailLog
+from app.services.email_service import (
+    get_smtp_config,
+    save_smtp_config,
+    send_email,
+    test_smtp_connection,
+    get_recent_email_logs,
 )
 from app.services.content_service import (
     get_rules_content,
@@ -255,16 +265,13 @@ def api_list_announcements():
 @login_required
 def api_create_announcement():
     """
-    Validates, saves, and dispatches a new announcement to Discord and/or Email.
+    Validates, saves, and dispatches a new announcement to the portal and optional Email.
     Reports honest status for unconfigured integrations and prevents duplicates.
     """
     data = request.get_json(silent=True) or request.form.to_dict()
     title = (data.get("title") or "").strip()
     message = (data.get("message") or "").strip()
     target_audience = (data.get("target_audience") or "all").strip().lower()
-    send_discord = data.get("send_discord", True)
-    if isinstance(send_discord, str):
-        send_discord = send_discord.lower() in ("true", "1", "yes")
 
     send_email = data.get("send_email", False)
     if isinstance(send_email, str):
@@ -274,12 +281,23 @@ def api_create_announcement():
         title=title,
         message=message,
         target_audience=target_audience,
-        send_discord=send_discord,
         send_email=send_email,
         admin_id=current_user.id if hasattr(current_user, "id") else None,
     )
 
     return jsonify(result_data), status_code
+
+
+@admin_bp.route("/api/admin/announcements", methods=["DELETE"])
+@login_required
+def api_clear_announcements():
+    """Deletes all announcement records from the history log."""
+    deleted_count = clear_announcements()
+    return jsonify({
+        "success": True,
+        "message": f"Successfully cleared {deleted_count} announcement message(s).",
+        "cleared_count": deleted_count,
+    }), 200
 
 
 # ==============================================================================
@@ -468,5 +486,278 @@ def api_reset_admin_schedule():
     """Resets public event schedule back to default."""
     success, message = reset_schedule_to_default()
     return jsonify({"success": success, "message": message, "data": get_schedule_content()}), 200
+
+
+# ==============================================================================
+# FEATURE 5: INQUIRIES & EMAIL COMMUNICATION
+# ==============================================================================
+
+@admin_bp.route("/api/admin/inquiries", methods=["GET"])
+@login_required
+def api_list_inquiries():
+    """
+    Returns filtered, searched, and paginated contact/inquiry messages.
+    Query params: search, status (all, unread, read, replied), page, per_page.
+    """
+    search = request.args.get("search", "").strip()
+    status = request.args.get("status", "all").strip().lower()
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+
+    query = ContactMessage.query
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (ContactMessage.name.ilike(search_term))
+            | (ContactMessage.email.ilike(search_term))
+            | (ContactMessage.subject.ilike(search_term))
+            | (ContactMessage.message.ilike(search_term))
+        )
+
+    if status == "unread":
+        query = query.filter(ContactMessage.is_read.is_(False))
+    elif status == "read":
+        query = query.filter(ContactMessage.is_read.is_(True), ContactMessage.replied_at.is_(None))
+    elif status == "replied":
+        query = query.filter(ContactMessage.replied_at.isnot(None))
+
+    total = query.count()
+    unread_count = ContactMessage.query.filter(ContactMessage.is_read.is_(False)).count()
+    replied_count = ContactMessage.query.filter(ContactMessage.replied_at.isnot(None)).count()
+    total_count = ContactMessage.query.count()
+
+    items = query.order_by(ContactMessage.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    ).items
+
+    return jsonify({
+        "success": True,
+        "inquiries": [item.to_dict() for item in items],
+        "total": total,
+        "unread_count": unread_count,
+        "replied_count": replied_count,
+        "total_count": total_count,
+        "page": page,
+        "per_page": per_page,
+    }), 200
+
+
+@admin_bp.route("/api/admin/inquiries/<int:id>", methods=["GET"])
+@login_required
+def api_get_inquiry(id):
+    """Returns single inquiry message and automatically marks it as read."""
+    inquiry = ContactMessage.query.get(id)
+    if not inquiry:
+        return jsonify({"success": False, "error": "Inquiry message not found."}), 404
+
+    if not inquiry.is_read:
+        inquiry.is_read = True
+        db.session.commit()
+
+    unread_count = ContactMessage.query.filter(ContactMessage.is_read.is_(False)).count()
+
+    return jsonify({
+        "success": True,
+        "inquiry": inquiry.to_dict(),
+        "unread_count": unread_count,
+    }), 200
+
+
+@admin_bp.route("/api/admin/inquiries/<int:id>/status", methods=["PATCH", "POST"])
+@login_required
+def api_toggle_inquiry_status(id):
+    """Toggles or sets the is_read status of an inquiry."""
+    inquiry = ContactMessage.query.get(id)
+    if not inquiry:
+        return jsonify({"success": False, "error": "Inquiry message not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    if "is_read" in data:
+        inquiry.is_read = bool(data["is_read"])
+    else:
+        inquiry.is_read = not inquiry.is_read
+
+    db.session.commit()
+    unread_count = ContactMessage.query.filter(ContactMessage.is_read.is_(False)).count()
+
+    return jsonify({
+        "success": True,
+        "message": f"Inquiry marked as {'read' if inquiry.is_read else 'unread'}.",
+        "inquiry": inquiry.to_dict(),
+        "unread_count": unread_count,
+    }), 200
+
+
+@admin_bp.route("/api/admin/inquiries/<int:id>", methods=["DELETE"])
+@login_required
+def api_delete_inquiry(id):
+    """Deletes an inquiry message."""
+    inquiry = ContactMessage.query.get(id)
+    if not inquiry:
+        return jsonify({"success": False, "error": "Inquiry message not found."}), 404
+
+    db.session.delete(inquiry)
+    db.session.commit()
+    unread_count = ContactMessage.query.filter(ContactMessage.is_read.is_(False)).count()
+
+    return jsonify({
+        "success": True,
+        "message": "Inquiry deleted successfully.",
+        "unread_count": unread_count,
+    }), 200
+
+
+@admin_bp.route("/api/admin/inquiries/<int:id>/reply", methods=["POST"])
+@login_required
+def api_reply_inquiry(id):
+    """Sends an email reply to an inquiry and updates inquiry status."""
+    inquiry = ContactMessage.query.get(id)
+    if not inquiry:
+        return jsonify({"success": False, "error": "Inquiry message not found."}), 404
+
+    data = request.get_json(silent=True) or request.form.to_dict()
+    reply_message = (data.get("message") or data.get("reply_message") or "").strip()
+    subject = (data.get("subject") or f"Re: {inquiry.subject}").strip()
+
+    if not reply_message:
+        return jsonify({"success": False, "error": "Reply message body cannot be empty."}), 400
+
+    # Build rich email body
+    event_name = current_app.config.get("EVENT_NAME", "SYNEX 2026")
+    body_text = f"""Hi {inquiry.name},
+
+{reply_message}
+
+--------------------------------------------------
+Original Inquiry:
+From: {inquiry.name} <{inquiry.email}>
+Subject: {inquiry.subject}
+Date: {inquiry.created_at.strftime('%Y-%m-%d %H:%M UTC') if inquiry.created_at else ''}
+
+{inquiry.message}
+--------------------------------------------------
+
+Warm regards,
+{event_name} Organizing Committee
+"""
+
+    success, msg_info, email_log = send_email(
+        to_email=inquiry.email,
+        subject=subject,
+        body_text=body_text,
+        email_type="inquiry_reply",
+    )
+
+    # Update inquiry record
+    inquiry.reply_message = reply_message
+    inquiry.replied_at = datetime.utcnow()
+    inquiry.is_read = True
+    db.session.commit()
+
+    unread_count = ContactMessage.query.filter(ContactMessage.is_read.is_(False)).count()
+    is_simulated = (email_log.status == "simulated") if email_log else True
+    is_live_delivered = (email_log.status == "sent") if email_log else False
+
+    return jsonify({
+        "success": True,
+        "is_simulated": is_simulated,
+        "is_live_delivered": is_live_delivered,
+        "delivery_status": email_log.status if email_log else "unknown",
+        "message": msg_info,
+        "inquiry": inquiry.to_dict(),
+        "unread_count": unread_count,
+        "email_log": email_log.to_dict() if email_log else None,
+    }), 200
+
+
+@admin_bp.route("/api/admin/send-email", methods=["POST"])
+@login_required
+def api_admin_send_email():
+    """Composes and dispatches a direct email to any recipient from the admin console."""
+    data = request.get_json(silent=True) or request.form.to_dict()
+    to_email = (data.get("to_email") or data.get("recipient") or "").strip()
+    subject = (data.get("subject") or "").strip()
+    message = (data.get("message") or "").strip()
+
+    if not to_email or "@" not in to_email:
+        return jsonify({"success": False, "error": "A valid recipient email address is required."}), 400
+    if not subject:
+        return jsonify({"success": False, "error": "Subject cannot be empty."}), 400
+    if not message:
+        return jsonify({"success": False, "error": "Email message cannot be empty."}), 400
+
+    success, msg_info, email_log = send_email(
+        to_email=to_email,
+        subject=subject,
+        body_text=message,
+        email_type="direct",
+    )
+
+    is_simulated = (email_log.status == "simulated") if email_log else True
+    is_live_delivered = (email_log.status == "sent") if email_log else False
+
+    status_code = 200 if (success or is_simulated) else 400
+    return jsonify({
+        "success": success or is_simulated,
+        "is_simulated": is_simulated,
+        "is_live_delivered": is_live_delivered,
+        "delivery_status": email_log.status if email_log else "unknown",
+        "message": msg_info,
+        "email_log": email_log.to_dict() if email_log else None,
+    }), status_code
+
+
+@admin_bp.route("/api/admin/email/settings", methods=["GET"])
+@login_required
+def api_get_smtp_settings():
+    """Returns current email delivery configuration with sensitive credentials masked."""
+    cfg = get_smtp_config()
+    safe_cfg = {
+        "provider": cfg.get("provider", "smtp"),
+        "has_resend_key": cfg.get("has_resend_key", False),
+        "resend_key_masked": ("re_" + "•" * 12) if cfg.get("resend_key") else "",
+        "host": cfg["host"],
+        "port": cfg["port"],
+        "username": cfg["username"],
+        "password_masked": "••••••••" if cfg["password"] else "",
+        "has_password": cfg.get("has_password", bool(cfg["password"])),
+        "use_tls": cfg["use_tls"],
+        "use_ssl": cfg["use_ssl"],
+        "default_sender": cfg["default_sender"],
+        "is_configured": cfg["is_configured"],
+        "status_description": cfg.get("status_description", "Simulation Outbox Mode"),
+    }
+    return jsonify({"success": True, "settings": safe_cfg}), 200
+
+
+@admin_bp.route("/api/admin/email/settings", methods=["PUT", "POST"])
+@login_required
+def api_update_smtp_settings():
+    """Updates and saves SMTP email settings into EventSetting."""
+    data = request.get_json(silent=True) or request.form.to_dict()
+    success, message = save_smtp_config(data)
+    return jsonify({"success": success, "message": message}), 200
+
+
+@admin_bp.route("/api/admin/email/test", methods=["POST"])
+@login_required
+def api_test_smtp_settings():
+    """Tests SMTP connection and authentication."""
+    data = request.get_json(silent=True) or {}
+    test_recipient = data.get("test_recipient") or current_user.email
+    success, message = test_smtp_connection(test_recipient)
+    status_code = 200 if success else 400
+    return jsonify({"success": success, "message": message}), status_code
+
+
+@admin_bp.route("/api/admin/email/logs", methods=["GET"])
+@login_required
+def api_get_email_logs():
+    """Returns recent outbound email logs (outbox activity)."""
+    limit = request.args.get("limit", 50, type=int)
+    logs = get_recent_email_logs(limit=limit)
+    return jsonify({"success": True, "logs": logs}), 200
+
 
 

@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
-import requests
 from flask import current_app
 from app.extensions import db
 from app.models.announcement import Announcement
@@ -15,13 +14,13 @@ def create_and_dispatch_announcement(
     title: str,
     message: str,
     target_audience: str = "all",
-    send_discord: bool = True,
     send_email: bool = False,
     admin_id: Optional[int] = None,
+    **kwargs,
 ) -> Tuple[bool, Dict[str, Any], int]:
     """
-    Validates, persists, and dispatches hackathon announcements to configured channels.
-    Reports honest status for both configured and unconfigured integrations.
+    Validates, persists, and publishes hackathon announcements to the portal and optional email.
+    Reports honest status for configured and unconfigured integrations.
     Avoids duplicate deliveries if retried within 60 seconds.
     """
     title = (title or "").strip()
@@ -68,117 +67,91 @@ def create_and_dispatch_announcement(
         created_by_id=admin_id,
         discord_sent=False,
         email_sent=False,
-        delivery_status="Processing",
+        delivery_status="Portal: Published",
     )
     db.session.add(announcement)
     db.session.commit()
 
-    discord_status = "Discord: Not requested"
     email_status = "Email: Not requested"
 
-    # 4. Discord Webhook Delivery
-    if send_discord:
-        webhook_url = current_app.config.get("DISCORD_WEBHOOK_URL")
-        if not webhook_url or not webhook_url.strip():
-            discord_status = "Discord: Webhook not configured (DISCORD_WEBHOOK_URL is not set)"
-            announcement.discord_sent = False
-        else:
-            try:
-                payload = {
-                    "content": f"📢 **[SYNEX 2026 Announcement]** {title}",
-                    "embeds": [
-                        {
-                            "title": title,
-                            "description": message,
-                            "color": 0x2563EB,  # SYNEX Primary Blue
-                            "fields": [
-                                {"name": "Target Audience", "value": target_audience.capitalize(), "inline": True},
-                                {"name": "Sender", "value": "SYNEX Admin Console", "inline": True},
-                            ],
-                            "footer": {"text": "SYNEX 2026 Hackathon Announcement Engine"},
-                            "timestamp": datetime.utcnow().isoformat(),
-                        }
-                    ],
-                }
-                resp = requests.post(
-                    webhook_url.strip(),
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                    timeout=5,
-                )
-                if resp.status_code in (200, 204):
-                    announcement.discord_sent = True
-                    discord_status = "Discord: Delivered successfully"
-                    logger.info(f"Announcement {announcement.id} sent to Discord webhook.")
-                else:
-                    announcement.discord_sent = False
-                    discord_status = f"Discord: Delivery failed (HTTP {resp.status_code})"
-                    logger.error(f"Discord webhook failed with status {resp.status_code}: {resp.text}")
-            except Exception as e:
-                announcement.discord_sent = False
-                discord_status = f"Discord: Delivery error ({str(e)})"
-                logger.error(f"Discord webhook exception: {e}")
-
-    # 5. Email Delivery
+    # 4. Email Delivery
     if send_email:
-        mail_user = current_app.config.get("MAIL_USERNAME")
-        mail_pass = current_app.config.get("MAIL_PASSWORD")
-        if not mail_user or not mail_pass:
-            email_status = "Email: SMTP provider not configured (MAIL_USERNAME / MAIL_PASSWORD not set)"
+        from app.services.email_service import get_smtp_config, send_email as dispatch_email
+        smtp_cfg = get_smtp_config()
+        if not smtp_cfg["is_configured"]:
+            email_status = "Email: Provider not configured (configure in Admin Event Settings)"
             announcement.email_sent = False
         else:
-            # SMTP configured: send email announcement
-            try:
-                import smtplib
-                from email.mime.text import MIMEText
-                from email.mime.multipart import MIMEMultipart
+            # Gather recipient emails based on audience
+            if target_audience == "paid":
+                recipients = [
+                    p.email
+                    for p in Participant.query.join(Registration).filter(
+                        Registration.payment_status == "paid"
+                    ).all()
+                    if p.email
+                ]
+            else:
+                recipients = [p.email for p in Participant.query.all() if p.email]
 
-                mail_server = current_app.config.get("MAIL_SERVER", "smtp.gmail.com")
-                mail_port = int(current_app.config.get("MAIL_PORT", 587))
-                use_tls = current_app.config.get("MAIL_USE_TLS", True)
-                sender = current_app.config.get("MAIL_DEFAULT_SENDER", mail_user)
+            # Deduplicate recipient list
+            unique_recipients = list(set(recipients))
 
-                # Gather recipient emails based on audience
-                if target_audience == "paid":
-                    recipients = [
-                        p.email
-                        for p in Participant.query.join(Registration).filter(
-                            Registration.payment_status == "paid"
-                        ).all()
-                        if p.email
-                    ]
-                else:
-                    recipients = [p.email for p in Participant.query.all() if p.email]
-
-                # Deduplicate recipient list
-                unique_recipients = list(set(recipients))
-
-                if not unique_recipients:
-                    email_status = "Email: No eligible participant email addresses found."
-                    announcement.email_sent = False
-                else:
-                    # Send email
-                    msg = MIMEMultipart("alternative")
-                    msg["Subject"] = f"[SYNEX 2026] {title}"
-                    msg["From"] = sender
-                    msg["Bcc"] = ", ".join(unique_recipients[:50])  # Batch limit
-                    msg.attach(MIMEText(message, "plain"))
-
-                    with smtplib.SMTP(mail_server, mail_port, timeout=10) as server:
-                        if use_tls:
-                            server.starttls()
-                        server.login(mail_user, mail_pass)
-                        server.sendmail(sender, unique_recipients[:50], msg.as_string())
-
-                    announcement.email_sent = True
-                    email_status = f"Email: Delivered to {len(unique_recipients[:50])} recipients"
-            except Exception as e:
+            if not unique_recipients:
+                email_status = "Email: No eligible participant email addresses found."
                 announcement.email_sent = False
-                email_status = f"Email: Delivery error ({str(e)})"
-                logger.error(f"Email dispatch error: {e}")
+            else:
+                # Dispatch email via unified email service (handles Resend HTTPS and SMTP)
+                delivered_count = 0
+                failed_count = 0
+                last_err = ""
 
-    # 6. Finalize delivery status
-    announcement.delivery_status = f"{discord_status}; {email_status}"
+                announcement_html = f"""
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #E2E8F0; border-radius: 12px; background: #FFFFFF;">
+                  <div style="background: linear-gradient(135deg, #2563EB, #7C3AED); padding: 24px; border-radius: 8px; color: #FFFFFF; text-align: center; margin-bottom: 20px;">
+                    <span style="display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Official Broadcast Announcement</span>
+                    <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #FFFFFF;">{title}</h2>
+                  </div>
+                  <div style="color: #334155; font-size: 15px; line-height: 1.7; white-space: pre-wrap; padding: 0 4px;">{message}</div>
+                  <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8; text-align: center;">
+                    <p style="margin: 0;">SYNEX 2026 Hackathon &bull; Campus Innovation Hub, Bengaluru &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
+                  </div>
+                </div>
+                """
+
+                for recipient_email in unique_recipients[:50]:
+                    try:
+                        ok, res_msg, _ = dispatch_email(
+                            to_email=recipient_email,
+                            subject=f"[SYNEX 2026 Announcement] {title}",
+                            body_text=message,
+                            body_html=announcement_html,
+                            email_type="announcement",
+                        )
+                        if ok:
+                            delivered_count += 1
+                        else:
+                            failed_count += 1
+                            last_err = res_msg
+                    except Exception as e:
+                        failed_count += 1
+                        last_err = str(e)
+                        logger.error(f"Email broadcast exception to {recipient_email}: {e}")
+
+                if delivered_count > 0:
+                    announcement.email_sent = True
+                    email_status = f"Email: Delivered to {delivered_count} recipient(s)"
+                    if failed_count > 0:
+                        email_status += f" ({failed_count} failed: {last_err})"
+                else:
+                    announcement.email_sent = False
+                    email_status = f"Email: Delivery error ({last_err or 'failed to send'})"
+
+    # 5. Finalize delivery status
+    if send_email:
+        announcement.delivery_status = f"Portal: Published; {email_status}"
+    else:
+        announcement.delivery_status = "Portal: Published"
     db.session.commit()
 
     return True, {
@@ -186,11 +159,6 @@ def create_and_dispatch_announcement(
         "message": "Announcement processed successfully.",
         "announcement": announcement.to_dict(),
         "delivery": {
-            "discord": {
-                "selected": send_discord,
-                "sent": announcement.discord_sent,
-                "status": discord_status,
-            },
             "email": {
                 "selected": send_email,
                 "sent": announcement.email_sent,
@@ -204,3 +172,11 @@ def get_recent_announcements(limit: int = 15) -> List[Dict[str, Any]]:
     """Returns the most recent announcement records ordered by creation date."""
     records = Announcement.query.order_by(Announcement.created_at.desc()).limit(limit).all()
     return [a.to_dict() for a in records]
+
+
+def clear_announcements() -> int:
+    """Deletes all announcement records from the database and returns deleted count."""
+    count = Announcement.query.delete()
+    db.session.commit()
+    logger.info(f"Cleared {count} announcement records.")
+    return count

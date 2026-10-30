@@ -6,6 +6,7 @@ from app.models.payment import Payment
 from app.models.event_setting import EventSetting
 from app.models.contact_message import ContactMessage
 from app.models.announcement import Announcement
+from app.models.email_log import EmailLog
 
 __all__ = [
     "Admin",
@@ -17,4 +18,5 @@ __all__ = [
     "EventSetting",
     "ContactMessage",
     "Announcement",
+    "EmailLog",
 ]

@@ -31,6 +31,8 @@ async function initAdminDashboard() {
   // Load announcements history and event settings
   await loadRecentAnnouncements();
   await loadEventSettings();
+  await loadInquiries();
+  await loadSmtpSettings();
 }
 
 /**
@@ -705,6 +707,8 @@ function setupEventListeners() {
   setupSettingsHandlers();
   setupResetParticipantsHandlers();
   setupPublicContentEditorHandlers();
+  setupInquiriesHandlers();
+  setupSmtpHandlers();
 }
 
 function escapeHtml(text) {
@@ -736,17 +740,12 @@ async function loadRecentAnnouncements() {
     }
 
     tbody.innerHTML = json.announcements.map((a) => {
-      let statusHtml = "";
-      if (a.discord_sent) {
-        statusHtml += `<span class="badge badge-success" style="font-size: 0.72rem; margin-right: 4px;"><i class="fa-brands fa-discord"></i> Discord</span>`;
-      }
+      let statusHtml = `<span class="badge badge-primary" style="font-size: 0.72rem; margin-right: 4px;"><i class="fa-solid fa-bullhorn"></i> Portal</span>`;
       if (a.email_sent) {
         statusHtml += `<span class="badge badge-success" style="font-size: 0.72rem; margin-right: 4px;"><i class="fa-solid fa-envelope"></i> Email</span>`;
       }
-      if (!a.discord_sent && !a.email_sent) {
-        statusHtml = `<span class="badge badge-warning" style="font-size: 0.72rem;"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(a.delivery_status || "Logged (Unconfigured)")}</span>`;
-      } else {
-        statusHtml += `<div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 3px;">${escapeHtml(a.delivery_status || "")}</div>`;
+      if (a.delivery_status) {
+        statusHtml += `<div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 3px;">${escapeHtml(a.delivery_status)}</div>`;
       }
 
       return `
@@ -783,8 +782,8 @@ function setupAnnouncementHandlers() {
       const title = document.getElementById("announcementTitle").value.trim();
       const message = document.getElementById("announcementMessage").value.trim();
       const targetAudience = document.getElementById("announcementAudience").value;
-      const sendDiscord = document.getElementById("announcementSendDiscord").checked;
-      const sendEmail = document.getElementById("announcementSendEmail").checked;
+      const sendEmailInput = document.getElementById("announcementSendEmail");
+      const sendEmail = sendEmailInput ? sendEmailInput.checked : false;
       const submitBtn = document.getElementById("btnSendAnnouncement");
 
       if (title.length < 3) {
@@ -793,10 +792,6 @@ function setupAnnouncementHandlers() {
       }
       if (message.length < 5) {
         showBanner(banner, "Announcement message must be at least 5 characters.", "error");
-        return;
-      }
-      if (!sendDiscord && !sendEmail) {
-        showBanner(banner, "Please select at least one dispatch channel (Discord or Email).", "error");
         return;
       }
 
@@ -814,18 +809,16 @@ function setupAnnouncementHandlers() {
             title,
             message,
             target_audience: targetAudience,
-            send_discord: sendDiscord,
             send_email: sendEmail,
           }),
         });
 
         const json = await res.json();
         if (res.ok && json.success) {
-          const discordStatus = json.delivery?.discord?.status || "";
           const emailStatus = json.delivery?.email?.status || "";
           showBanner(
             banner,
-            `<strong>Announcement Processed!</strong> ${escapeHtml(discordStatus)}${emailStatus ? ' | ' + escapeHtml(emailStatus) : ''}`,
+            `<strong>Announcement Published to Portal!</strong>${emailStatus ? ' ' + escapeHtml(emailStatus) : ''}`,
             "success"
           );
           form.reset();
@@ -840,6 +833,36 @@ function setupAnnouncementHandlers() {
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = origHtml;
+      }
+    });
+  }
+
+  const clearBtn = document.getElementById("btnClearAnnouncements");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to clear all announcement dispatch history messages?")) {
+        return;
+      }
+      clearBtn.disabled = true;
+      const origHtml = clearBtn.innerHTML;
+      clearBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Clearing...`;
+      try {
+        const res = await fetch("/api/admin/announcements", {
+          method: "DELETE",
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showBanner(banner, data.message || "Announcement history cleared.", "success");
+          await loadRecentAnnouncements();
+        } else {
+          showBanner(banner, data.error || "Failed to clear announcements.", "error");
+        }
+      } catch (err) {
+        console.error("Clear announcements error:", err);
+        showBanner(banner, "Network error while clearing announcements.", "error");
+      } finally {
+        clearBtn.disabled = false;
+        clearBtn.innerHTML = origHtml;
       }
     });
   }
@@ -1041,7 +1064,10 @@ function showBanner(bannerEl, msg, type = "success") {
   if (!bannerEl) return;
   bannerEl.className = `admin-alert-banner admin-alert-${type}`;
   bannerEl.style.display = "flex";
-  const icon = type === "success" ? "fa-circle-check" : "fa-triangle-exclamation";
+  let icon = "fa-circle-check";
+  if (type === "error") icon = "fa-triangle-exclamation";
+  else if (type === "warning") icon = "fa-triangle-exclamation";
+  else if (type === "info") icon = "fa-circle-info";
   bannerEl.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${msg}</span>`;
   bannerEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -1612,5 +1638,840 @@ function setupPublicContentEditorHandlers() {
     }
   });
 }
+
+
+/**
+ * ==============================================================================
+ * FEATURE 5: INQUIRIES & EMAIL COMMUNICATION LOGIC
+ * ==============================================================================
+ */
+
+let currentInquiriesSearch = "";
+let currentInquiriesStatus = "all";
+let activeInquiry = null;
+
+async function loadInquiries() {
+  const tbody = document.getElementById("inquiriesTableBody");
+  if (!tbody) return;
+
+  const statTotal = document.getElementById("statTotalInquiries");
+  const statUnread = document.getElementById("statUnreadInquiries");
+  const statReplied = document.getElementById("statRepliedInquiries");
+  const unreadBadge = document.getElementById("inquiriesUnreadBadge");
+
+  try {
+    const params = new URLSearchParams();
+    if (currentInquiriesSearch) params.set("search", currentInquiriesSearch);
+    if (currentInquiriesStatus && currentInquiriesStatus !== "all") params.set("status", currentInquiriesStatus);
+
+    const res = await fetch(`/api/admin/inquiries?${params.toString()}`);
+    if (!res.ok) throw new Error("Failed to load inquiries");
+    const json = await res.json();
+
+    if (!json.success) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-error); padding: 1.5rem;">Error loading inquiries.</td></tr>`;
+      return;
+    }
+
+    // Update stats & badges
+    if (statTotal) statTotal.textContent = json.total_count ?? 0;
+    if (statUnread) statUnread.textContent = json.unread_count ?? 0;
+    if (statReplied) statReplied.textContent = json.replied_count ?? 0;
+
+    if (unreadBadge) {
+      const count = json.unread_count || 0;
+      if (count > 0) {
+        unreadBadge.textContent = count;
+        unreadBadge.style.display = "inline-block";
+      } else {
+        unreadBadge.style.display = "none";
+      }
+    }
+
+    const inquiries = json.inquiries || [];
+    if (inquiries.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-text-muted); padding: 2rem;">No inquiries matching current filter.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = inquiries.map((inq) => {
+      // Status badge
+      let statusHtml = "";
+      if (inq.is_replied) {
+        statusHtml = `<span class="badge" style="background: #DCFCE7; color: #166534; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;"><i class="fa-solid fa-reply"></i> Replied</span>`;
+      } else if (!inq.is_read) {
+        statusHtml = `<span class="badge" style="background: #FEE2E2; color: #991B1B; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;"><i class="fa-solid fa-envelope"></i> Unread</span>`;
+      } else {
+        statusHtml = `<span class="badge" style="background: #F1F5F9; color: #475569; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 500;"><i class="fa-regular fa-envelope-open"></i> Read</span>`;
+      }
+
+      // Date formatting
+      let formattedDate = "N/A";
+      if (inq.created_at) {
+        const d = new Date(inq.created_at);
+        formattedDate = d.toLocaleDateString("en-IN", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      const snippet = escapeHtml(inq.message || "").substring(0, 75) + ((inq.message || "").length > 75 ? "..." : "");
+
+      return `
+        <tr style="${!inq.is_read ? 'background: #FEF2F2 !important; font-weight: 500;' : ''}">
+          <td>
+            <div style="font-weight: 700; color: var(--color-text-main); font-size: 0.88rem;">${escapeHtml(inq.name)}</div>
+            <div style="font-size: 0.78rem; color: var(--color-text-secondary); margin-top: 2px;">
+              <a href="mailto:${escapeHtml(inq.email)}" style="color: var(--color-primary);">${escapeHtml(inq.email)}</a>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--color-text-main); font-size: 0.85rem;">${escapeHtml(inq.subject)}</div>
+          </td>
+          <td style="color: var(--color-text-secondary); font-size: 0.82rem; line-height: 1.4;">${snippet}</td>
+          <td style="font-size: 0.78rem; color: var(--color-text-muted); white-space: nowrap;">${formattedDate}</td>
+          <td>${statusHtml}</td>
+          <td style="text-align: right; white-space: nowrap;">
+            <button type="button" class="btn btn-outline btn-sm btn-view-inquiry" data-id="${inq.id}" style="padding: 3px 8px; font-size: 0.75rem; font-weight: 600; margin-right: 4px;" title="View & Reply">
+              <i class="fa-solid fa-eye"></i> View &amp; Reply
+            </button>
+            <button type="button" class="btn btn-outline btn-sm btn-toggle-inquiry" data-id="${inq.id}" data-read="${inq.is_read}" style="padding: 3px 6px; font-size: 0.75rem;" title="${inq.is_read ? 'Mark Unread' : 'Mark Read'}">
+              <i class="fa-solid ${inq.is_read ? 'fa-envelope' : 'fa-envelope-open'}"></i>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm btn-delete-inquiry" data-id="${inq.id}" style="padding: 3px 6px; font-size: 0.75rem; color: var(--color-error); border-color: #FECACA;" title="Delete Message">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    // Attach row button events
+    tbody.querySelectorAll(".btn-view-inquiry").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        openInquiryModal(id);
+      });
+    });
+
+    tbody.querySelectorAll(".btn-toggle-inquiry").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        const currentRead = btn.getAttribute("data-read") === "true";
+        await toggleInquiryReadStatus(id, !currentRead);
+      });
+    });
+
+    tbody.querySelectorAll(".btn-delete-inquiry").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (confirm("Are you sure you want to delete this inquiry message?")) {
+          await deleteInquiryMessage(id);
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error("Error loading inquiries:", err);
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-error); padding: 1.5rem;">Network error loading inquiries.</td></tr>`;
+  }
+}
+
+async function openInquiryModal(id) {
+  const modal = document.getElementById("inquiryModal");
+  if (!modal) return;
+
+  const alertBanner = document.getElementById("inquiryModalAlertBanner");
+  if (alertBanner) alertBanner.style.display = "none";
+
+  const senderNameEl = document.getElementById("inquirySenderName");
+  const senderEmailEl = document.getElementById("inquirySenderEmail");
+  const subjectEl = document.getElementById("inquirySubject");
+  const bodyEl = document.getElementById("inquiryMessageBody");
+  const refEl = document.getElementById("inquiryModalRef");
+  const badgeContainer = document.getElementById("inquiryStatusBadgeContainer");
+  const replyBox = document.getElementById("inquiryPreviousReplyBox");
+  const prevReplyText = document.getElementById("inquiryPreviousReplyText");
+  const repliedAtEl = document.getElementById("inquiryRepliedAtTime");
+
+  const replyIdInput = document.getElementById("inquiryReplyId");
+  const replySubjectInput = document.getElementById("inquiryReplySubject");
+  const replyMessageInput = document.getElementById("inquiryReplyMessage");
+
+  // Show modal in loading state
+  modal.classList.add("active");
+  document.body.style.overflow = "hidden";
+  if (bodyEl) bodyEl.textContent = "Loading inquiry details...";
+
+  if (currentEmailSettings) {
+    updateModalDeliveryBanners(currentEmailSettings);
+  } else {
+    loadSmtpSettings();
+  }
+
+  try {
+    const res = await fetch(`/api/admin/inquiries/${id}`);
+    const json = await res.json();
+
+    if (!res.ok || !json.success) {
+      if (bodyEl) bodyEl.textContent = "Failed to load inquiry details.";
+      return;
+    }
+
+    const inq = json.inquiry;
+    activeInquiry = inq;
+
+    if (senderNameEl) senderNameEl.textContent = inq.name || "Inquirer";
+    if (senderEmailEl) {
+      senderEmailEl.textContent = inq.email;
+      senderEmailEl.href = `mailto:${inq.email}`;
+    }
+    if (subjectEl) subjectEl.textContent = inq.subject || "(No Subject)";
+    if (bodyEl) bodyEl.textContent = inq.message || "";
+
+    if (refEl && inq.created_at) {
+      const d = new Date(inq.created_at);
+      refEl.textContent = `Received: ${d.toLocaleString()}`;
+    }
+
+    if (badgeContainer) {
+      if (inq.is_replied) {
+        badgeContainer.innerHTML = `<span class="badge" style="background: #DCFCE7; color: #166534; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; font-weight: 700;"><i class="fa-solid fa-reply"></i> Replied</span>`;
+      } else {
+        badgeContainer.innerHTML = `<span class="badge" style="background: #EFF6FF; color: #1E40AF; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; font-weight: 700;"><i class="fa-solid fa-envelope-open"></i> Read</span>`;
+      }
+    }
+
+    if (inq.is_replied && replyBox && prevReplyText) {
+      replyBox.style.display = "block";
+      prevReplyText.textContent = inq.reply_message || "";
+      if (repliedAtEl && inq.replied_at) {
+        const rd = new Date(inq.replied_at);
+        repliedAtEl.textContent = `Replied: ${rd.toLocaleString()}`;
+      }
+    } else if (replyBox) {
+      replyBox.style.display = "none";
+    }
+
+    if (replyIdInput) replyIdInput.value = inq.id;
+    if (replySubjectInput) replySubjectInput.value = `Re: ${inq.subject || "SYNEX 2026 Inquiry"}`;
+    if (replyMessageInput) replyMessageInput.value = "";
+
+    // Refresh list in background to update unread badge
+    loadInquiries();
+
+  } catch (err) {
+    console.error("Failed to load inquiry details:", err);
+  }
+}
+
+async function toggleInquiryReadStatus(id, newReadStatus) {
+  try {
+    const res = await fetch(`/api/admin/inquiries/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_read: newReadStatus })
+    });
+    if (res.ok) {
+      await loadInquiries();
+    }
+  } catch (err) {
+    console.error("Failed to toggle inquiry status:", err);
+  }
+}
+
+async function deleteInquiryMessage(id) {
+  try {
+    const res = await fetch(`/api/admin/inquiries/${id}`, { method: "DELETE" });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      const banner = document.getElementById("inquiryAlertBanner");
+      if (banner) showBanner(banner, "Inquiry deleted successfully.", "success");
+      await loadInquiries();
+    }
+  } catch (err) {
+    console.error("Failed to delete inquiry:", err);
+  }
+}
+
+function setupInquiriesHandlers() {
+  const searchInput = document.getElementById("inquiriesSearchInput");
+  let searchTimer = null;
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        currentInquiriesSearch = e.target.value.trim();
+        loadInquiries();
+      }, 300);
+    });
+  }
+
+  const statusFilter = document.getElementById("inquiriesStatusFilter");
+  if (statusFilter) {
+    statusFilter.addEventListener("change", (e) => {
+      currentInquiriesStatus = e.target.value;
+      loadInquiries();
+    });
+  }
+
+  const btnReload = document.getElementById("btnReloadInquiries");
+  if (btnReload) {
+    btnReload.addEventListener("click", () => {
+      loadInquiries();
+      loadEmailLogs();
+    });
+  }
+
+  // Inquiry Reply Form
+  const replyForm = document.getElementById("inquiryReplyForm");
+  const btnSendReply = document.getElementById("btnSendInquiryReply");
+  const modalAlert = document.getElementById("inquiryModalAlertBanner");
+
+  if (replyForm) {
+    replyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("inquiryReplyId").value;
+      const subject = document.getElementById("inquiryReplySubject").value.trim();
+      const message = document.getElementById("inquiryReplyMessage").value.trim();
+
+      if (!message) {
+        if (modalAlert) showBanner(modalAlert, "Please enter a reply message.", "error");
+        return;
+      }
+
+      btnSendReply.disabled = true;
+      const origHtml = btnSendReply.innerHTML;
+      btnSendReply.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending Email...</span>`;
+
+      try {
+        const res = await fetch(`/api/admin/inquiries/${id}/reply`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subject: subject, message: message })
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          if (json.is_simulated) {
+            if (modalAlert) {
+              showBanner(
+                modalAlert,
+                `⚠️ Reply saved to Admin Outbox (SIMULATION MODE). A real email was NOT delivered to ${activeInquiry ? activeInquiry.email : 'inquirer'} because outgoing mail credentials are not configured in Event Settings.`,
+                "warning"
+              );
+            }
+          } else {
+            if (modalAlert) showBanner(modalAlert, json.message || "Reply email dispatched successfully to inquirer's inbox!", "success");
+          }
+
+          document.getElementById("inquiryReplyMessage").value = "";
+
+          // Update previous reply view inside modal
+          const replyBox = document.getElementById("inquiryPreviousReplyBox");
+          const prevReplyText = document.getElementById("inquiryPreviousReplyText");
+          const repliedAtEl = document.getElementById("inquiryRepliedAtTime");
+          if (replyBox && prevReplyText) {
+            replyBox.style.display = "block";
+            prevReplyText.textContent = message;
+            if (repliedAtEl) repliedAtEl.textContent = `Replied: Just now`;
+          }
+
+          const inquiryBanner = document.getElementById("inquiryAlertBanner");
+          if (inquiryBanner) {
+            const statusMsg = json.is_simulated
+              ? `Reply recorded in Outbox for ${activeInquiry ? activeInquiry.email : 'inquirer'} (Simulation Mode).`
+              : `Live email reply sent to ${activeInquiry ? activeInquiry.email : 'inquirer'}!`;
+            showBanner(inquiryBanner, statusMsg, json.is_simulated ? "warning" : "success");
+          }
+
+          await loadInquiries();
+          await loadEmailLogs();
+
+          if (json.is_live_delivered) {
+            setTimeout(() => {
+              const modal = document.getElementById("inquiryModal");
+              if (modal) {
+                modal.classList.remove("active");
+                document.body.style.overflow = "";
+              }
+            }, 1800);
+          }
+        } else {
+          if (modalAlert) showBanner(modalAlert, json.error || "Failed to send email reply.", "error");
+        }
+      } catch (err) {
+        console.error("Reply send error:", err);
+        if (modalAlert) showBanner(modalAlert, "Network error while sending email reply.", "error");
+      } finally {
+        btnSendReply.disabled = false;
+        btnSendReply.innerHTML = origHtml;
+      }
+    });
+  }
+
+  // Inquiry Modal close
+  const inquiryModal = document.getElementById("inquiryModal");
+  const btnCloseInquiryModal = document.getElementById("btnCloseInquiryModal");
+  const btnInquiryCloseFooter = document.getElementById("btnInquiryCloseFooter");
+  const btnToggleInquiryStatusModal = document.getElementById("btnToggleInquiryStatusModal");
+
+  if (btnToggleInquiryStatusModal) {
+    btnToggleInquiryStatusModal.addEventListener("click", async () => {
+      if (activeInquiry) {
+        await toggleInquiryReadStatus(activeInquiry.id, !activeInquiry.is_read);
+        activeInquiry.is_read = !activeInquiry.is_read;
+        const badgeContainer = document.getElementById("inquiryStatusBadgeContainer");
+        if (badgeContainer) {
+          badgeContainer.innerHTML = activeInquiry.is_read
+            ? `<span class="badge" style="background: #EFF6FF; color: #1E40AF; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; font-weight: 700;"><i class="fa-solid fa-envelope-open"></i> Read</span>`
+            : `<span class="badge" style="background: #FEE2E2; color: #991B1B; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; font-weight: 700;"><i class="fa-solid fa-envelope"></i> Unread</span>`;
+        }
+      }
+    });
+  }
+
+  [btnCloseInquiryModal, btnInquiryCloseFooter].forEach(btn => {
+    if (btn) {
+      btn.addEventListener("click", () => {
+        if (inquiryModal) {
+          inquiryModal.classList.remove("active");
+          document.body.style.overflow = "";
+        }
+      });
+    }
+  });
+
+  if (inquiryModal) {
+    inquiryModal.addEventListener("click", (e) => {
+      if (e.target === inquiryModal) {
+        inquiryModal.classList.remove("active");
+        document.body.style.overflow = "";
+      }
+    });
+  }
+
+  // Compose Email Modal
+  const btnOpenCompose = document.getElementById("btnOpenComposeEmail");
+  const composeModal = document.getElementById("composeEmailModal");
+  const btnCloseCompose = document.getElementById("btnCloseComposeEmailModal");
+  const btnCancelCompose = document.getElementById("btnCancelComposeEmail");
+  const composeForm = document.getElementById("composeEmailForm");
+  const btnSubmitCompose = document.getElementById("btnSubmitComposeEmail");
+  const composeAlert = document.getElementById("composeEmailAlertBanner");
+
+  if (btnOpenCompose && composeModal) {
+    btnOpenCompose.addEventListener("click", () => {
+      if (composeAlert) composeAlert.style.display = "none";
+      if (currentEmailSettings) {
+        updateModalDeliveryBanners(currentEmailSettings);
+      } else {
+        loadSmtpSettings();
+      }
+      composeModal.classList.add("active");
+      document.body.style.overflow = "hidden";
+    });
+  }
+
+  [btnCloseCompose, btnCancelCompose].forEach(btn => {
+    if (btn && composeModal) {
+      btn.addEventListener("click", () => {
+        composeModal.classList.remove("active");
+        document.body.style.overflow = "";
+      });
+    }
+  });
+
+  if (composeModal) {
+    composeModal.addEventListener("click", (e) => {
+      if (e.target === composeModal) {
+        composeModal.classList.remove("active");
+        document.body.style.overflow = "";
+      }
+    });
+  }
+
+  if (composeForm) {
+    composeForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const toEmail = document.getElementById("composeToEmail").value.trim();
+      const subject = document.getElementById("composeSubject").value.trim();
+      const message = document.getElementById("composeMessage").value.trim();
+
+      if (!toEmail || !subject || !message) {
+        if (composeAlert) showBanner(composeAlert, "Please fill in recipient, subject, and message.", "error");
+        return;
+      }
+
+      btnSubmitCompose.disabled = true;
+      const origHtml = btnSubmitCompose.innerHTML;
+      btnSubmitCompose.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending...</span>`;
+
+      try {
+        const res = await fetch("/api/admin/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to_email: toEmail, subject: subject, message: message })
+        });
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          if (json.is_simulated) {
+            if (composeAlert) {
+              showBanner(
+                composeAlert,
+                `⚠️ Email recorded in Outbox (SIMULATION MODE). No live email was dispatched to ${toEmail} because outgoing credentials are not configured in Event Settings.`,
+                "warning"
+              );
+            }
+          } else {
+            if (composeAlert) showBanner(composeAlert, json.message || "Email delivered successfully!", "success");
+          }
+
+          composeForm.reset();
+          await loadEmailLogs();
+
+          const inquiryBanner = document.getElementById("inquiryAlertBanner");
+          if (inquiryBanner) {
+            const statusMsg = json.is_simulated
+              ? `Outbound email recorded in Outbox for ${toEmail} (Simulation Mode).`
+              : `Outbound email delivered to ${toEmail}!`;
+            showBanner(inquiryBanner, statusMsg, json.is_simulated ? "warning" : "success");
+          }
+
+          if (json.is_live_delivered) {
+            setTimeout(() => {
+              composeModal.classList.remove("active");
+              document.body.style.overflow = "";
+            }, 1800);
+          }
+        } else {
+          if (composeAlert) showBanner(composeAlert, json.error || "Failed to deliver email.", "error");
+        }
+      } catch (err) {
+        console.error("Compose email error:", err);
+        if (composeAlert) showBanner(composeAlert, "Network error while sending email.", "error");
+      } finally {
+        btnSubmitCompose.disabled = false;
+        btnSubmitCompose.innerHTML = origHtml;
+      }
+    });
+  }
+
+  // Outbox toggle
+  const btnToggleOutbox = document.getElementById("btnToggleOutboxLog");
+  const outboxContainer = document.getElementById("outboxLogContainer");
+  const outboxToggleText = document.getElementById("outboxToggleText");
+
+  if (btnToggleOutbox && outboxContainer) {
+    btnToggleOutbox.addEventListener("click", () => {
+      const isHidden = outboxContainer.style.display === "none";
+      outboxContainer.style.display = isHidden ? "block" : "none";
+      if (outboxToggleText) outboxToggleText.textContent = isHidden ? "Hide Outbox Log" : "Show Outbox Log";
+      if (isHidden) loadEmailLogs();
+    });
+  }
+}
+
+async function loadEmailLogs() {
+  const tbody = document.getElementById("outboxLogTableBody");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/api/admin/email/logs?limit=25");
+    const json = await res.json();
+
+    if (!res.ok || !json.success || !json.logs || json.logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--color-text-muted); padding: 1rem;">No recent outbound email activity.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = json.logs.map(log => {
+      let statusBadge = "";
+      if (log.status === "sent") {
+        statusBadge = `<span class="badge" style="background: #DCFCE7; color: #166534;"><i class="fa-solid fa-check"></i> Sent</span>`;
+      } else if (log.status === "failed") {
+        statusBadge = `<span class="badge" style="background: #FEE2E2; color: #991B1B;"><i class="fa-solid fa-xmark"></i> Failed</span>`;
+      } else {
+        statusBadge = `<span class="badge" style="background: #FEF3C7; color: #92400E;"><i class="fa-solid fa-box-archive"></i> Simulated</span>`;
+      }
+
+      const d = log.created_at ? new Date(log.created_at).toLocaleString() : "N/A";
+
+      return `
+        <tr>
+          <td><strong style="color: var(--color-text-main);">${escapeHtml(log.recipient)}</strong></td>
+          <td>${escapeHtml(log.subject)}</td>
+          <td><span style="text-transform: capitalize; font-size: 0.75rem; background: #F1F5F9; padding: 2px 6px; border-radius: 4px;">${escapeHtml(log.email_type || 'direct')}</span></td>
+          <td>${statusBadge}</td>
+          <td style="color: var(--color-text-muted); font-size: 0.75rem;">${d}</td>
+        </tr>
+      `;
+    }).join("");
+  } catch (err) {
+    console.error("Error loading email logs:", err);
+  }
+}
+
+let currentEmailSettings = null;
+
+function updateModalDeliveryBanners(s) {
+  const configs = [
+    {
+      banner: document.getElementById("inquiryDeliveryStatusBanner"),
+      text: document.getElementById("inquiryDeliveryStatusText"),
+      link: document.getElementById("inquiryDeliveryConfigLink"),
+    },
+    {
+      banner: document.getElementById("composeDeliveryStatusBanner"),
+      text: document.getElementById("composeDeliveryStatusText"),
+      link: document.getElementById("composeDeliveryConfigLink"),
+    }
+  ];
+
+  configs.forEach(({ banner, text, link }) => {
+    if (!banner || !text) return;
+    if (s && s.is_configured) {
+      banner.style.background = "#F0FDF4";
+      banner.style.borderColor = "#BBF7D0";
+      banner.style.color = "#166534";
+      const icon = banner.querySelector("i");
+      if (icon) {
+        icon.className = "fa-solid fa-circle-check";
+        icon.style.color = "#16A34A";
+      }
+      text.innerHTML = `<strong>Live Delivery Active:</strong> Outgoing replies will be delivered directly to recipient inbox via <strong>${escapeHtml(s.provider === 'resend' ? 'Resend HTTPS API (Port 443)' : 'SMTP Server')}</strong>.`;
+      if (link) {
+        link.textContent = "Change Settings";
+        link.style.color = "#15803D";
+        link.onclick = (e) => {
+          e.preventDefault();
+          scrollToEmailSettings();
+        };
+      }
+    } else {
+      banner.style.background = "#FEF3C7";
+      banner.style.borderColor = "#FCD34D";
+      banner.style.color = "#92400E";
+      const icon = banner.querySelector("i");
+      if (icon) {
+        icon.className = "fa-solid fa-triangle-exclamation";
+        icon.style.color = "#D97706";
+      }
+      text.innerHTML = `<strong>Simulation Mode Active:</strong> No outgoing email credentials configured. Replies will be saved in your Admin Outbox, but <u>NO real email</u> will reach the recipient.`;
+      if (link) {
+        link.textContent = "Configure Live Delivery";
+        link.style.color = "#B45309";
+        link.onclick = (e) => {
+          e.preventDefault();
+          scrollToEmailSettings();
+        };
+      }
+    }
+  });
+}
+
+function scrollToEmailSettings() {
+  const openModal = document.querySelector(".team-modal-backdrop.active");
+  if (openModal) {
+    openModal.classList.remove("active");
+    document.body.style.overflow = "";
+  }
+  const target = document.getElementById("smtpSettingsForm") || document.getElementById("settingsSection");
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+async function loadSmtpSettings() {
+  const radioResend = document.getElementById("providerRadioResend");
+  const radioSmtp = document.getElementById("providerRadioSmtp");
+  const resendGroup = document.getElementById("resendFieldsGroup");
+  const smtpGroup = document.getElementById("smtpFieldsGroup");
+  const resendApiKeyEl = document.getElementById("resendApiKey");
+  const resendSenderEl = document.getElementById("resendSender");
+
+  const hostEl = document.getElementById("smtpHost");
+  const portEl = document.getElementById("smtpPort");
+  const userEl = document.getElementById("smtpUsername");
+  const pwdEl = document.getElementById("smtpPassword");
+  const senderEl = document.getElementById("smtpSender");
+  const tlsEl = document.getElementById("smtpUseTls");
+  const sslEl = document.getElementById("smtpUseSsl");
+  const statusBadge = document.getElementById("smtpStatusBadge");
+
+  try {
+    const res = await fetch("/api/admin/email/settings");
+    const json = await res.json();
+
+    if (res.ok && json.success && json.settings) {
+      const s = json.settings;
+      currentEmailSettings = s;
+
+      const isResend = (s.provider === "resend");
+      if (radioResend) radioResend.checked = isResend;
+      if (radioSmtp) radioSmtp.checked = !isResend;
+
+      if (resendGroup) resendGroup.style.display = isResend ? "block" : "none";
+      if (smtpGroup) smtpGroup.style.display = isResend ? "none" : "block";
+
+      if (resendApiKeyEl) {
+        resendApiKeyEl.value = "";
+        resendApiKeyEl.placeholder = s.has_resend_key ? "•••••••••••• (API Key Configured - leave blank to keep)" : "re_123456789_abcdef...";
+      }
+      if (resendSenderEl) {
+        if (!s.default_sender || s.default_sender.includes("synex2026.org") || s.default_sender.includes("synex.org") || s.default_sender.includes("noreply")) {
+          resendSenderEl.value = "SYNEX Hackathon <onboarding@resend.dev>";
+        } else {
+          resendSenderEl.value = s.default_sender;
+        }
+      }
+
+      if (hostEl) hostEl.value = s.host || "smtp.gmail.com";
+      if (portEl) portEl.value = s.port || 587;
+      if (userEl) userEl.value = s.username || "";
+      if (pwdEl) {
+        pwdEl.value = "";
+        pwdEl.placeholder = s.has_password ? "•••••••••••• (Password Configured - leave blank to keep)" : "••••••••••••";
+      }
+      if (senderEl) senderEl.value = s.default_sender || "";
+      if (tlsEl) tlsEl.checked = !!s.use_tls;
+      if (sslEl) sslEl.checked = !!s.use_ssl;
+
+      if (statusBadge) {
+        if (s.is_configured) {
+          const providerLabel = isResend ? "Resend HTTPS Active (Port 443)" : "SMTP Live Active";
+          statusBadge.innerHTML = `<span class="badge" style="background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(providerLabel)}</span>`;
+        } else {
+          statusBadge.innerHTML = `<span class="badge" style="background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode (Credentials Missing)</span>`;
+        }
+      }
+
+      updateModalDeliveryBanners(s);
+    }
+  } catch (err) {
+    console.error("Error loading email settings:", err);
+  }
+}
+
+function setupSmtpHandlers() {
+  const form = document.getElementById("smtpSettingsForm");
+  const btnSave = document.getElementById("btnSaveSmtp");
+  const btnTest = document.getElementById("btnTestSmtp");
+  const banner = document.getElementById("smtpAlertBanner");
+
+  const radioResend = document.getElementById("providerRadioResend");
+  const radioSmtp = document.getElementById("providerRadioSmtp");
+  const resendGroup = document.getElementById("resendFieldsGroup");
+  const smtpGroup = document.getElementById("smtpFieldsGroup");
+
+  if (radioResend && radioSmtp) {
+    radioResend.addEventListener("change", () => {
+      if (resendGroup) resendGroup.style.display = "block";
+      if (smtpGroup) smtpGroup.style.display = "none";
+    });
+    radioSmtp.addEventListener("change", () => {
+      if (resendGroup) resendGroup.style.display = "none";
+      if (smtpGroup) smtpGroup.style.display = "block";
+    });
+  }
+
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const isResend = radioResend ? radioResend.checked : true;
+      const provider = isResend ? "resend" : "smtp";
+
+      const resendApiKey = document.getElementById("resendApiKey") ? document.getElementById("resendApiKey").value.trim() : "";
+      const resendSender = document.getElementById("resendSender") ? document.getElementById("resendSender").value.trim() : "";
+
+      const host = document.getElementById("smtpHost") ? document.getElementById("smtpHost").value.trim() : "";
+      const port = document.getElementById("smtpPort") ? document.getElementById("smtpPort").value.trim() : "587";
+      const username = document.getElementById("smtpUsername") ? document.getElementById("smtpUsername").value.trim() : "";
+      const password = document.getElementById("smtpPassword") ? document.getElementById("smtpPassword").value.trim() : "";
+      const defaultSender = document.getElementById("smtpSender") ? document.getElementById("smtpSender").value.trim() : "";
+      const useTls = document.getElementById("smtpUseTls") ? document.getElementById("smtpUseTls").checked : true;
+      const useSsl = document.getElementById("smtpUseSsl") ? document.getElementById("smtpUseSsl").checked : false;
+
+      btnSave.disabled = true;
+      const origHtml = btnSave.innerHTML;
+      btnSave.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Saving...</span>`;
+
+      try {
+        const payload = {
+          provider: provider,
+          default_sender: isResend ? (resendSender || defaultSender) : defaultSender,
+        };
+
+        if (isResend) {
+          if (resendApiKey) payload.resend_key = resendApiKey;
+        } else {
+          payload.host = host;
+          payload.port = port;
+          payload.username = username;
+          if (password) payload.password = password;
+          payload.use_tls = useTls;
+          payload.use_ssl = useSsl;
+        }
+
+        const res = await fetch("/api/admin/email/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          if (banner) showBanner(banner, json.message || "Email server settings updated successfully!", "success");
+          await loadSmtpSettings();
+        } else {
+          if (banner) showBanner(banner, json.error || "Failed to update email settings.", "error");
+        }
+      } catch (err) {
+        console.error("Email settings save error:", err);
+        if (banner) showBanner(banner, "Network error saving email settings.", "error");
+      } finally {
+        btnSave.disabled = false;
+        btnSave.innerHTML = origHtml;
+      }
+    });
+  }
+
+  if (btnTest) {
+    btnTest.addEventListener("click", async () => {
+      const recipient = prompt("Enter a recipient email address to send a live test message (e.g. your Gmail address):");
+      if (recipient === null) return; // user cancelled prompt
+
+      btnTest.disabled = true;
+      const origHtml = btnTest.innerHTML;
+      btnTest.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending Test...</span>`;
+
+      try {
+        const res = await fetch("/api/admin/email/test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ test_recipient: recipient.trim() })
+        });
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          if (banner) showBanner(banner, json.message || "Email connection test succeeded!", "success");
+        } else {
+          if (banner) showBanner(banner, json.message || json.error || "Email connection test failed.", "error");
+        }
+      } catch (err) {
+        console.error("Email test error:", err);
+        if (banner) showBanner(banner, "Network error testing email connection.", "error");
+      } finally {
+        btnTest.disabled = false;
+        btnTest.innerHTML = origHtml;
+      }
+    });
+  }
+}
+
 
 

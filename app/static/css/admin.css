@@ -1173,6 +1173,18 @@ textarea.admin-form-control {
   color: #991B1B;
 }
 
+.admin-alert-warning {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+}
+
+.admin-alert-info {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #1E40AF;
+}
+
 /* History table */
 .announcement-history-table {
   width: 100%;

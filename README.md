@@ -42,9 +42,9 @@
      - Domain Breakdown Report CSV (`GET /api/admin/reports/domains.csv`)
       - Paid Participants & Fee Audit CSV (`GET /api/admin/reports/paid-participants.csv`)
      *(All reports feature automated formula injection prevention escaping `=`, `+`, `-`, `@`, `\t`, `\r`)*
-3. **Multi-Channel Announcement Engine (`/api/admin/announcements`):**
-   - Broadcast announcements to specific target audiences (`all`, `confirmed`, `pending`)
-   - Multi-channel delivery support: Discord webhook (`requests.post`) and SMTP email delivery with honest status telemetry
+3. **Announcement Engine (`/api/admin/announcements`):**
+   - Publish persistent announcements directly to the hackathon portal
+   - Optional participant email broadcast with honest delivery telemetry
    - 60-second duplicate broadcast protection / idempotency safeguard
    - Live Dispatches History log table with delivery channel badges, timestamps, and recipient counts
 4. **Dynamic Event Configuration (`/api/admin/settings`):**
@@ -104,7 +104,7 @@ Hackathon_Portal/
 │   │   ├── registration_service.py # Registration validation & atomic persistence
 │   │   ├── payment_service.py      # Razorpay order, HMAC verification & webhooks
 │   │   ├── admin_service.py        # Dashboard metrics, filtering & CSV exports
-│   │   ├── announcement_service.py # Broadcast engine, Discord webhooks & duplicate protection
+│   │   ├── announcement_service.py # Broadcast engine, portal announcements & duplicate protection
 │   │   └── email_service.py        # Transactional confirmation emails
 │   │
 │   ├── routes/               # Flask Blueprints & REST Endpoints
@@ -220,9 +220,6 @@ EVENT_NAME=SYNEX 2026
 EVENT_INDIVIDUAL_FEE=299
 EVENT_TEAM_FEE=999
 EVENT_CURRENCY=INR
-
-# External Integrations (Optional)
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your_webhook_id/your_webhook_token
 
 # Notifications & Session Lifetime
 MAIL_DEFAULT_SENDER=SYNEX Hackathon Team <noreply@synex.org>
