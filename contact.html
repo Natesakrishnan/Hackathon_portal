@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/register.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/register.css">
   <style>
     .contact-grid {
       display: grid;
@@ -409,7 +409,7 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="js/main.js"></script>
+  <script src="/js/main.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const contactForm = document.getElementById("contactInquiryForm");
@@ -427,7 +427,7 @@
         });
       });
 
-      contactForm.addEventListener("submit", (e) => {
+      contactForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         let valid = true;
 
@@ -447,17 +447,60 @@
           valid = false;
         }
 
-        if (!messageInput.value.trim() || messageInput.value.trim().length < 10) {
+        if (!messageInput.value.trim() || messageInput.value.trim().length < 5) {
           messageInput.closest(".form-group").classList.add("has-error");
           valid = false;
         }
 
         if (!valid) return;
 
-        // Display success banner
-        successAlert.style.display = "flex";
-        contactForm.reset();
-        window.scrollTo({ top: contactForm.offsetTop - 100, behavior: "smooth" });
+        const btnSubmit = contactForm.querySelector('button[type="submit"]');
+        const origBtnHtml = btnSubmit ? btnSubmit.innerHTML : "";
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Sending Message...`;
+        }
+
+        try {
+          const res = await fetch("/api/contact", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              name: nameInput.value.trim(),
+              email: emailInput.value.trim(),
+              subject: subjectSelect.options[subjectSelect.selectedIndex]?.text || subjectSelect.value,
+              message: messageInput.value.trim()
+            })
+          });
+
+          const data = await res.json();
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = origBtnHtml;
+          }
+
+          if (res.ok && data.success) {
+            successAlert.style.display = "flex";
+            const alertText = successAlert.querySelector("div");
+            if (alertText) {
+              alertText.innerHTML = `<strong>Message Sent:</strong> ${data.message || "Thank you for reaching out! Our organizing committee has received your message."}`;
+            }
+            contactForm.reset();
+            window.scrollTo({ top: contactForm.offsetTop - 100, behavior: "smooth" });
+          } else {
+            alert(data.error || "Failed to send message. Please try again.");
+          }
+        } catch (err) {
+          console.error("Contact submit error:", err);
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = origBtnHtml;
+          }
+          alert("Network error. Please check your connection and try again.");
+        }
       });
     });
   </script>

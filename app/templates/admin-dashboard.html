@@ -38,7 +38,7 @@
     <!-- Sidebar Navigation -->
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin Navigation Sidebar">
       <div class="sidebar-header">
-        <a href="index.html" class="brand" aria-label="SYNEX Public Portal">
+        <a href="/" target="_blank" class="brand" aria-label="SYNEX Public Portal">
           <div class="brand-logo-icon" style="width: 36px; height: 36px; font-size: 1.1rem;">S</div>
           <div class="brand-text">
             <span class="brand-name" style="font-size: 1.2rem;">SYNEX</span>
@@ -48,57 +48,63 @@
       </div>
 
       <ul class="sidebar-nav">
-        <li class="sidebar-item active">
-          <a href="admin-dashboard.html">
+        <li class="sidebar-item active" data-page="dashboard">
+          <a href="#dashboard" onclick="event.preventDefault(); switchAdminPage('dashboard');">
             <i class="fa-solid fa-gauge-high"></i>
             <span>Dashboard</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#registrations" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="registrations">
+          <a href="#registrations" onclick="event.preventDefault(); switchAdminPage('registrations');">
             <i class="fa-solid fa-address-card"></i>
             <span>Registrations</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#participants" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="participants">
+          <a href="#participants" onclick="event.preventDefault(); switchAdminPage('participants');">
             <i class="fa-solid fa-users"></i>
             <span>Participants</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#teams" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="teams">
+          <a href="#teams" onclick="event.preventDefault(); switchAdminPage('teams');">
             <i class="fa-solid fa-people-group"></i>
             <span>Teams</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#payments" onclick="event.preventDefault(); document.getElementById('tableCard').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="payments">
+          <a href="#payments" onclick="event.preventDefault(); switchAdminPage('payments');">
             <i class="fa-solid fa-credit-card"></i>
             <span>Payments</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#reports" onclick="event.preventDefault(); document.getElementById('reportsSection').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="reports">
+          <a href="#reports" onclick="event.preventDefault(); switchAdminPage('reports');">
             <i class="fa-solid fa-chart-column"></i>
             <span>Reports</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#inquiries" onclick="event.preventDefault(); document.getElementById('inquiriesSection').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="inquiries">
+          <a href="#inquiries" onclick="event.preventDefault(); switchAdminPage('inquiries');">
             <i class="fa-solid fa-envelope-open-text"></i>
             <span>Inquiries</span>
             <span class="badge" id="inquiriesUnreadBadge" style="margin-left: auto; display: none; background: #EF4444; color: #FFF; font-size: 0.72rem; padding: 2px 7px; border-radius: 999px; font-weight: 700;">0</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#announcements" onclick="event.preventDefault(); document.getElementById('announcementsSection').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="announcements">
+          <a href="#announcements" onclick="event.preventDefault(); switchAdminPage('announcements');">
             <i class="fa-solid fa-bullhorn"></i>
             <span>Announcements</span>
           </a>
         </li>
-        <li class="sidebar-item">
-          <a href="#settings" onclick="event.preventDefault(); document.getElementById('settingsSection').scrollIntoView({behavior:'smooth'});">
+        <li class="sidebar-item" data-page="certificates">
+          <a href="#certificates" onclick="event.preventDefault(); switchAdminPage('certificates');">
+            <i class="fa-solid fa-award"></i>
+            <span>E-Certificates</span>
+          </a>
+        </li>
+        <li class="sidebar-item" data-page="settings">
+          <a href="#settings" onclick="event.preventDefault(); switchAdminPage('settings');">
             <i class="fa-solid fa-sliders"></i>
             <span>Event Settings</span>
           </a>
@@ -131,11 +137,11 @@
           <button class="sidebar-toggle-btn" id="adminSidebarToggle" aria-label="Toggle admin sidebar">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <h1 class="topbar-title">Hackathon Overview &amp; Analytics</h1>
+          <h1 class="topbar-title" id="adminPageTitle">Hackathon Overview &amp; Analytics</h1>
         </div>
 
         <div class="topbar-right">
-          <a href="index.html" class="btn btn-outline btn-sm">
+          <a href="/" target="_blank" class="btn btn-outline btn-sm" id="btnViewPublicSite">
             <i class="fa-solid fa-arrow-up-right-from-square"></i>
             <span>View Public Site</span>
           </a>
@@ -149,8 +155,22 @@
       <!-- Admin Dashboard Content -->
       <main class="admin-content">
 
-        <!-- 6 Summary Metrics Cards -->
-        <div class="metrics-grid">
+        <!-- ==========================================
+             PAGE 1: DASHBOARD OVERVIEW & ANALYTICS
+             ========================================== -->
+        <div class="admin-page-view active-page" id="view-dashboard">
+          <div class="page-header-banner">
+            <div>
+              <h2><i class="fa-solid fa-gauge-high" style="color: var(--color-primary);"></i> Hackathon Overview &amp; Analytics</h2>
+              <p>Live metrics overview, registration velocity, and financial conversion health.</p>
+            </div>
+            <div class="badge badge-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">
+              <i class="fa-solid fa-bolt" style="color: #F59E0B;"></i> Live Summary
+            </div>
+          </div>
+
+          <!-- 6 Summary Metrics Cards -->
+          <div class="metrics-grid">
           <!-- Card 1: Total Registrations -->
           <div class="metric-card metric-primary">
             <div class="metric-header">
@@ -239,12 +259,126 @@
           <!-- Full Width: Registrations by Domain -->
           <div class="chart-card chart-card-full">
             <div class="chart-header">
-              <h2 class="chart-title">Registrations Across 8 Innovation Domains</h2>
-              <span class="badge badge-secondary">Track Breakdown</span>
+              <h2 class="chart-title">Registrations Across Innovation Domains</h2>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="badge badge-success" id="badgeTrackBreakdown" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">
+                  <i class="fa-solid fa-circle" style="color: #10B981; font-size: 0.5rem;"></i> Live Track Breakdown
+                </span>
+                <button type="button" class="btn btn-outline btn-sm" id="btnRefreshCharts" onclick="checkAuthAndLoadMetrics();" style="padding: 3px 9px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-rotate"></i> <span>Refresh Live</span>
+                </button>
+              </div>
             </div>
             <div class="chart-canvas-container" style="min-height: 240px;">
               <canvas id="domainChart"></canvas>
             </div>
+          </div>
+        </div>
+
+        <!-- Quick Navigator: Direct Jump to Any Admin View -->
+        <div style="margin-top: 2rem;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-compass" style="color: var(--color-primary);"></i> Quick Section Navigator
+          </h3>
+          <div class="quick-nav-cards-grid">
+            <div class="quick-nav-card" onclick="switchAdminPage('registrations');">
+              <div class="quick-nav-icon" style="background: #EFF6FF; color: #2563EB;">
+                <i class="fa-solid fa-id-card"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Registrations</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Manage applications &amp; status</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('participants');">
+              <div class="quick-nav-icon" style="background: #ECFDF5; color: #059669;">
+                <i class="fa-solid fa-users"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Participants</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Individual hackers &amp; contacts</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('teams');">
+              <div class="quick-nav-icon" style="background: #F5F3FF; color: #7C3AED;">
+                <i class="fa-solid fa-people-group"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Teams</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Squad rosters &amp; lead info</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('payments');">
+              <div class="quick-nav-icon" style="background: #FEF3C7; color: #D97706;">
+                <i class="fa-solid fa-credit-card"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Payments</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Financial ledger &amp; txns</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('reports');">
+              <div class="quick-nav-icon" style="background: #EEF2FF; color: #4F46E5;">
+                <i class="fa-solid fa-chart-column"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Reports</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Certified CSV master exports</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('inquiries');">
+              <div class="quick-nav-icon" style="background: #FFF1F2; color: #E11D48;">
+                <i class="fa-solid fa-envelope-open-text"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Inquiries</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Public messages &amp; replies</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('announcements');">
+              <div class="quick-nav-icon" style="background: #FEF9C3; color: #CA8A04;">
+                <i class="fa-solid fa-bullhorn"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Announcements</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Broadcast dispatches &amp; email</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('certificates');">
+              <div class="quick-nav-icon" style="background: #FEF3C7; color: #D97706;">
+                <i class="fa-solid fa-award"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">E-Certificates</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">PPT template &amp; PDF dispatch</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('settings');">
+              <div class="quick-nav-icon" style="background: #F1F5F9; color: #475569;">
+                <i class="fa-solid fa-sliders"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">Event Settings</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Confidential fee &amp; API vault</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> <!-- /#view-dashboard -->
+
+      <!-- ==========================================
+           PAGE 2: REGISTRATION ENTRIES
+           ========================================== -->
+      <div class="admin-page-view" id="view-registrations">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-id-card" style="color: var(--color-primary);"></i> Registration Entries</h2>
+            <p>Manage, search, filter, and inspect all hackathon application submissions.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadRegistrationsTable()">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh</span>
+            </button>
           </div>
         </div>
 
@@ -261,13 +395,13 @@
             <div class="toolbar-filters">
               <!-- Domain Filter Dropdown -->
               <select id="tableDomainFilter" class="filter-select" aria-label="Filter by innovation domain">
-                <option value="all">All Domains (8 Tracks)</option>
-                <option value="Artificial Intelligence & Machine Learning">AI &amp; Machine Learning</option>
-                <option value="Web Development">Web Development</option>
-                <option value="Cybersecurity">Cybersecurity</option>
-                <option value="Internet of Things (IoT)">Internet of Things (IoT)</option>
-                <option value="Healthcare Technology">Healthcare Technology</option>
-                <option value="Financial Technology (FinTech)">Financial Technology (FinTech)</option>
+                <option value="all">All Domains</option>
+                <option value="AI & Machine Learning">AI &amp; Machine Learning</option>
+                <option value="Web3 & Blockchain">Web3 &amp; Blockchain</option>
+                <option value="Cloud & Cybersecurity">Cloud &amp; Cybersecurity</option>
+                <option value="IoT & Embedded Systems">IoT &amp; Embedded Systems</option>
+                <option value="Healthcare & MedTech">Healthcare &amp; MedTech</option>
+                <option value="Open Innovation & FinTech">Open Innovation &amp; FinTech</option>
                 <option value="Smart Cities & Sustainability">Smart Cities &amp; Sustainability</option>
                 <option value="Open Innovation">Open Innovation</option>
               </select>
@@ -316,6 +450,216 @@
               <button class="btn btn-outline btn-sm" id="btnPrevPage" disabled>Previous</button>
               <button class="btn btn-outline btn-sm" id="btnNextPage" disabled>Next</button>
             </div>
+          </div>
+        </div>
+      </div> <!-- /#view-registrations -->
+
+      <!-- ==========================================
+           PAGE 3: PARTICIPANTS DIRECTORY
+           ========================================== -->
+      <div class="admin-page-view" id="view-participants">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-users" style="color: var(--color-primary);"></i> Participants Directory</h2>
+            <p>Comprehensive roster of individual hackers, contact details, affiliations, and track registrations.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadRegistrationsTable()">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh</span>
+            </button>
+            <span class="badge badge-secondary" id="badgeParticipantsCount">0 Hackers</span>
+          </div>
+        </div>
+
+        <!-- Participants Directory Table Card -->
+        <div class="table-card" id="participantsTableCard">
+          <div class="table-toolbar">
+            <div class="toolbar-search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="participantsSearchInput" placeholder="Search participant name, email, college...">
+            </div>
+
+            <div class="toolbar-filters">
+              <select id="participantsTypeFilter" class="filter-select" aria-label="Filter by participant type">
+                <option value="all">All Participant Types</option>
+                <option value="Solo Hacker">Solo Hackers Only</option>
+                <option value="Team Member">Team Members / Leaders Only</option>
+              </select>
+
+              <select id="participantsDomainFilter" class="filter-select" aria-label="Filter by innovation domain">
+                <option value="all">All Domains</option>
+                <option value="AI & Machine Learning">AI &amp; Machine Learning</option>
+                <option value="Web3 & Blockchain">Web3 &amp; Blockchain</option>
+                <option value="Cloud & Cybersecurity">Cloud &amp; Cybersecurity</option>
+                <option value="IoT & Embedded Systems">IoT &amp; Embedded Systems</option>
+                <option value="Healthcare & MedTech">Healthcare &amp; MedTech</option>
+                <option value="Open Innovation & FinTech">Open Innovation &amp; FinTech</option>
+                <option value="Smart Cities & Sustainability">Smart Cities &amp; Sustainability</option>
+                <option value="Open Innovation">Open Innovation</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table" id="participantsTable">
+              <thead>
+                <tr>
+                  <th>Participant / Name</th>
+                  <th>Role / Type</th>
+                  <th>Email Address</th>
+                  <th>Phone</th>
+                  <th>College / University</th>
+                  <th>Domain Track</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="participantsTableBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--color-text-muted); padding: 2rem;">Loading participants directory...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <span id="participantsShowingCount">Loading participant records...</span>
+          </div>
+        </div>
+      </div> <!-- /#view-participants -->
+
+      <!-- ==========================================
+           PAGE 4: TEAMS & SQUADS
+           ========================================== -->
+      <div class="admin-page-view" id="view-teams">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-people-group" style="color: var(--color-primary);"></i> Teams &amp; Squads</h2>
+            <p>Inspect registered hackathon teams, squad leaders, roster sizes, and project domains.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadRegistrationsTable()">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh</span>
+            </button>
+            <span class="badge badge-secondary" id="badgeTeamsCount">0 Teams</span>
+          </div>
+        </div>
+
+        <!-- Teams Directory Table Card -->
+        <div class="table-card" id="teamsTableCard">
+          <div class="table-toolbar">
+            <div class="toolbar-search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="teamsSearchInput" placeholder="Search team name, leader, college...">
+            </div>
+
+            <div class="toolbar-filters">
+              <select id="teamsDomainFilter" class="filter-select" aria-label="Filter teams by domain">
+                <option value="all">All Domains</option>
+                <option value="AI & Machine Learning">AI &amp; Machine Learning</option>
+                <option value="Web3 & Blockchain">Web3 &amp; Blockchain</option>
+                <option value="Cloud & Cybersecurity">Cloud &amp; Cybersecurity</option>
+                <option value="IoT & Embedded Systems">IoT &amp; Embedded Systems</option>
+                <option value="Healthcare & MedTech">Healthcare &amp; MedTech</option>
+                <option value="Open Innovation & FinTech">Open Innovation &amp; FinTech</option>
+                <option value="Smart Cities & Sustainability">Smart Cities &amp; Sustainability</option>
+                <option value="Open Innovation">Open Innovation</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table" id="teamsTable">
+              <thead>
+                <tr>
+                  <th>Team Name</th>
+                  <th>Squad Leader</th>
+                  <th>Roster Size</th>
+                  <th>College / Institution</th>
+                  <th>Domain</th>
+                  <th>Payment Status</th>
+                  <th style="text-align: right;">Roster Actions</th>
+                </tr>
+              </thead>
+              <tbody id="teamsTableBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--color-text-muted); padding: 2rem;">Loading team squads...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <span id="teamsShowingCount">Loading team squads...</span>
+          </div>
+        </div>
+      </div> <!-- /#view-teams -->
+
+      <!-- ==========================================
+           PAGE 5: FINANCIAL AUDIT & PAYMENTS
+           ========================================== -->
+      <div class="admin-page-view" id="view-payments">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-credit-card" style="color: var(--color-primary);"></i> Financial Ledger &amp; Payments</h2>
+            <p>Verified transaction records, payment gateway order IDs, amounts collected, and status tracking.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a href="/api/admin/reports/paid-participants.csv" class="btn btn-outline btn-sm">
+              <i class="fa-solid fa-download"></i> <span>Export Paid CSV</span>
+            </a>
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadRegistrationsTable()">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Payments Table Card -->
+        <div class="table-card" id="paymentsTableCard">
+          <div class="table-toolbar">
+            <div class="toolbar-search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="paymentsSearchInput" placeholder="Search order ID, participant/team, payment ref...">
+            </div>
+
+            <div class="toolbar-filters">
+              <select id="paymentsStatusFilter" class="filter-select" aria-label="Filter by payment status">
+                <option value="all">All Payment Statuses</option>
+                <option value="paid">Paid &amp; Verified Only</option>
+                <option value="pending">Pending Only</option>
+                <option value="failed">Failed Only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table" id="paymentsTable">
+              <thead>
+                <tr>
+                  <th>Order / Reg ID</th>
+                  <th>Participant / Entity</th>
+                  <th>Entry Type</th>
+                  <th>Gross Amount</th>
+                  <th>Payment Status</th>
+                  <th>Gateway Ref / Transaction</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="paymentsTableBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--color-text-muted); padding: 2rem;">Loading payment ledger...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <span id="paymentsShowingCount">Loading payment transactions...</span>
+          </div>
+        </div>
+      </div> <!-- /#view-payments -->
+
+      <!-- ==========================================
+           PAGE 6: REAL-TIME REPORTS & EXPORTS
+           ========================================== -->
+      <div class="admin-page-view" id="view-reports">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-chart-column" style="color: var(--color-primary);"></i> Certified Reports &amp; Exports</h2>
+            <p>Generate certified CSV data reports sourced directly from verified database records.</p>
           </div>
         </div>
 
@@ -398,6 +742,26 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div> <!-- /#view-reports -->
+
+      <!-- ==========================================
+           PAGE 7: INQUIRIES & CONTACT INBOX
+           ========================================== -->
+      <div class="admin-page-view" id="view-inquiries">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-envelope-open-text" style="color: var(--color-primary);"></i> Inquiries &amp; Contact Inbox</h2>
+            <p>Direct inquiries submitted by hackers, team leaders, and visitors via the public contact portal.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button type="button" class="btn btn-primary btn-sm" id="btnOpenComposeEmailTop" onclick="document.getElementById('btnOpenComposeEmail') && document.getElementById('btnOpenComposeEmail').click();">
+              <i class="fa-solid fa-paper-plane"></i> <span>Compose Email</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadInquiries()">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh</span>
+            </button>
           </div>
         </div>
 
@@ -511,6 +875,18 @@
 
           </div>
         </div>
+      </div> <!-- /#view-inquiries -->
+
+      <!-- ==========================================
+           PAGE 8: BROADCAST ANNOUNCEMENTS
+           ========================================== -->
+      <div class="admin-page-view" id="view-announcements">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-bullhorn" style="color: var(--color-primary);"></i> Broadcast Announcements</h2>
+            <p>Publish persistent announcements to the portal and broadcast notification alerts.</p>
+          </div>
+        </div>
 
         <!-- FEATURE 1: Announcement Management Section -->
         <div class="admin-section-card" id="announcementsSection">
@@ -600,6 +976,23 @@
                 </table>
               </div>
             </div>
+          </div>
+        </div>
+      </div> <!-- /#view-announcements -->
+
+      <!-- ==========================================
+           PAGE 9: EVENT CONFIGURATION & PARAMETERS
+           ========================================== -->
+      <div class="admin-page-view" id="view-settings">
+        <div class="page-header-banner">
+          <div>
+            <h2><i class="fa-solid fa-sliders" style="color: var(--color-primary);"></i> Event Configuration &amp; Parameters</h2>
+            <p>Confidential server-side settings: fees, target deadlines, total prize pool, and email credentials.</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <button type="button" class="btn btn-outline btn-sm" id="btnReloadSettingsTop" onclick="loadEventSettings();">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh</span>
+            </button>
           </div>
         </div>
 
@@ -898,6 +1291,270 @@
             </div> <!-- /#settingsUnlockedContent -->
           </div>
         </div>
+      </div> <!-- /#view-settings -->
+
+      <!-- ==========================================
+           PAGE 9: E-CERTIFICATE DISTRIBUTION
+           ========================================== -->
+      <div class="admin-page-view" id="view-certificates" style="display: none;">
+        <div class="admin-view-header">
+          <div>
+            <h2 class="view-heading">E-Certificate Distribution &amp; Automation</h2>
+            <p class="view-subheading">Upload a PowerPoint (.pptx) template, auto-populate participant details, preview vector PDFs, and dispatch verified certificates via email.</p>
+          </div>
+          <div class="view-header-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline btn-sm" id="btnDownloadSamplePdf" onclick="downloadSampleCertificatePdf();">
+              <i class="fa-solid fa-file-pdf" style="color: #DC2626;"></i> <span>Download PDF</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" id="btnPreviewSampleCert" onclick="openCertificatePreviewModal(null);">
+              <i class="fa-solid fa-eye" style="color: #2563EB;"></i> <span>Preview Sample PDF</span>
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnOpenBulkCertModal" onclick="dispatchBulkCertificates();">
+              <i class="fa-solid fa-paper-plane"></i> <span>Send Certificates to All</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="certAlertBanner" class="admin-alert-banner"></div>
+
+        <!-- Top Grid: Template Studio & Single/Test Dispatcher -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          
+          <!-- Card 1: PPTX Template Studio -->
+          <div class="chart-card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+              <div>
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <i class="fa-solid fa-file-powerpoint" style="color: #EA580C;"></i> PowerPoint Template Studio
+                </h3>
+                <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0;">Upload your custom slide design or use the built-in official SYNEX template.</p>
+              </div>
+              <span class="badge badge-success" id="badgeCertTemplateType">Official Default</span>
+            </div>
+
+            <div style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.8rem; color: var(--color-text-muted);">Active File:</span>
+                <strong style="font-size: 0.85rem; color: #1E293B; font-family: monospace;" id="certActiveFilename">synex_certificate_template.pptx</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--color-text-secondary);">
+                <span>Size: <strong id="certActiveFileSize">28.6 KB</strong></span>
+                <span>Last Updated: <strong id="certActiveFileDate">Today</strong></span>
+              </div>
+            </div>
+
+            <!-- Upload PPTX Form -->
+            <div style="margin-bottom: 1.25rem;">
+              <label style="font-size: 0.82rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.4rem;">
+                Upload Custom PowerPoint Template (.pptx)
+              </label>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="file" id="certUploadInput" accept=".pptx" style="font-size: 0.8rem; flex: 1; border: 1px solid var(--color-border); padding: 0.45rem 0.75rem; border-radius: 6px; background: #FFF;">
+                <button type="button" class="btn btn-primary btn-sm" id="btnUploadCertTemplate" onclick="handleCertificateTemplateUpload();">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> <span>Upload</span>
+                </button>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem;">
+                <span style="font-size: 0.75rem; color: var(--color-text-muted);">Standard 16:9 or 4:3 slide format</span>
+                <button type="button" class="btn btn-outline btn-sm" id="btnResetCertTemplate" onclick="handleResetCertificateTemplate();" style="font-size: 0.72rem; padding: 2px 8px; color: var(--color-error); border-color: #FECACA;">
+                  <i class="fa-solid fa-rotate-left"></i> Reset to Default
+                </button>
+              </div>
+            </div>
+
+            <!-- Auto-Populated Placeholders Tag Cloud -->
+            <div>
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.4rem;">
+                <i class="fa-solid fa-tags" style="color: #2563EB;"></i> Auto-Populated Placeholders (Click to Copy):
+              </span>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;" id="certPlaceholderTagsCloud">
+                <!-- Injected dynamically by admin.js with click-to-copy -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Single / Test Certificate Dispatcher -->
+          <div class="chart-card" style="padding: 1.5rem;">
+            <div style="margin-bottom: 1rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-paper-plane" style="color: #2563EB;"></i> Test &amp; Single Certificate Dispatch
+              </h3>
+              <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0;">Dispatch a verified test certificate with attached PDF to any recipient before launching bulk distribution.</p>
+            </div>
+
+            <form id="certSingleDispatchForm" onsubmit="event.preventDefault(); handleSendSingleCertificate();">
+              <div style="margin-bottom: 0.85rem;">
+                <label for="certSingleSelectParticipant" style="font-size: 0.82rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.3rem;">
+                  Choose Participant Record
+                </label>
+                <select id="certSingleSelectParticipant" class="admin-form-control" onchange="handleSelectCertParticipantChange();">
+                  <option value="">-- Or enter custom test details below --</option>
+                </select>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.85rem;">
+                <div>
+                  <label for="certSingleName" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">Full Name</label>
+                  <input type="text" id="certSingleName" class="admin-form-control" placeholder="e.g. Aarav Patel" required>
+                </div>
+                <div>
+                  <label for="certSingleEmail" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">Email Address</label>
+                  <input type="email" id="certSingleEmail" class="admin-form-control" placeholder="e.g. aarav@college.edu" required>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.85rem;">
+                <div>
+                  <label for="certSingleDomain" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">Domain Track</label>
+                  <input type="text" id="certSingleDomain" class="admin-form-control" placeholder="e.g. AI & Machine Learning">
+                </div>
+                <div>
+                  <label for="certSingleRole" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">Role</label>
+                  <input type="text" id="certSingleRole" class="admin-form-control" placeholder="e.g. Team Leader">
+                </div>
+              </div>
+
+              <div style="margin-bottom: 1.25rem;">
+                <label for="certSingleCustomSubject" style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-main); display: block; margin-bottom: 0.25rem;">
+                  Email Subject
+                </label>
+                <input type="text" id="certSingleCustomSubject" class="admin-form-control" placeholder="Your SYNEX 2026 Certificate of Participation — {{NAME}}">
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline btn-sm" style="flex: 1;" onclick="handlePreviewCertFromForm();">
+                  <i class="fa-solid fa-eye"></i> <span>Preview PDF</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" style="flex: 1;" onclick="handleDownloadCertFromForm();">
+                  <i class="fa-solid fa-download" style="color: #DC2626;"></i> <span>Download PDF</span>
+                </button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btnSendSingleCertSubmit" style="flex: 1.3;">
+                  <i class="fa-solid fa-paper-plane"></i> <span>Send Certificate Email</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+
+        <!-- Participant Certificate Registry Table -->
+        <div class="chart-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.2rem;">
+                Participant Certificate Registry
+              </h3>
+              <span id="certRegistryCountText" style="font-size: 0.82rem; color: var(--color-text-muted);">
+                Showing 0 eligible participants
+              </span>
+            </div>
+
+            <!-- Toolbar Filters -->
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <select id="certFilterDomain" class="filter-select" onchange="loadCertificateParticipants();" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;">
+                <option value="all">All Domains</option>
+                <option value="AI & Machine Learning">AI &amp; Machine Learning</option>
+                <option value="Web3 & Blockchain">Web3 &amp; Blockchain</option>
+                <option value="Cloud & Cybersecurity">Cloud &amp; Cybersecurity</option>
+                <option value="IoT & Embedded Systems">IoT &amp; Embedded Systems</option>
+                <option value="Healthcare & MedTech">Healthcare &amp; MedTech</option>
+                <option value="Open Innovation & FinTech">Open Innovation &amp; FinTech</option>
+              </select>
+
+              <select id="certFilterPayment" class="filter-select" onchange="loadCertificateParticipants();" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;">
+                <option value="paid">Paid Entries Only</option>
+                <option value="all">All Registrations</option>
+              </select>
+
+              <div class="search-box" style="margin-bottom: 0; min-width: 220px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="certSearchInput" placeholder="Search name, email, squad, ref..." oninput="handleCertSearchInput();" style="padding: 0.4rem 0.75rem 0.4rem 2rem; font-size: 0.82rem;">
+              </div>
+
+              <button type="button" class="btn btn-outline btn-sm" onclick="loadCertificateParticipants();" title="Refresh registry">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Batch Action Bar (Appears when >= 1 checkbox checked) -->
+          <div id="certBatchActionBar" style="display: none; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 0.6rem 1rem; margin-bottom: 1rem; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.85rem; color: #1E40AF; font-weight: 600;">
+              <span id="certSelectedCountText">0 participants selected</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="dispatchSelectedCertificates();">
+                <i class="fa-solid fa-paper-plane"></i> <span>Send Certificates to Selected</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Registry Table -->
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">
+                    <input type="checkbox" id="certSelectAllCheckbox" onchange="toggleSelectAllCertificates(this);">
+                  </th>
+                  <th>Participant</th>
+                  <th>Role</th>
+                  <th>Innovation Domain</th>
+                  <th>Squad / Team</th>
+                  <th>Institution / College</th>
+                  <th>Payment Status</th>
+                  <th>Certificate ID</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="certParticipantsTableBody">
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Loading participant directory...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Certificate Dispatch History Log -->
+        <div class="chart-card" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.2rem;">
+                Certificate Dispatch History
+              </h3>
+              <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0;">Verified delivery logs for participant e-certificate email transmissions.</p>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadCertificateHistory();">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh History</span>
+            </button>
+          </div>
+
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Recipient</th>
+                  <th>Subject</th>
+                  <th>Delivery Status</th>
+                  <th>Dispatched At</th>
+                  <th>Diagnostic Details</th>
+                </tr>
+              </thead>
+              <tbody id="certHistoryTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 1.5rem; color: var(--color-text-muted);">
+                    No certificate emails dispatched yet.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div> <!-- /#view-certificates -->
 
       </main>
     </div>
@@ -1313,9 +1970,47 @@
         </form>
       </div>
     </div>
+  <!-- Certificate PDF Preview Modal -->
+  <div class="team-modal-backdrop" id="certPreviewModal" role="dialog" aria-modal="true" aria-labelledby="certPreviewModalTitle">
+    <div class="team-modal-dialog" style="max-width: 900px; width: 95vw; height: 90vh; display: flex; flex-direction: column;">
+      <div class="team-modal-header" style="border-bottom: 1px solid var(--color-border); background: #F8FAFC;">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon" style="background: #EFF6FF; color: #2563EB;">
+            <i class="fa-solid fa-certificate"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="certPreviewModalTitle">Certificate PDF Preview</h2>
+            <span class="team-modal-ref" id="certPreviewModalSub">High-fidelity vector PDF generated from template</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseCertPreviewModal" onclick="closeCertificatePreviewModal();" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body" style="padding: 0; flex: 1; display: flex; flex-direction: column; background: #334155; position: relative;">
+        <div id="certPreviewLoadingSpinner" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.8); color: #FFF; z-index: 10;">
+          <i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: #60A5FA; margin-bottom: 0.75rem;"></i>
+          <span style="font-size: 0.9rem; font-weight: 500;">Rendering vector certificate PDF...</span>
+        </div>
+        <iframe id="certPreviewIframe" style="width: 100%; height: 100%; border: none; flex: 1; background: #525659;" title="Certificate PDF Preview"></iframe>
+      </div>
+
+      <div class="team-modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1.5rem; background: #F8FAFC; border-top: 1px solid var(--color-border);">
+        <a id="btnDownloadPreviewPdf" href="#" target="_blank" download class="btn btn-outline btn-sm">
+          <i class="fa-solid fa-download"></i> <span>Download PDF</span>
+        </a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeCertificatePreviewModal();">
+          Close Preview
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->
+  <script>
+    window.INITIAL_ADMIN_PAGE = "{{ initial_page | default('dashboard') }}";
+  </script>
   <script src="/js/main.js"></script>
   <script src="/js/admin.js"></script>
 </body>

@@ -142,7 +142,8 @@ def get_filtered_registrations(
 
     # Filter by domain
     if domain and domain != "all":
-        query = query.filter(Registration.domain == domain)
+        domain_term = f"%{domain.strip()}%"
+        query = query.filter(or_(Registration.domain == domain, Registration.domain.ilike(domain_term)))
 
     # Filter by payment or registration status
     if status and status != "all":

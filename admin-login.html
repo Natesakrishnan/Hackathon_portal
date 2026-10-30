@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Portal Login Preview — SYNEX 2026</title>
-  <meta name="description" content="Organizer administration portal login preview for SYNEX Hackathon 2026.">
+  <title>Admin Portal Login — SYNEX 2026</title>
+  <meta name="description" content="Organizer administration portal login for SYNEX Hackathon 2026.">
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
@@ -18,15 +18,15 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body class="admin-login-body">
 
-  <!-- Demo Notice Banner -->
-  <div class="demo-banner" role="status">
-    <i class="fa-solid fa-lock" aria-hidden="true"></i>
-    <span><strong>DEVELOPMENT PREVIEW:</strong> Backend authentication server is not connected. This is an interface preview only.</span>
+  <!-- Production / Active Status Banner -->
+  <div class="demo-banner" role="status" style="background: #1E293B; color: #E2E8F0; border-bottom: 1px solid #334155;">
+    <i class="fa-solid fa-shield-halved" style="color: #38BDF8;" aria-hidden="true"></i>
+    <span><strong>ORGANIZER ACCESS:</strong> SYNEX Hackathon Management Portal with Flask session authentication & Scrypt encryption.</span>
   </div>
 
   <main class="admin-login-wrapper">
@@ -37,12 +37,34 @@
         <p class="login-sub">Sign in to manage registrations and monitor hackathon analytics</p>
       </div>
 
-      <!-- Preview Notice Alert -->
-      <div class="alert alert-info" style="font-size: 0.8rem; line-height: 1.45; margin-bottom: 1.5rem;">
-        <i class="fa-solid fa-circle-info" style="font-size: 1rem; color: #0284C7;" aria-hidden="true"></i>
-        <div>
-          <strong>Frontend Preview:</strong> Live authentication with Flask session tokens and bcrypt hashing will be connected in the backend phase. Entering any non-empty username/password will open the dashboard interface preview.
+      {% if current_user.is_authenticated %}
+      <!-- Active Session Status Alert -->
+      <div class="alert alert-success" style="font-size: 0.85rem; margin-bottom: 1.25rem; background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-circle-check" style="color: #059669;"></i>
+          <span>Signed in as <strong>{{ current_user.username }}</strong></span>
         </div>
+        <div style="display: flex; gap: 8px;">
+          <a href="/admin/dashboard" class="btn btn-primary btn-sm" style="font-size: 0.78rem; padding: 4px 10px;">Go to Dashboard &rarr;</a>
+          <a href="/admin/logout" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 4px 10px;">Log Out</a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Credentials Hint Alert -->
+      <div class="alert alert-info" style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 8px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start;">
+        <i class="fa-solid fa-circle-info" style="font-size: 1.1rem; color: #0284C7; margin-top: 2px;" aria-hidden="true"></i>
+        <div>
+          <strong>Default Admin Credentials:</strong><br>
+          Username: <code style="background: #E0F2FE; color: #0369A1; padding: 2px 6px; border-radius: 4px; font-weight: 600;">admin</code> &nbsp;|&nbsp; 
+          Password: <code style="background: #E0F2FE; color: #0369A1; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Admin@SYNEX2026</code>
+        </div>
+      </div>
+
+      <!-- Error Alert Box (Hidden by default) -->
+      <div id="loginErrorAlert" class="alert alert-danger" style="display: none; font-size: 0.85rem; margin-bottom: 1.25rem; background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; border-radius: 8px; padding: 10px 14px; gap: 8px; align-items: center;">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="loginErrorMessage">Invalid username or password.</span>
       </div>
 
       <form id="adminLoginForm" novalidate>
@@ -53,7 +75,7 @@
             <span class="required">*</span>
           </label>
           <div class="input-wrapper">
-            <input type="text" id="adminUsername" class="form-input" placeholder="e.g. admin@synex.org" required autocomplete="username">
+            <input type="text" id="adminUsername" class="form-input" placeholder="e.g. admin or admin@synex.org" required autocomplete="username">
             <i class="fa-solid fa-user-shield input-icon" aria-hidden="true"></i>
           </div>
           <span class="field-error" id="usernameError">Please enter your organizer username.</span>
@@ -76,13 +98,13 @@
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-bottom: 1.25rem;">
+        <button type="submit" id="btnLoginSubmit" class="btn btn-primary btn-lg" style="width: 100%; margin-bottom: 1.25rem;">
           <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
-          <span>Sign In to Dashboard (Preview)</span>
+          <span>Sign In to Dashboard</span>
         </button>
 
         <div style="text-align: center;">
-          <a href="index.html" class="btn btn-outline btn-sm" style="width: 100%;">
+          <a href="/" class="btn btn-outline btn-sm" style="width: 100%;">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
             <span>Return to Public Website</span>
           </a>
@@ -93,12 +115,12 @@
 
   <footer class="footer" style="padding: 1.5rem 0; margin-top: auto; background: transparent; border: none;">
     <div class="container" style="text-align: center; font-size: 0.75rem; color: var(--color-text-muted);">
-      &copy; 2026 SYNEX Hackathon • Internal Organizer Preview Interface
+      &copy; 2026 SYNEX Hackathon • Internal Organizer Management Portal
     </div>
   </footer>
 
   <!-- Scripts -->
-  <script src="js/main.js"></script>
+  <script src="/js/main.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const form = document.getElementById("adminLoginForm");
@@ -106,6 +128,9 @@
       const passwordInput = document.getElementById("adminPassword");
       const toggleBtn = document.getElementById("passwordToggleBtn");
       const toggleIcon = document.getElementById("passwordToggleIcon");
+      const btnSubmit = document.getElementById("btnLoginSubmit");
+      const errorAlert = document.getElementById("loginErrorAlert");
+      const errorMessage = document.getElementById("loginErrorMessage");
 
       // Show/Hide Password Toggle
       if (toggleBtn && passwordInput && toggleIcon) {
@@ -122,36 +147,73 @@
         inp.addEventListener("input", () => {
           const group = inp.closest(".form-group");
           if (group) group.classList.remove("has-error");
+          if (errorAlert) errorAlert.style.display = "none";
         });
       });
 
-      // Form validation & redirect
-      form.addEventListener("submit", (e) => {
+      // Form validation & asynchronous server login
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
         let valid = true;
 
-        if (!usernameInput.value.trim()) {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username) {
           usernameInput.closest(".form-group").classList.add("has-error");
           valid = false;
         }
 
-        if (!passwordInput.value.trim()) {
+        if (!password) {
           passwordInput.closest(".form-group").classList.add("has-error");
           valid = false;
         }
 
         if (!valid) {
-          if (!usernameInput.value.trim()) usernameInput.focus();
+          if (!username) usernameInput.focus();
           else passwordInput.focus();
           return;
         }
 
-        // Store sample session flag
-        sessionStorage.setItem("synex_admin_demo_logged_in", "true");
-        sessionStorage.setItem("synex_admin_user", usernameInput.value.trim());
+        // Show spinner
+        const originalBtnHtml = btnSubmit.innerHTML;
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span>Authenticating...</span>`;
 
-        // Redirect to admin dashboard preview
-        window.location.href = "admin-dashboard.html";
+        try {
+          const res = await fetch("/api/admin/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            // Set session indicators
+            sessionStorage.setItem("synex_admin_logged_in", "true");
+            sessionStorage.setItem("synex_admin_user", data.admin?.username || username);
+            window.location.href = data.redirect_url || "/admin/dashboard";
+          } else {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = originalBtnHtml;
+            if (errorAlert && errorMessage) {
+              errorMessage.textContent = data.error || "Invalid username or password. Please try again.";
+              errorAlert.style.display = "flex";
+            }
+          }
+        } catch (err) {
+          console.error("Login request failed:", err);
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = originalBtnHtml;
+          if (errorAlert && errorMessage) {
+            errorMessage.textContent = "Unable to connect to the authentication service. Please check your network connection.";
+            errorAlert.style.display = "flex";
+          }
+        }
       });
     });
   </script>

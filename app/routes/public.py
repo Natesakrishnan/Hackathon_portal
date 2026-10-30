@@ -26,6 +26,8 @@ def serve_assets(filename):
 
 
 @public_bp.route("/")
+@public_bp.route("/index.html")
+@public_bp.route("/index")
 def index():
     return render_template("index.html")
 

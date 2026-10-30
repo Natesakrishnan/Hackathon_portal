@@ -1029,6 +1029,96 @@ def test_confidential_settings_direct_login_as_krish(client):
     assert settings_res.status_code == 200
 
 
+def test_admin_certificates_unauthorized(client):
+    """Test unauthenticated access to certificate endpoints returns 401."""
+    res = client.get("/api/admin/certificates/template")
+    assert res.status_code == 401
+
+    res = client.get("/api/admin/certificates/participants")
+    assert res.status_code == 401
+
+
+def test_admin_certificate_template_endpoints(admin_client):
+    """Test fetching template metadata and downloading active PPTX template."""
+    # 1. Fetch template metadata
+    res = admin_client.get("/api/admin/certificates/template")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert "filename" in data["data"]
+    assert "placeholders" in data["data"]
+    assert any(p["placeholder"] == "{{PARTICIPANT_NAME}}" for p in data["data"]["placeholders"])
+
+    # 2. Download template PPTX
+    res_dl = admin_client.get("/api/admin/certificates/template/download")
+    assert res_dl.status_code == 200
+    assert len(res_dl.data) > 0
+
+
+def test_admin_certificate_participants_and_preview(admin_client):
+    """Test querying participants registry and generating live vector certificate PDF."""
+    # Seed a registration
+    reg_res = admin_client.post(
+        "/api/registrations",
+        json={
+            "registration_type": "individual",
+            "domain": "AI & Machine Learning",
+            "full_name": "Devi Raman",
+            "email": "devi@test.edu",
+            "phone": "9876543299",
+            "college": "National Tech Institute",
+            "department": "AI & DS",
+            "year_of_study": "3rd Year",
+        },
+    )
+    assert reg_res.status_code == 201
+
+    # Fetch participants registry
+    parts_res = admin_client.get("/api/admin/certificates/participants?domain=all&payment=all")
+    assert parts_res.status_code == 200
+    parts_data = parts_res.get_json()
+    assert parts_data["success"] is True
+    assert len(parts_data["data"]) >= 1
+    found = next((p for p in parts_data["data"] if p["email"] == "devi@test.edu"), None)
+    assert found is not None
+    assert found["name"] == "Devi Raman"
+    assert found["certificate_id"].startswith("SYNEX-")
+
+    # Preview PDF
+    pdf_res = admin_client.get(f"/api/admin/certificates/preview?participant_id={found['id']}")
+    assert pdf_res.status_code == 200
+    assert pdf_res.content_type == "application/pdf"
+    assert pdf_res.data.startswith(b"%PDF")
+
+
+def test_admin_certificate_dispatch_and_history(admin_client):
+    """Test single & bulk certificate email dispatch and history logs."""
+    # 1. Send single certificate
+    send_res = admin_client.post(
+        "/api/admin/certificates/send-single",
+        json={
+            "name": "Karthik Raja",
+            "email": "karthik@test.edu",
+            "role": "Solo Hacker",
+            "domain": "Web3 & Blockchain",
+            "college": "State Engineering College",
+        },
+    )
+    assert send_res.status_code == 200
+    assert send_res.get_json()["success"] is True
+
+    # 2. Check dispatch history
+    hist_res = admin_client.get("/api/admin/certificates/history")
+    assert hist_res.status_code == 200
+    hist_data = hist_res.get_json()
+    assert hist_data["success"] is True
+    assert len(hist_data["data"]) >= 1
+    recent_entry = hist_data["data"][0]
+    assert recent_entry["recipient_email"] == "karthik@test.edu"
+    assert "Certificate" in recent_entry["subject"]
+
+
+
 
 
 

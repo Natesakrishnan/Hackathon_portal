@@ -12,12 +12,203 @@ let currentPage = 1;
 let trendsChartInstance = null;
 let paymentChartInstance = null;
 let domainChartInstance = null;
+window.latestRegistrationsCache = [];
+
+/**
+ * Admin Multi-Page / Tabbed View System
+ */
+const ADMIN_PAGE_CONFIG = {
+  "dashboard": {
+    title: "Hackathon Overview & Analytics",
+    viewId: "view-dashboard",
+    hash: "#dashboard",
+    path: "/admin/dashboard",
+  },
+  "registrations": {
+    title: "Registration Entries",
+    viewId: "view-registrations",
+    hash: "#registrations",
+    path: "/admin/registrations",
+  },
+  "participants": {
+    title: "Participants Directory",
+    viewId: "view-participants",
+    hash: "#participants",
+    path: "/admin/participants",
+  },
+  "teams": {
+    title: "Teams & Squads",
+    viewId: "view-teams",
+    hash: "#teams",
+    path: "/admin/teams",
+  },
+  "payments": {
+    title: "Financial Ledger & Payments",
+    viewId: "view-payments",
+    hash: "#payments",
+    path: "/admin/payments",
+  },
+  "reports": {
+    title: "Certified Reports & Exports",
+    viewId: "view-reports",
+    hash: "#reports",
+    path: "/admin/reports",
+  },
+  "inquiries": {
+    title: "Inquiries & Contact Inbox",
+    viewId: "view-inquiries",
+    hash: "#inquiries",
+    path: "/admin/inquiries",
+  },
+  "announcements": {
+    title: "Broadcast Announcements",
+    viewId: "view-announcements",
+    hash: "#announcements",
+    path: "/admin/announcements",
+  },
+  "certificates": {
+    title: "E-Certificate Distribution",
+    viewId: "view-certificates",
+    hash: "#certificates",
+    path: "/admin/certificates",
+  },
+  "settings": {
+    title: "Event Configuration & Parameters",
+    viewId: "view-settings",
+    hash: "#settings",
+    path: "/admin/settings",
+  },
+};
+
+let currentAdminPage = "dashboard";
+
+/**
+ * Switches the active admin view, updates sidebar active state,
+ * synchronizes URL hash/history, updates header title, and renders active data.
+ */
+function switchAdminPage(pageKey, updateHistory = true) {
+  if (!pageKey || !ADMIN_PAGE_CONFIG[pageKey]) {
+    pageKey = "dashboard";
+  }
+
+  currentAdminPage = pageKey;
+  const config = ADMIN_PAGE_CONFIG[pageKey];
+
+  // 1. Hide all page views and show ONLY the active view
+  document.querySelectorAll(".admin-page-view").forEach((view) => {
+    if (view.id === config.viewId) {
+      view.style.display = "block";
+      view.classList.add("active-page");
+    } else {
+      view.style.display = "none";
+      view.classList.remove("active-page");
+    }
+  });
+
+  // 2. Update sidebar navigation pills
+  document.querySelectorAll(".sidebar-item").forEach((item) => {
+    const itemPage = item.getAttribute("data-page");
+    if (itemPage === pageKey) {
+      item.classList.add("active");
+    } else if (itemPage) {
+      item.classList.remove("active");
+    }
+  });
+
+  // 3. Update topbar title
+  const titleEl = document.getElementById("adminPageTitle");
+  if (titleEl) {
+    titleEl.textContent = config.title;
+  }
+
+  // 4. Update browser URL hash without full reload
+  if (updateHistory) {
+    if (window.location.hash !== config.hash) {
+      window.location.hash = pageKey;
+    }
+  }
+
+  // 5. Trigger live metrics reload and canvas resize when dashboard becomes visible
+  if (pageKey === "dashboard") {
+    checkAuthAndLoadMetrics();
+    setTimeout(() => {
+      if (trendsChartInstance && typeof trendsChartInstance.resize === "function") {
+        trendsChartInstance.resize();
+      }
+      if (paymentChartInstance && typeof paymentChartInstance.resize === "function") {
+        paymentChartInstance.resize();
+      }
+      if (domainChartInstance && typeof domainChartInstance.resize === "function") {
+        domainChartInstance.resize();
+      }
+    }, 50);
+  }
+
+  // 6. Ensure directory tables are rendered
+  if (pageKey === "participants") {
+    renderParticipantsDirectory();
+  } else if (pageKey === "teams") {
+    renderTeamsDirectory();
+  } else if (pageKey === "payments") {
+    renderPaymentsDirectory();
+  } else if (pageKey === "certificates") {
+    loadCertificateSection();
+  }
+
+  // 7. Scroll smoothly to top
+  const mainEl = document.querySelector(".admin-main");
+  if (mainEl) mainEl.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+window.switchAdminPage = switchAdminPage;
+
+let liveDashboardTimer = null;
+
+/**
+ * Periodically polls the server for live metrics and chart updates
+ */
+function startLiveDashboardPolling() {
+  if (liveDashboardTimer) clearInterval(liveDashboardTimer);
+  liveDashboardTimer = setInterval(async () => {
+    if (currentAdminPage === "dashboard" && !document.hidden) {
+      await checkAuthAndLoadMetrics();
+    }
+  }, 10000);
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   initAdminDashboard();
 });
 
 async function initAdminDashboard() {
+  // Determine initial page
+  let initialPage = "dashboard";
+  const hash = (window.location.hash || "").replace("#", "").trim();
+  if (hash && ADMIN_PAGE_CONFIG[hash]) {
+    initialPage = hash;
+  } else if (window.INITIAL_ADMIN_PAGE && ADMIN_PAGE_CONFIG[window.INITIAL_ADMIN_PAGE]) {
+    initialPage = window.INITIAL_ADMIN_PAGE;
+  } else {
+    const path = window.location.pathname.replace(/\/$/, "");
+    for (const [key, cfg] of Object.entries(ADMIN_PAGE_CONFIG)) {
+      if (path === cfg.path) {
+        initialPage = key;
+        break;
+      }
+    }
+  }
+
+  // Switch to initial page immediately
+  switchAdminPage(initialPage, false);
+
+  // Listen to hash changes for browser forward/back buttons
+  window.addEventListener("hashchange", () => {
+    const newHash = (window.location.hash || "").replace("#", "").trim();
+    if (newHash && ADMIN_PAGE_CONFIG[newHash] && newHash !== currentAdminPage) {
+      switchAdminPage(newHash, false);
+    }
+  });
+
   // Check auth and fetch dashboard metrics
   const isAuthenticated = await checkAuthAndLoadMetrics();
   if (!isAuthenticated) return;
@@ -34,6 +225,9 @@ async function initAdminDashboard() {
 
   // Check confidential Event Settings lock status
   await checkSettingsAuthStatus();
+
+  // Start live polling heartbeat
+  startLiveDashboardPolling();
 }
 
 /**
@@ -121,48 +315,52 @@ function initCharts(domainBreakdown, summary, paymentMethods, dailyTrends) {
       ? dailyTrends.counts
       : [0, 0, 0, 0, 0, 0, summary ? summary.total_registrations || 0 : 0];
 
-    if (trendsChartInstance) trendsChartInstance.destroy();
-
-    trendsChartInstance = new Chart(trendsCanvas, {
-      type: "line",
-      data: {
-        labels: labels,
-        datasets: [{
-          label: "Daily Registrations",
-          data: counts,
-          borderColor: "#2563EB",
-          backgroundColor: "rgba(37, 99, 235, 0.08)",
-          borderWidth: 3,
-          fill: true,
-          tension: 0.35,
-          pointBackgroundColor: "#2563EB",
-          pointRadius: 4,
-          pointHoverRadius: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (context) => `Registrations: ${context.parsed.y}`
+    if (trendsChartInstance) {
+      trendsChartInstance.data.labels = labels;
+      trendsChartInstance.data.datasets[0].data = counts;
+      trendsChartInstance.update();
+    } else {
+      trendsChartInstance = new Chart(trendsCanvas, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Daily Registrations",
+            data: counts,
+            borderColor: "#2563EB",
+            backgroundColor: "rgba(37, 99, 235, 0.08)",
+            borderWidth: 3,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: "#2563EB",
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (context) => `Registrations: ${context.parsed.y}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, stepSize: 1 },
+              grid: { color: "#F1F5F9" }
+            },
+            x: {
+              grid: { display: false }
             }
           }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0, stepSize: 1 },
-            grid: { color: "#F1F5F9" }
-          },
-          x: {
-            grid: { display: false }
-          }
         }
-      }
-    });
+      });
+    }
   }
 
   // 2. Payment Status Distribution (Doughnut)
@@ -172,45 +370,52 @@ function initCharts(domainBreakdown, summary, paymentMethods, dailyTrends) {
     const pending = summary ? (summary.pending_count || 0) : 0;
     const failed = summary ? (summary.failed_count || 0) : 0;
 
-    if (paymentChartInstance) paymentChartInstance.destroy();
+    const paymentLabels = [`Paid (${paid})`, `Pending (${pending})`, `Failed (${failed})`];
+    const paymentData = [paid, pending, failed];
 
-    paymentChartInstance = new Chart(paymentCanvas, {
-      type: "doughnut",
-      data: {
-        labels: [`Paid (${paid})`, `Pending (${pending})`, `Failed (${failed})`],
-        datasets: [{
-          data: [paid, pending, failed],
-          backgroundColor: ["#16A34A", "#F59E0B", "#DC2626"],
-          borderWidth: 2,
-          borderColor: "#FFFFFF"
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: { boxWidth: 12, font: { size: 11 } }
-          }
+    if (paymentChartInstance) {
+      paymentChartInstance.data.labels = paymentLabels;
+      paymentChartInstance.data.datasets[0].data = paymentData;
+      paymentChartInstance.update();
+    } else {
+      paymentChartInstance = new Chart(paymentCanvas, {
+        type: "doughnut",
+        data: {
+          labels: paymentLabels,
+          datasets: [{
+            data: paymentData,
+            backgroundColor: ["#16A34A", "#F59E0B", "#DC2626"],
+            borderWidth: 2,
+            borderColor: "#FFFFFF"
+          }]
         },
-        cutout: "70%"
-      }
-    });
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 12, font: { size: 11 } }
+            }
+          },
+          cutout: "70%"
+        }
+      });
+    }
   }
 
   // 3. Registrations Across 8 Innovation Domains (Bar)
   const domainCanvas = document.getElementById("domainChart");
   if (domainCanvas) {
     const allDomains = [
-      "Artificial Intelligence & Machine Learning",
-      "Web Development",
-      "Cybersecurity",
+      "AI & Machine Learning",
+      "Web3 & Web Development",
+      "Cybersecurity & Cloud",
       "Internet of Things (IoT)",
-      "Healthcare Technology",
-      "Financial Technology (FinTech)",
+      "Healthcare & MedTech",
+      "FinTech & Open Innovation",
       "Smart Cities & Sustainability",
-      "Open Innovation"
+      "Open Innovation Track"
     ];
 
     const shortLabels = [
@@ -224,55 +429,114 @@ function initCharts(domainBreakdown, summary, paymentMethods, dailyTrends) {
       "Open Innov"
     ];
 
-    const counts = allDomains.map((domainName) => {
-      if (domainBreakdown && domainBreakdown[domainName] !== undefined) {
-        return domainBreakdown[domainName];
-      }
-      for (const [k, v] of Object.entries(domainBreakdown || {})) {
-        if (k.toLowerCase().includes(domainName.toLowerCase()) || domainName.toLowerCase().includes(k.toLowerCase())) {
-          return v;
+    // Harmonious distinct colors per track
+    const barColors = [
+      "#6366F1", // Indigo
+      "#3B82F6", // Blue
+      "#EC4899", // Pink
+      "#F59E0B", // Amber
+      "#10B981", // Emerald
+      "#8B5CF6", // Purple
+      "#06B6D4", // Cyan
+      "#F97316", // Orange
+    ];
+
+    // Accurate word boundary regex to prevent false matches (e.g. 'ai' in 'blockchain' or 'sustainability')
+    const trackPatterns = [
+      /\b(ai|ml|machine\s*learning|artificial\s*intelligence|deep\s*learning)\b/i,
+      /\b(web3|blockchain|crypto|smart\s*contracts|web\s*development|web\s*dev|web)\b/i,
+      /\b(cybersecurity|cyber|cloud|infosec|security)\b/i,
+      /\b(iot|embedded|internet\s*of\s*things|sensors|hardware)\b/i,
+      /\b(health|healthcare|medtech|biotech|medical)\b/i,
+      /\b(fintech|financial|finance)\b/i,
+      /\b(smart\s*cities|sustainability|clean\s*energy|urban)\b/i,
+      /\b(open\s*innovation|open\s*track|general|creative|other)\b/i
+    ];
+
+    const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+    let totalTrackRegistrations = 0;
+
+    if (domainBreakdown && typeof domainBreakdown === "object") {
+      for (const [rawDomain, countVal] of Object.entries(domainBreakdown)) {
+        const num = Number(countVal) || 0;
+        if (num <= 0) continue;
+        totalTrackRegistrations += num;
+
+        let matched = false;
+        // Exact case-insensitive match
+        for (let i = 0; i < allDomains.length; i++) {
+          if (rawDomain.trim().toLowerCase() === allDomains[i].toLowerCase()) {
+            counts[i] += num;
+            matched = true;
+            break;
+          }
         }
-      }
-      return 0;
-    });
-
-    if (domainChartInstance) domainChartInstance.destroy();
-
-    domainChartInstance = new Chart(domainCanvas, {
-      type: "bar",
-      data: {
-        labels: shortLabels,
-        datasets: [{
-          label: "Teams & Hackers",
-          data: counts,
-          backgroundColor: "#7C3AED",
-          borderRadius: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              title: (items) => allDomains[items[0].dataIndex] || "",
-              label: (context) => `Registrations: ${context.parsed.y}`
+        // Word boundary pattern match
+        if (!matched) {
+          for (let i = 0; i < trackPatterns.length; i++) {
+            if (trackPatterns[i].test(rawDomain)) {
+              counts[i] += num;
+              matched = true;
+              break;
             }
           }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0, stepSize: 1 },
-            grid: { color: "#F1F5F9" }
-          },
-          x: {
-            grid: { display: false }
-          }
+        }
+        // Fallback to Open Track
+        if (!matched) {
+          counts[7] += num;
         }
       }
-    });
+    }
+
+    // Update track breakdown badge in header
+    const trackBadge = document.getElementById("badgeTrackBreakdown");
+    if (trackBadge) {
+      trackBadge.innerHTML = `<i class="fa-solid fa-circle" style="color: #10B981; font-size: 0.5rem; margin-right: 4px;"></i>${totalTrackRegistrations} Live ${totalTrackRegistrations === 1 ? 'Entry' : 'Entries'}`;
+    }
+
+    if (domainChartInstance) {
+      domainChartInstance.data.labels = shortLabels;
+      domainChartInstance.data.datasets[0].data = counts;
+      domainChartInstance.data.datasets[0].backgroundColor = barColors;
+      domainChartInstance.update();
+    } else {
+      domainChartInstance = new Chart(domainCanvas, {
+        type: "bar",
+        data: {
+          labels: shortLabels,
+          datasets: [{
+            label: "Teams & Hackers",
+            data: counts,
+            backgroundColor: barColors,
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => allDomains[items[0].dataIndex] || "",
+                label: (context) => `Registrations: ${context.parsed.y}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, stepSize: 1 },
+              grid: { color: "#F1F5F9" }
+            },
+            x: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
   }
 }
 
@@ -323,7 +587,11 @@ async function loadRegistrationsTable() {
       return;
     }
 
+    window.latestRegistrationsCache = json.data.registrations || [];
     renderTableRows(json.data.registrations, json.data);
+    renderParticipantsDirectory();
+    renderTeamsDirectory();
+    renderPaymentsDirectory();
   } catch (err) {
     console.error("Error loading registrations table:", err);
     tbody.innerHTML = `
@@ -710,6 +978,364 @@ function setupEventListeners() {
   setupPublicContentEditorHandlers();
   setupInquiriesHandlers();
   setupSmtpHandlers();
+  setupDirectoryFilterHandlers();
+  setupCertificateHandlers();
+}
+
+/**
+ * Setup search and filter input handlers for Participants, Teams, and Payments directories
+ */
+function setupDirectoryFilterHandlers() {
+  const partSearch = document.getElementById("participantsSearchInput");
+  if (partSearch) {
+    let timeout = null;
+    partSearch.addEventListener("input", () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(renderParticipantsDirectory, 150);
+    });
+  }
+  const partType = document.getElementById("participantsTypeFilter");
+  if (partType) partType.addEventListener("change", renderParticipantsDirectory);
+  const partDomain = document.getElementById("participantsDomainFilter");
+  if (partDomain) partDomain.addEventListener("change", renderParticipantsDirectory);
+
+  const teamsSearch = document.getElementById("teamsSearchInput");
+  if (teamsSearch) {
+    let timeout = null;
+    teamsSearch.addEventListener("input", () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(renderTeamsDirectory, 150);
+    });
+  }
+  const teamsDomain = document.getElementById("teamsDomainFilter");
+  if (teamsDomain) teamsDomain.addEventListener("change", renderTeamsDirectory);
+
+  const paySearch = document.getElementById("paymentsSearchInput");
+  if (paySearch) {
+    let timeout = null;
+    paySearch.addEventListener("input", () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(renderPaymentsDirectory, 150);
+    });
+  }
+  const payStatus = document.getElementById("paymentsStatusFilter");
+  if (payStatus) payStatus.addEventListener("change", renderPaymentsDirectory);
+}
+
+/**
+ * Renders the Participants Directory table view
+ */
+function renderParticipantsDirectory() {
+  const tbody = document.getElementById("participantsTableBody");
+  const countEl = document.getElementById("participantsShowingCount");
+  const badgeCountEl = document.getElementById("badgeParticipantsCount");
+  if (!tbody) return;
+
+  const records = window.latestRegistrationsCache || [];
+  const search = (document.getElementById("participantsSearchInput")?.value || "").toLowerCase().trim();
+  const typeFilter = document.getElementById("participantsTypeFilter")?.value || "all";
+  const domainFilter = document.getElementById("participantsDomainFilter")?.value || "all";
+
+  let participantsList = [];
+  records.forEach((reg) => {
+    const isTeam = reg.registration_type === "team";
+    const lead = reg.participant || {};
+
+    participantsList.push({
+      regId: reg.public_id,
+      name: lead.full_name || "N/A",
+      role: isTeam ? "Team Leader" : "Solo Hacker",
+      email: lead.email || "N/A",
+      phone: lead.phone || "N/A",
+      college: lead.college || "N/A",
+      domain: reg.domain || "N/A",
+      status: reg.payment_status || "pending",
+      isTeam: isTeam,
+      teamName: isTeam ? (reg.team?.team_name || reg.team_name || "Team Squad") : null,
+    });
+
+    if (isTeam && reg.team && Array.isArray(reg.team.members)) {
+      reg.team.members.forEach((m, idx) => {
+        if (m.role === "leader" || m.email === lead.email) return;
+        participantsList.push({
+          regId: reg.public_id,
+          name: m.name || `Member ${idx + 2}`,
+          role: "Team Member",
+          email: m.email || "N/A",
+          phone: m.phone || "N/A",
+          college: m.college || lead.college || "N/A",
+          domain: reg.domain || "N/A",
+          status: reg.payment_status || "pending",
+          isTeam: true,
+          teamName: reg.team.team_name || reg.team_name || "Team Squad",
+        });
+      });
+    }
+  });
+
+  if (badgeCountEl) {
+    badgeCountEl.textContent = `${participantsList.length} Hackers`;
+  }
+
+  const filtered = participantsList.filter((p) => {
+    if (domainFilter !== "all") {
+      const pDom = (p.domain || "").toLowerCase();
+      const fDom = domainFilter.toLowerCase();
+      if (pDom !== fDom && !pDom.includes(fDom) && !fDom.includes(pDom)) return false;
+    }
+    if (typeFilter === "Solo Hacker" && p.role !== "Solo Hacker") return false;
+    if (typeFilter === "Team Member" && p.role === "Solo Hacker") return false;
+    if (search) {
+      const targetStr = `${p.name} ${p.email} ${p.college} ${p.domain} ${p.role} ${p.teamName || ""}`.toLowerCase();
+      if (!targetStr.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (countEl) {
+    countEl.textContent = `Showing ${filtered.length} of ${participantsList.length} participants`;
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 2.5rem 1rem; color: var(--color-text-muted);">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem; opacity: 0.4;"><i class="fa-solid fa-user-slash"></i></div>
+          <div style="font-weight: 600; color: var(--color-text-main);">No matching participants found</div>
+          <div style="font-size: 0.85rem; margin-top: 0.25rem;">Adjust search query or filter options.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((p) => {
+    let statusBadge = "";
+    if (p.status === "paid") {
+      statusBadge = `<span class="badge badge-success" style="background: #ECFDF5; color: #047857; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-circle-check"></i> Paid</span>`;
+    } else if (p.status === "failed") {
+      statusBadge = `<span class="badge badge-danger" style="background: #FEF2F2; color: #B91C1C; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-circle-xmark"></i> Failed</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-warning" style="background: #FFFBEB; color: #B45309; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-clock"></i> Pending</span>`;
+    }
+
+    let roleBadge = "";
+    if (p.role === "Solo Hacker") {
+      roleBadge = `<span class="badge badge-secondary" style="font-size: 0.72rem; padding: 2px 7px;">Solo Hacker</span>`;
+    } else if (p.role === "Team Leader") {
+      roleBadge = `<span class="badge badge-primary" style="font-size: 0.72rem; padding: 2px 7px; background: #EFF6FF; color: #1D4ED8;"><i class="fa-solid fa-crown" style="font-size: 0.65rem;"></i> Lead (${escapeHtml(p.teamName || "Team")})</span>`;
+    } else {
+      roleBadge = `<span class="badge badge-secondary" style="font-size: 0.72rem; padding: 2px 7px; background: #F1F5F9; color: #475569;"><i class="fa-solid fa-user-group" style="font-size: 0.65rem;"></i> Member (${escapeHtml(p.teamName || "Team")})</span>`;
+    }
+
+    return `
+      <tr>
+        <td>
+          <div style="font-weight: 700; color: var(--color-text-main); font-size: 0.88rem;">${escapeHtml(p.name)}</div>
+          <span style="font-family: monospace; font-size: 0.75rem; color: #64748B;">${escapeHtml(p.regId)}</span>
+        </td>
+        <td>${roleBadge}</td>
+        <td><a href="mailto:${escapeHtml(p.email)}" style="color: #2563EB; font-size: 0.82rem; text-decoration: none;"><i class="fa-solid fa-envelope" style="margin-right: 4px; color: #64748B;"></i>${escapeHtml(p.email)}</a></td>
+        <td style="font-size: 0.82rem; color: #334155;">${escapeHtml(p.phone)}</td>
+        <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; color: #475569;" title="${escapeHtml(p.college)}">${escapeHtml(p.college)}</td>
+        <td><span class="domain-tag" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; background: #F1F5F9; color: #334155; font-weight: 500;">${escapeHtml(p.domain)}</span></td>
+        <td>${statusBadge}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+/**
+ * Renders the Teams Directory table view
+ */
+function renderTeamsDirectory() {
+  const tbody = document.getElementById("teamsTableBody");
+  const countEl = document.getElementById("teamsShowingCount");
+  const badgeCountEl = document.getElementById("badgeTeamsCount");
+  if (!tbody) return;
+
+  const records = (window.latestRegistrationsCache || []).filter(r => r.registration_type === "team");
+  const search = (document.getElementById("teamsSearchInput")?.value || "").toLowerCase().trim();
+  const domainFilter = document.getElementById("teamsDomainFilter")?.value || "all";
+
+  if (badgeCountEl) {
+    badgeCountEl.textContent = `${records.length} Teams`;
+  }
+
+  const filtered = records.filter((r) => {
+    if (domainFilter !== "all") {
+      const rDom = (r.domain || "").toLowerCase();
+      const fDom = domainFilter.toLowerCase();
+      if (rDom !== fDom && !rDom.includes(fDom) && !fDom.includes(rDom)) return false;
+    }
+    if (search) {
+      const teamName = r.team ? r.team.team_name : (r.team_name || "");
+      const leaderName = r.participant ? r.participant.full_name : "";
+      const college = r.participant ? r.participant.college : "";
+      const targetStr = `${teamName} ${leaderName} ${college} ${r.domain} ${r.public_id}`.toLowerCase();
+      if (!targetStr.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (countEl) {
+    countEl.textContent = `Showing ${filtered.length} of ${records.length} teams`;
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 2.5rem 1rem; color: var(--color-text-muted);">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem; opacity: 0.4;"><i class="fa-solid fa-people-line"></i></div>
+          <div style="font-weight: 600; color: var(--color-text-main);">No matching team squads found</div>
+          <div style="font-size: 0.85rem; margin-top: 0.25rem;">Adjust search query or domain filter.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((r) => {
+    const teamName = r.team ? r.team.team_name : (r.team_name || "Team Squad");
+    const leader = r.participant || {};
+    const membersCount = r.team && r.team.members ? r.team.members.length : 2;
+    const college = leader.college || "N/A";
+
+    let statusBadge = "";
+    if (r.payment_status === "paid") {
+      statusBadge = `<span class="badge badge-success" style="background: #ECFDF5; color: #047857; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-circle-check"></i> Paid</span>`;
+    } else if (r.payment_status === "failed") {
+      statusBadge = `<span class="badge badge-danger" style="background: #FEF2F2; color: #B91C1C; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-circle-xmark"></i> Failed</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-warning" style="background: #FFFBEB; color: #B45309; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-clock"></i> Pending</span>`;
+    }
+
+    return `
+      <tr>
+        <td>
+          <div style="font-weight: 700; color: #1E293B; font-size: 0.92rem;">
+            <i class="fa-solid fa-people-group" style="color: #2563EB; margin-right: 6px;"></i>${escapeHtml(teamName)}
+          </div>
+          <span style="font-family: monospace; font-size: 0.75rem; color: #64748B;">${escapeHtml(r.public_id)}</span>
+        </td>
+        <td>
+          <div style="font-weight: 600; color: #334155; font-size: 0.85rem;">${escapeHtml(leader.full_name || "N/A")}</div>
+          <div style="font-size: 0.75rem; color: #64748B;">${escapeHtml(leader.email || "")}</div>
+        </td>
+        <td>
+          <span class="badge badge-primary" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem;">
+            ${membersCount} Members
+          </span>
+        </td>
+        <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; color: #475569;" title="${escapeHtml(college)}">${escapeHtml(college)}</td>
+        <td><span class="domain-tag" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; background: #F1F5F9; color: #334155; font-weight: 500;">${escapeHtml(r.domain)}</span></td>
+        <td>${statusBadge}</td>
+        <td style="text-align: right;">
+          <button type="button" class="btn btn-outline btn-sm btn-team-link" data-ref="${escapeHtml(r.public_id)}" style="padding: 3px 9px; font-size: 0.78rem;">
+            <i class="fa-solid fa-eye"></i> <span>View Roster</span>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  // Bind View Roster buttons
+  tbody.querySelectorAll(".btn-team-link").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const ref = btn.getAttribute("data-ref");
+      openTeamDetailsModal(ref);
+    });
+  });
+}
+
+/**
+ * Renders the Financial Audit & Payments ledger table view
+ */
+function renderPaymentsDirectory() {
+  const tbody = document.getElementById("paymentsTableBody");
+  const countEl = document.getElementById("paymentsShowingCount");
+  if (!tbody) return;
+
+  const records = window.latestRegistrationsCache || [];
+  const search = (document.getElementById("paymentsSearchInput")?.value || "").toLowerCase().trim();
+  const statusFilter = document.getElementById("paymentsStatusFilter")?.value || "all";
+
+  const filtered = records.filter((r) => {
+    if (statusFilter !== "all" && r.payment_status !== statusFilter) return false;
+    if (search) {
+      const pName = r.participant ? r.participant.full_name : "";
+      const teamName = r.team ? r.team.team_name : (r.team_name || "");
+      const txn = r.payment_id || r.transaction_id || "";
+      const targetStr = `${r.public_id} ${pName} ${teamName} ${txn} ${r.domain}`.toLowerCase();
+      if (!targetStr.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (countEl) {
+    countEl.textContent = `Showing ${filtered.length} of ${records.length} transactions`;
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 2.5rem 1rem; color: var(--color-text-muted);">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem; opacity: 0.4;"><i class="fa-solid fa-receipt"></i></div>
+          <div style="font-weight: 600; color: var(--color-text-main);">No payment transactions found</div>
+          <div style="font-size: 0.85rem; margin-top: 0.25rem;">Adjust search query or payment status filter.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((r) => {
+    const isTeam = r.registration_type === "team";
+    const entityName = isTeam ? (r.team?.team_name || r.team_name || "Team Squad") : (r.participant?.full_name || "Solo Hacker");
+    const txnId = r.payment_id || r.transaction_id || (r.payment_status === "paid" ? `TXN_${r.public_id.replace('-', '_')}` : "Pending (Offline/Gateway)");
+
+    let statusBadge = "";
+    if (r.payment_status === "paid") {
+      statusBadge = `<span class="badge badge-success" style="background: #ECFDF5; color: #047857; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Verified Paid</span>`;
+    } else if (r.payment_status === "failed") {
+      statusBadge = `<span class="badge badge-danger" style="background: #FEF2F2; color: #B91C1C; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> Failed</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-warning" style="background: #FFFBEB; color: #B45309; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;"><i class="fa-solid fa-clock"></i> Unpaid / Pending</span>`;
+    }
+
+    const formattedDate = r.created_at ? r.created_at.replace("T", " ").substring(0, 16) : "N/A";
+
+    return `
+      <tr>
+        <td>
+          <span style="font-family: monospace; font-weight: 700; color: #1E40AF; background: #EFF6FF; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">
+            ${escapeHtml(r.public_id)}
+          </span>
+        </td>
+        <td>
+          <div style="font-weight: 700; color: #1E293B; font-size: 0.88rem;">${escapeHtml(entityName)}</div>
+          <span style="font-size: 0.75rem; color: #64748B;">${escapeHtml(r.participant?.email || "")}</span>
+        </td>
+        <td>
+          <span class="badge ${isTeam ? 'badge-primary' : 'badge-secondary'}" style="font-size: 0.75rem; padding: 2px 7px;">
+            ${isTeam ? 'Team Entry' : 'Individual Entry'}
+          </span>
+        </td>
+        <td>
+          <span style="font-weight: 800; font-size: 0.95rem; color: ${r.payment_status === 'paid' ? '#059669' : '#1E293B'};">
+            ₹${r.entry_fee}
+          </span>
+        </td>
+        <td>${statusBadge}</td>
+        <td>
+          <code style="font-size: 0.75rem; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 2px 6px; border-radius: 4px; color: #475569;">
+            ${escapeHtml(txnId)}
+          </code>
+        </td>
+        <td style="font-size: 0.78rem; color: #64748B;">${formattedDate}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 function escapeHtml(text) {
@@ -2592,6 +3218,752 @@ function setupSmtpHandlers() {
     });
   }
 }
+
+/**
+ * ========================================================
+ * E-CERTIFICATE STUDIO & DISTRIBUTION SYSTEM
+ * ========================================================
+ */
+let certificateParticipantsCache = [];
+let certificateTemplateInfoCache = null;
+
+function setupCertificateHandlers() {
+  const modal = document.getElementById("certPreviewModal");
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeCertificatePreviewModal();
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal && modal.classList.contains("active")) {
+      closeCertificatePreviewModal();
+    }
+  });
+}
+
+async function loadCertificateSection() {
+  await Promise.all([
+    loadCertificateTemplateInfo(),
+    loadCertificateParticipants(),
+    loadCertificateHistory()
+  ]);
+}
+window.loadCertificateSection = loadCertificateSection;
+
+/**
+ * Fetches and displays active PPTX template status and placeholders
+ */
+async function loadCertificateTemplateInfo() {
+  const badgeEl = document.getElementById("badgeCertTemplateType");
+  const filenameEl = document.getElementById("certActiveFilename");
+  const sizeEl = document.getElementById("certActiveFileSize");
+  const dateEl = document.getElementById("certActiveFileDate");
+  const tagsCloud = document.getElementById("certPlaceholderTagsCloud");
+
+  try {
+    const res = await fetch("/api/admin/certificates/template");
+    const json = await res.json();
+    if (res.ok && json.success && json.data) {
+      certificateTemplateInfoCache = json.data;
+      if (badgeEl) {
+        badgeEl.textContent = json.data.is_custom ? "Custom Template" : "Official Default";
+        badgeEl.className = json.data.is_custom ? "badge badge-primary" : "badge badge-success";
+      }
+      if (filenameEl) filenameEl.textContent = json.data.filename || "synex_certificate_template.pptx";
+      if (sizeEl) sizeEl.textContent = `${json.data.size_kb} KB`;
+      if (dateEl) dateEl.textContent = json.data.updated_at || "Built-in";
+
+      if (tagsCloud && Array.isArray(json.data.placeholders)) {
+        tagsCloud.innerHTML = json.data.placeholders.map(p => `
+          <span class="cert-placeholder-pill" title="Click to copy ${p.placeholder} to clipboard" onclick="copyCertPlaceholder('${p.placeholder}', this)">
+            <code>${p.placeholder}</code>
+            <i class="fa-regular fa-copy" style="font-size: 0.7rem; opacity: 0.7;"></i>
+          </span>
+        `).join("");
+      }
+    }
+  } catch (err) {
+    console.error("Error loading certificate template info:", err);
+  }
+}
+window.loadCertificateTemplateInfo = loadCertificateTemplateInfo;
+
+/**
+ * Copies placeholder text to clipboard and flashes visual feedback
+ */
+function copyCertPlaceholder(text, el) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (el) {
+        el.classList.add("copied");
+        const origHtml = el.innerHTML;
+        el.innerHTML = `<code>Copied!</code> <i class="fa-solid fa-check"></i>`;
+        setTimeout(() => {
+          el.classList.remove("copied");
+          el.innerHTML = origHtml;
+        }, 1200);
+      }
+    }).catch(() => {});
+  }
+}
+window.copyCertPlaceholder = copyCertPlaceholder;
+
+/**
+ * Triggers direct browser download of the active PPTX presentation template
+ */
+function downloadActiveCertificateTemplate() {
+  window.location.href = "/api/admin/certificates/template/download";
+}
+window.downloadActiveCertificateTemplate = downloadActiveCertificateTemplate;
+
+/**
+ * Triggers direct browser download of the sample certificate PDF
+ */
+function downloadSampleCertificatePdf() {
+  window.location.href = "/api/admin/certificates/preview?sample=true&download=true";
+}
+window.downloadSampleCertificatePdf = downloadSampleCertificatePdf;
+
+/**
+ * Handles uploading a custom .pptx presentation template
+ */
+async function handleCertificateTemplateUpload() {
+  const fileInput = document.getElementById("certUploadInput");
+  const banner = document.getElementById("certAlertBanner");
+  const uploadBtn = document.getElementById("btnUploadCertTemplate");
+
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    if (banner) showBanner(banner, "Please select a .pptx PowerPoint file to upload.", "error");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  if (!file.name.toLowerCase().endsWith(".pptx")) {
+    if (banner) showBanner(banner, "Only PowerPoint presentation files (.pptx) are allowed.", "error");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("template_file", file);
+
+  const origHtml = uploadBtn ? uploadBtn.innerHTML : "";
+  if (uploadBtn) {
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Uploading...`;
+  }
+
+  try {
+    const res = await fetch("/api/admin/certificates/template/upload", {
+      method: "POST",
+      body: formData
+    });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      if (banner) showBanner(banner, json.message || "Template uploaded successfully!", "success");
+      fileInput.value = "";
+      await loadCertificateTemplateInfo();
+    } else {
+      if (banner) showBanner(banner, json.error || "Failed to upload template.", "error");
+    }
+  } catch (err) {
+    console.error("Template upload error:", err);
+    if (banner) showBanner(banner, "Network error uploading certificate template.", "error");
+  } finally {
+    if (uploadBtn) {
+      uploadBtn.disabled = false;
+      uploadBtn.innerHTML = origHtml;
+    }
+  }
+}
+window.handleCertificateTemplateUpload = handleCertificateTemplateUpload;
+
+/**
+ * Resets the active template back to the built-in official SYNEX template
+ */
+async function handleResetCertificateTemplate() {
+  if (!confirm("Are you sure you want to revert to the official default PowerPoint certificate template?")) {
+    return;
+  }
+
+  const banner = document.getElementById("certAlertBanner");
+  try {
+    const res = await fetch("/api/admin/certificates/template/reset", {
+      method: "POST"
+    });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      if (banner) showBanner(banner, json.message || "Reset to official default template.", "success");
+      await loadCertificateTemplateInfo();
+    } else {
+      if (banner) showBanner(banner, json.error || "Failed to reset template.", "error");
+    }
+  } catch (err) {
+    console.error("Template reset error:", err);
+    if (banner) showBanner(banner, "Network error resetting template.", "error");
+  }
+}
+window.handleResetCertificateTemplate = handleResetCertificateTemplate;
+
+/**
+ * Loads all participants for certificates registry
+ */
+async function loadCertificateParticipants() {
+  const tbody = document.getElementById("certParticipantsTableBody");
+  const countEl = document.getElementById("certRegistryCountText");
+  const domainFilter = document.getElementById("certFilterDomain") ? document.getElementById("certFilterDomain").value : "all";
+  const paymentFilter = document.getElementById("certFilterPayment") ? document.getElementById("certFilterPayment").value : "paid";
+
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="9" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+        <i class="fa-solid fa-circle-notch fa-spin"></i> Loading participant directory...
+      </td>
+    </tr>
+  `;
+
+  try {
+    const params = new URLSearchParams({
+      domain: domainFilter,
+      payment: paymentFilter
+    });
+    const res = await fetch(`/api/admin/certificates/participants?${params.toString()}`);
+    const json = await res.json();
+
+    if (res.ok && json.success && Array.isArray(json.data)) {
+      certificateParticipantsCache = json.data;
+      renderCertificateParticipantsTable();
+      populateSingleSelectDropdown();
+    } else {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 2rem; color: #DC2626;">
+            Failed to load participant data: ${escapeHtml(json.error || "Unknown server error")}
+          </td>
+        </tr>
+      `;
+    }
+  } catch (err) {
+    console.error("Error loading certificate participants:", err);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; padding: 2rem; color: #DC2626;">
+          Network error loading participant directory.
+        </td>
+      </tr>
+    `;
+  }
+}
+window.loadCertificateParticipants = loadCertificateParticipants;
+
+/**
+ * Populates single dispatch participant selector dropdown
+ */
+function populateSingleSelectDropdown() {
+  const selectDropdown = document.getElementById("certSingleSelectParticipant");
+  if (!selectDropdown) return;
+
+  const currentVal = selectDropdown.value;
+  selectDropdown.innerHTML = `<option value="">-- Choose from registered participants or type below --</option>` +
+    certificateParticipantsCache.map(p => `
+      <option value="${p.id}" ${p.id === currentVal ? "selected" : ""}>
+        ${escapeHtml(p.name)} (${escapeHtml(p.role)} • ${escapeHtml(p.team_name || "Solo")} • ${escapeHtml(p.email)})
+      </option>
+    `).join("");
+}
+
+/**
+ * Handles dropdown selection change in single dispatch form
+ */
+function handleSelectCertParticipantChange() {
+  const selectEl = document.getElementById("certSingleSelectParticipant");
+  if (!selectEl) return;
+  const pId = selectEl.value;
+  if (!pId) return;
+
+  const participant = certificateParticipantsCache.find(p => p.id === pId);
+  if (participant) {
+    const nameInput = document.getElementById("certSingleName");
+    const emailInput = document.getElementById("certSingleEmail");
+    const domainInput = document.getElementById("certSingleDomain");
+    const roleInput = document.getElementById("certSingleRole");
+    const subjInput = document.getElementById("certSingleCustomSubject");
+
+    if (nameInput) nameInput.value = participant.name || "";
+    if (emailInput) emailInput.value = participant.email || "";
+    if (domainInput) domainInput.value = participant.domain || "";
+    if (roleInput) roleInput.value = participant.role || "";
+    if (subjInput) subjInput.value = `Your SYNEX 2026 Certificate of Participation — ${participant.name}`;
+  }
+}
+window.handleSelectCertParticipantChange = handleSelectCertParticipantChange;
+
+/**
+ * Searches and renders filtered participants in the table
+ */
+function renderCertificateParticipantsTable() {
+  const tbody = document.getElementById("certParticipantsTableBody");
+  const countEl = document.getElementById("certRegistryCountText");
+  const searchInput = document.getElementById("certSearchInput");
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+  let list = certificateParticipantsCache;
+  if (query) {
+    list = list.filter(p =>
+      (p.name && p.name.toLowerCase().includes(query)) ||
+      (p.email && p.email.toLowerCase().includes(query)) ||
+      (p.team_name && p.team_name.toLowerCase().includes(query)) ||
+      (p.college && p.college.toLowerCase().includes(query)) ||
+      (p.ref && p.ref.toLowerCase().includes(query))
+    );
+  }
+
+  if (countEl) {
+    countEl.textContent = `Showing ${list.length} eligible participants (${certificateParticipantsCache.length} total)`;
+  }
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+          No eligible participants found matching criteria.
+        </td>
+      </tr>
+    `;
+    updateBatchActionBar();
+    return;
+  }
+
+  tbody.innerHTML = list.map(p => {
+    const isPaid = (p.payment_status || "").toUpperCase() === "PAID";
+    const statusBadge = isPaid
+      ? `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Paid</span>`
+      : `<span class="badge badge-warning">${escapeHtml(p.payment_status || "PENDING")}</span>`;
+
+    const roleBadge = p.role === "Solo Hacker"
+      ? `<span class="badge" style="background:#E0E7FF; color:#3730A3;">Solo</span>`
+      : p.role === "Team Leader"
+        ? `<span class="badge" style="background:#FEF3C7; color:#92400E;"><i class="fa-solid fa-crown" style="font-size:0.65rem;"></i> Leader</span>`
+        : `<span class="badge" style="background:#F1F5F9; color:#475569;">Member</span>`;
+
+    return `
+      <tr>
+        <td style="text-align: center;">
+          <input type="checkbox" class="cert-row-checkbox" value="${p.id}" onchange="updateBatchActionBar();">
+        </td>
+        <td>
+          <div style="font-weight: 600; color: #1E293B;">${escapeHtml(p.name)}</div>
+          <div style="font-size: 0.78rem; color: var(--color-text-muted);">${escapeHtml(p.email)}</div>
+        </td>
+        <td>${roleBadge}</td>
+        <td>
+          <span style="font-size: 0.82rem; color: #334155;">${escapeHtml(p.domain || "General")}</span>
+        </td>
+        <td>
+          <div style="font-weight: 500; font-size: 0.82rem; color: #1E293B;">${escapeHtml(p.team_name || "—")}</div>
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">${escapeHtml(p.registration_type || "")}</div>
+        </td>
+        <td style="font-size: 0.82rem; color: #475569; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(p.college || "")}">
+          ${escapeHtml(p.college || "—")}
+        </td>
+        <td>${statusBadge}</td>
+        <td>
+          <code style="font-size: 0.76rem; background: #F1F5F9; padding: 2px 6px; border-radius: 4px; color: #0F172A;">${escapeHtml(p.certificate_id)}</code>
+        </td>
+        <td style="text-align: right; white-space: nowrap;">
+          <div style="display: inline-flex; gap: 0.35rem;">
+            <button type="button" class="cert-table-action-btn preview" title="Preview Vector Certificate PDF" onclick="openCertificatePreviewModal('${p.id}');">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <a href="/api/admin/certificates/preview?participant_id=${encodeURIComponent(p.id)}&download=true" target="_blank" class="cert-table-action-btn download" title="Download Certificate PDF">
+              <i class="fa-solid fa-download"></i>
+            </a>
+            <button type="button" class="cert-table-action-btn send" title="Dispatch E-Certificate via Email" onclick="handleSendSingleCertFromTable('${p.id}');">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  updateBatchActionBar();
+}
+
+function handleCertSearchInput() {
+  renderCertificateParticipantsTable();
+}
+window.handleCertSearchInput = handleCertSearchInput;
+
+function toggleSelectAllCertificates(selectAllCheckbox) {
+  const checkboxes = document.querySelectorAll(".cert-row-checkbox");
+  checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+  updateBatchActionBar();
+}
+window.toggleSelectAllCertificates = toggleSelectAllCertificates;
+
+function updateBatchActionBar() {
+  const checkboxes = document.querySelectorAll(".cert-row-checkbox:checked");
+  const bar = document.getElementById("certBatchActionBar");
+  const countText = document.getElementById("certSelectedCountText");
+  const selectAll = document.getElementById("certSelectAllCheckbox");
+
+  const totalCheckboxes = document.querySelectorAll(".cert-row-checkbox");
+  if (selectAll && totalCheckboxes.length > 0) {
+    selectAll.checked = (checkboxes.length === totalCheckboxes.length);
+  }
+
+  if (bar && countText) {
+    if (checkboxes.length > 0) {
+      bar.style.display = "flex";
+      countText.textContent = `${checkboxes.length} participant${checkboxes.length > 1 ? "s" : ""} selected`;
+    } else {
+      bar.style.display = "none";
+    }
+  }
+}
+window.updateBatchActionBar = updateBatchActionBar;
+
+/**
+ * Opens PDF preview modal for a participant or sample details
+ */
+function openCertificatePreviewModal(participantId) {
+  const modal = document.getElementById("certPreviewModal");
+  const iframe = document.getElementById("certPreviewIframe");
+  const spinner = document.getElementById("certPreviewLoadingSpinner");
+  const downloadLink = document.getElementById("btnDownloadPreviewPdf");
+  const titleSub = document.getElementById("certPreviewModalSub");
+
+  if (!modal || !iframe) return;
+
+  if (spinner) spinner.style.display = "flex";
+
+  let previewUrl = "/api/admin/certificates/preview";
+  if (participantId) {
+    previewUrl += `?participant_id=${encodeURIComponent(participantId)}`;
+    const participant = certificateParticipantsCache.find(p => p.id === participantId);
+    if (participant && titleSub) {
+      titleSub.textContent = `Generated for: ${participant.name} (${participant.certificate_id})`;
+    }
+  } else {
+    previewUrl += "?sample=true";
+    if (titleSub) titleSub.textContent = `High-fidelity vector PDF generated from template`;
+  }
+
+  iframe.onload = () => {
+    if (spinner) spinner.style.display = "none";
+  };
+
+  iframe.src = previewUrl;
+  if (downloadLink) {
+    downloadLink.href = previewUrl + (previewUrl.includes("?") ? "&download=true" : "?download=true");
+  }
+
+  modal.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+window.openCertificatePreviewModal = openCertificatePreviewModal;
+
+function closeCertificatePreviewModal() {
+  const modal = document.getElementById("certPreviewModal");
+  const iframe = document.getElementById("certPreviewIframe");
+  if (modal) modal.classList.remove("active");
+  if (iframe) iframe.src = "about:blank";
+  document.body.style.overflow = "";
+}
+window.closeCertificatePreviewModal = closeCertificatePreviewModal;
+
+function handlePreviewCertFromForm() {
+  const name = document.getElementById("certSingleName") ? document.getElementById("certSingleName").value.trim() : "";
+  const email = document.getElementById("certSingleEmail") ? document.getElementById("certSingleEmail").value.trim() : "";
+  const domain = document.getElementById("certSingleDomain") ? document.getElementById("certSingleDomain").value.trim() : "";
+  const role = document.getElementById("certSingleRole") ? document.getElementById("certSingleRole").value.trim() : "";
+  const selectElem = document.getElementById("certSingleSelectParticipant");
+
+  const modal = document.getElementById("certPreviewModal");
+  const iframe = document.getElementById("certPreviewIframe");
+  const spinner = document.getElementById("certPreviewLoadingSpinner");
+  const downloadLink = document.getElementById("btnDownloadPreviewPdf");
+  const titleSub = document.getElementById("certPreviewModalSub");
+
+  if (!modal || !iframe) return;
+  if (spinner) spinner.style.display = "flex";
+
+  const params = new URLSearchParams();
+  if (selectElem && selectElem.value) {
+    params.append("participant_id", selectElem.value);
+  } else {
+    if (name) params.append("name", name);
+    if (email) params.append("email", email);
+    if (domain) params.append("domain", domain);
+    if (role) params.append("role", role);
+  }
+
+  const previewUrl = `/api/admin/certificates/preview?${params.toString()}`;
+
+  iframe.onload = () => {
+    if (spinner) spinner.style.display = "none";
+  };
+  iframe.src = previewUrl;
+  if (downloadLink) {
+    downloadLink.href = previewUrl + (previewUrl.includes("?") ? "&download=true" : "?download=true");
+  }
+  if (titleSub) titleSub.textContent = `Preview for ${name || "Custom Details"}`;
+
+  modal.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+window.handlePreviewCertFromForm = handlePreviewCertFromForm;
+
+function handleDownloadCertFromForm() {
+  const name = document.getElementById("certSingleName") ? document.getElementById("certSingleName").value.trim() : "";
+  const email = document.getElementById("certSingleEmail") ? document.getElementById("certSingleEmail").value.trim() : "";
+  const domain = document.getElementById("certSingleDomain") ? document.getElementById("certSingleDomain").value.trim() : "";
+  const role = document.getElementById("certSingleRole") ? document.getElementById("certSingleRole").value.trim() : "";
+  const selectElem = document.getElementById("certSingleSelectParticipant");
+
+  const params = new URLSearchParams({ download: "true" });
+  if (selectElem && selectElem.value) {
+    params.append("participant_id", selectElem.value);
+  } else {
+    if (name) params.append("name", name);
+    if (email) params.append("email", email);
+    if (domain) params.append("domain", domain);
+    if (role) params.append("role", role);
+  }
+  window.location.href = `/api/admin/certificates/preview?${params.toString()}`;
+}
+window.handleDownloadCertFromForm = handleDownloadCertFromForm;
+
+/**
+ * Handles sending a single certificate from the single dispatch card form
+ */
+async function handleSendSingleCertificate() {
+  const name = document.getElementById("certSingleName") ? document.getElementById("certSingleName").value.trim() : "";
+  const email = document.getElementById("certSingleEmail") ? document.getElementById("certSingleEmail").value.trim() : "";
+  const domain = document.getElementById("certSingleDomain") ? document.getElementById("certSingleDomain").value.trim() : "";
+  const role = document.getElementById("certSingleRole") ? document.getElementById("certSingleRole").value.trim() : "";
+  const subject = document.getElementById("certSingleCustomSubject") ? document.getElementById("certSingleCustomSubject").value.trim() : "";
+  const pId = document.getElementById("certSingleSelectParticipant") ? document.getElementById("certSingleSelectParticipant").value : "";
+
+  const banner = document.getElementById("certAlertBanner");
+  const submitBtn = document.getElementById("btnSendSingleCertSubmit");
+
+  if (!name || !email) {
+    if (banner) showBanner(banner, "Participant name and valid email are required.", "error");
+    return;
+  }
+
+  const origHtml = submitBtn ? submitBtn.innerHTML : "";
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Generating PDF & Sending...`;
+  }
+
+  try {
+    const payload = {
+      participant_id: pId || undefined,
+      name,
+      email,
+      domain,
+      role,
+      custom_subject: subject || undefined
+    };
+
+    const res = await fetch("/api/admin/certificates/send-single", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+
+    if (res.ok && json.success) {
+      if (banner) showBanner(banner, json.message || `Certificate PDF sent successfully to ${email}!`, "success");
+      await loadCertificateHistory();
+    } else {
+      if (banner) showBanner(banner, json.error || "Failed to send certificate.", "error");
+    }
+  } catch (err) {
+    console.error("Single certificate dispatch error:", err);
+    if (banner) showBanner(banner, "Network error sending certificate.", "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origHtml;
+    }
+  }
+}
+window.handleSendSingleCertificate = handleSendSingleCertificate;
+
+/**
+ * Sends single certificate directly from table action button
+ */
+async function handleSendSingleCertFromTable(participantId) {
+  const participant = certificateParticipantsCache.find(p => p.id === participantId);
+  if (!participant) return;
+
+  if (!confirm(`Generate PDF certificate and email it directly to ${participant.name} (${participant.email})?`)) {
+    return;
+  }
+
+  const banner = document.getElementById("certAlertBanner");
+  if (banner) showBanner(banner, `Generating PDF and emailing ${participant.name}...`, "info");
+
+  try {
+    const res = await fetch("/api/admin/certificates/send-single", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participant_id: participantId })
+    });
+    const json = await res.json();
+
+    if (res.ok && json.success) {
+      if (banner) showBanner(banner, json.message || `Certificate dispatched to ${participant.name}!`, "success");
+      await loadCertificateHistory();
+    } else {
+      if (banner) showBanner(banner, json.error || "Failed to dispatch certificate.", "error");
+    }
+  } catch (err) {
+    console.error("Error sending single certificate from table:", err);
+    if (banner) showBanner(banner, "Network error dispatching certificate.", "error");
+  }
+}
+window.handleSendSingleCertFromTable = handleSendSingleCertFromTable;
+
+/**
+ * Dispatches certificates to selected checked participants
+ */
+async function dispatchSelectedCertificates() {
+  const checkboxes = document.querySelectorAll(".cert-row-checkbox:checked");
+  if (checkboxes.length === 0) return;
+
+  const ids = Array.from(checkboxes).map(cb => cb.value);
+  if (!confirm(`Are you sure you want to generate PDF certificates and dispatch emails to all ${ids.length} selected participant(s)?`)) {
+    return;
+  }
+
+  const banner = document.getElementById("certAlertBanner");
+  if (banner) showBanner(banner, `Preparing and dispatching ${ids.length} certificate emails in background...`, "info");
+
+  try {
+    const res = await fetch("/api/admin/certificates/send-bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participant_ids: ids })
+    });
+    const json = await res.json();
+
+    if (res.ok && json.success) {
+      const msg = json.message || `Dispatched certificates to ${json.data.sent_count} of ${json.data.total} participants.`;
+      if (banner) showBanner(banner, msg, "success");
+      // Uncheck all
+      checkboxes.forEach(cb => cb.checked = false);
+      updateBatchActionBar();
+      await loadCertificateHistory();
+    } else {
+      if (banner) showBanner(banner, json.error || "Failed to dispatch certificates.", "error");
+    }
+  } catch (err) {
+    console.error("Selected certificates dispatch error:", err);
+    if (banner) showBanner(banner, "Network error dispatching selected certificates.", "error");
+  }
+}
+window.dispatchSelectedCertificates = dispatchSelectedCertificates;
+
+/**
+ * Dispatches bulk certificates according to current filter
+ */
+async function dispatchBulkCertificates() {
+  const domainFilter = document.getElementById("certFilterDomain") ? document.getElementById("certFilterDomain").value : "all";
+  const paymentFilter = document.getElementById("certFilterPayment") ? document.getElementById("certFilterPayment").value : "paid";
+
+  const domainText = domainFilter === "all" ? "all domains" : `domain '${domainFilter}'`;
+  const paymentText = paymentFilter === "paid" ? "Paid participants only" : "All registrations";
+
+  if (!confirm(`Dispatch verified PDF e-certificates to ALL eligible participants matching current filter (${domainText}, ${paymentText})?`)) {
+    return;
+  }
+
+  const banner = document.getElementById("certAlertBanner");
+  if (banner) showBanner(banner, "Generating certificates and queueing email distribution...", "info");
+
+  try {
+    const res = await fetch("/api/admin/certificates/send-bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filter_domain: domainFilter,
+        filter_payment: paymentFilter
+      })
+    });
+    const json = await res.json();
+
+    if (res.ok && json.success) {
+      const msg = json.message || `Dispatched certificates to ${json.data.sent_count} participants!`;
+      if (banner) showBanner(banner, msg, "success");
+      await loadCertificateHistory();
+    } else {
+      if (banner) showBanner(banner, json.error || "Failed bulk dispatch.", "error");
+    }
+  } catch (err) {
+    console.error("Bulk certificate dispatch error:", err);
+    if (banner) showBanner(banner, "Network error executing bulk certificate dispatch.", "error");
+  }
+}
+window.dispatchBulkCertificates = dispatchBulkCertificates;
+
+/**
+ * Loads recent certificate email dispatch logs
+ */
+async function loadCertificateHistory() {
+  const tbody = document.getElementById("certHistoryTableBody");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/api/admin/certificates/history");
+    const json = await res.json();
+
+    if (res.ok && json.success && Array.isArray(json.data)) {
+      if (json.data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 1.5rem; color: var(--color-text-muted);">
+              No certificate emails dispatched yet.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = json.data.map(log => {
+        const isDelivered = (log.delivery_status || "").toLowerCase() === "delivered" || (log.delivery_status || "").toLowerCase() === "sent";
+        const statusBadge = isDelivered
+          ? `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(log.delivery_status)}</span>`
+          : `<span class="badge badge-primary"><i class="fa-solid fa-paper-plane"></i> ${escapeHtml(log.delivery_status || "Dispatched")}</span>`;
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: #1E293B;">${escapeHtml(log.recipient_email)}</div>
+              <div style="font-size: 0.76rem; color: var(--color-text-muted);">Mode: ${escapeHtml(log.delivery_mode || "email")}</div>
+            </td>
+            <td style="font-size: 0.82rem; color: #334155;">${escapeHtml(log.subject)}</td>
+            <td>${statusBadge}</td>
+            <td style="font-size: 0.8rem; color: #475569; white-space: nowrap;">${escapeHtml(log.created_at)}</td>
+            <td style="font-size: 0.78rem; color: #64748B;">
+              ${escapeHtml(log.notes || "PDF Attached")}
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.error("Error loading certificate history:", err);
+  }
+}
+window.loadCertificateHistory = loadCertificateHistory;
+
 
 
 

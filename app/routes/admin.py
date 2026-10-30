@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from functools import wraps
 from flask import (
@@ -10,6 +11,7 @@ from flask import (
     Response,
     current_app,
     session,
+    send_file,
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
@@ -59,19 +61,54 @@ def admin_root():
     return redirect(url_for("admin.login"))
 
 
+@admin_bp.route("/admin/index.html")
+@admin_bp.route("/admin/index")
+def admin_legacy_index_redirect():
+    """Redirects relative index.html requests from admin portal to the root public portal."""
+    return redirect("/", code=302)
+
+
+
 @admin_bp.route("/admin/login")
 @admin_bp.route("/admin-login.html")
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for("admin.dashboard"))
     return render_template("admin-login.html")
 
 
 @admin_bp.route("/admin/dashboard")
 @admin_bp.route("/admin-dashboard.html")
+@admin_bp.route("/admin/registrations")
+@admin_bp.route("/admin/participants")
+@admin_bp.route("/admin/teams")
+@admin_bp.route("/admin/payments")
+@admin_bp.route("/admin/reports")
+@admin_bp.route("/admin/inquiries")
+@admin_bp.route("/admin/announcements")
+@admin_bp.route("/admin/settings")
+@admin_bp.route("/admin/certificates")
 @login_required
 def dashboard():
-    return render_template("admin-dashboard.html")
+    initial_page = "dashboard"
+    path = request.path.rstrip("/")
+    if path.endswith("/registrations"):
+        initial_page = "registrations"
+    elif path.endswith("/participants"):
+        initial_page = "participants"
+    elif path.endswith("/teams"):
+        initial_page = "teams"
+    elif path.endswith("/payments"):
+        initial_page = "payments"
+    elif path.endswith("/reports"):
+        initial_page = "reports"
+    elif path.endswith("/inquiries"):
+        initial_page = "inquiries"
+    elif path.endswith("/announcements"):
+        initial_page = "announcements"
+    elif path.endswith("/settings"):
+        initial_page = "settings"
+    elif path.endswith("/certificates"):
+        initial_page = "certificates"
+    return render_template("admin-dashboard.html", initial_page=initial_page)
 
 
 @admin_bp.route("/admin/logout", methods=["GET", "POST"])
@@ -872,6 +909,342 @@ def api_get_email_logs():
     limit = request.args.get("limit", 50, type=int)
     logs = get_recent_email_logs(limit=limit)
     return jsonify({"success": True, "logs": logs}), 200
+
+
+# ==============================================================================
+# E-CERTIFICATE TEMPLATE & DISTRIBUTION ENDPOINTS
+# ==============================================================================
+
+@admin_bp.route("/api/admin/certificates/template", methods=["GET"])
+@login_required
+def api_get_certificate_template_info():
+    """Returns active PPTX template status, metadata, and available placeholder tags."""
+    from app.services.certificate_service import get_active_template_path, get_default_template_path
+    active_path = get_active_template_path()
+    default_path = get_default_template_path()
+    filename = os.path.basename(active_path)
+    size_bytes = os.path.getsize(active_path) if os.path.exists(active_path) else 0
+    mtime = datetime.fromtimestamp(os.path.getmtime(active_path)).strftime("%Y-%m-%d %H:%M:%S") if os.path.exists(active_path) else "N/A"
+    
+    template_info = {
+        "filename": filename,
+        "size_kb": round(size_bytes / 1024, 1),
+        "last_modified": mtime,
+        "updated_at": mtime,
+        "is_default": os.path.abspath(active_path) == os.path.abspath(default_path),
+        "is_custom": os.path.abspath(active_path) != os.path.abspath(default_path),
+        "placeholders": [
+            {"placeholder": "{{PARTICIPANT_NAME}}", "tag": "{{PARTICIPANT_NAME}}", "description": "Full name of the hacker / leader / member"},
+            {"placeholder": "{{ROLE}}", "tag": "{{ROLE}}", "description": "Participation role (Solo Hacker, Team Leader, Team Member)"},
+            {"placeholder": "{{DOMAIN}}", "tag": "{{DOMAIN}}", "description": "Innovation domain (AI & Machine Learning, Web3, etc.)"},
+            {"placeholder": "{{TEAM_NAME}}", "tag": "{{TEAM_NAME}}", "description": "Team squad name (or 'Individual Participant')"},
+            {"placeholder": "{{COLLEGE}}", "tag": "{{COLLEGE}}", "description": "Institution / University affiliation"},
+            {"placeholder": "{{CERTIFICATE_ID}}", "tag": "{{CERTIFICATE_ID}}", "description": "Unique verified certificate credential ID"},
+            {"placeholder": "{{ISSUE_DATE}}", "tag": "{{ISSUE_DATE}}", "description": "Official issuance date (e.g. October 30, 2026)"},
+            {"placeholder": "{{EVENT_NAME}}", "tag": "{{EVENT_NAME}}", "description": "SYNEX National Innovation Hackathon 2026"},
+        ]
+    }
+    
+    return jsonify({
+        "success": True,
+        "template": template_info,
+        "data": template_info
+    }), 200
+
+
+@admin_bp.route("/api/admin/certificates/template/download", methods=["GET"])
+@login_required
+def api_download_certificate_template():
+    """Downloads current active PPTX presentation template for offline customization."""
+    from app.services.certificate_service import get_active_template_path
+    active_path = get_active_template_path()
+    if not os.path.exists(active_path):
+        return jsonify({"success": False, "error": "Template file not found on server."}), 404
+    return send_file(
+        active_path,
+        as_attachment=True,
+        download_name=os.path.basename(active_path),
+        mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    )
+
+
+@admin_bp.route("/api/admin/certificates/template/upload", methods=["POST"])
+@login_required
+def api_upload_certificate_template():
+    """Allows admin to upload a custom PowerPoint (.pptx) certificate template."""
+    from werkzeug.utils import secure_filename
+    from app.services.certificate_service import get_templates_dir
+    from pptx import Presentation
+
+    if "template_file" not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded. Please select a .pptx file."}), 400
+
+    file = request.files["template_file"]
+    if not file or not file.filename:
+        return jsonify({"success": False, "error": "No file selected."}), 400
+
+    filename = secure_filename(file.filename)
+    if not filename.lower().endswith(".pptx"):
+        return jsonify({"success": False, "error": "Invalid format. Only PowerPoint (.pptx) files are supported."}), 400
+
+    templates_dir = get_templates_dir()
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    saved_filename = f"custom_template_{timestamp}_{filename}"
+    target_path = os.path.join(templates_dir, saved_filename)
+    file.save(target_path)
+
+    # Validate that it is a valid PPTX
+    try:
+        prs = Presentation(target_path)
+        if len(prs.slides) == 0:
+            os.remove(target_path)
+            return jsonify({"success": False, "error": "The uploaded presentation contains 0 slides."}), 400
+    except Exception as e:
+        if os.path.exists(target_path):
+            os.remove(target_path)
+        return jsonify({"success": False, "error": f"Failed to parse presentation file: {str(e)}"}), 400
+
+    # Persist as active template
+    EventSetting.set_val("ACTIVE_CERTIFICATE_TEMPLATE", target_path, "Active PPTX Certificate Template Path")
+
+    return jsonify({
+        "success": True,
+        "message": f"Custom template '{filename}' uploaded and set as active successfully!",
+        "filename": saved_filename
+    }), 200
+
+
+@admin_bp.route("/api/admin/certificates/template/reset", methods=["POST"])
+@login_required
+def api_reset_certificate_template():
+    """Resets the active certificate template back to the default SYNEX official template."""
+    EventSetting.set_val("ACTIVE_CERTIFICATE_TEMPLATE", "", "Active PPTX Certificate Template Path")
+    return jsonify({
+        "success": True,
+        "message": "Certificate template reset to official default SYNEX design."
+    }), 200
+
+
+@admin_bp.route("/api/admin/certificates/participants", methods=["GET"])
+@login_required
+def api_get_certificate_participants():
+    """Returns eligible participants with certificate readiness status."""
+    from app.services.certificate_service import get_participants_for_certificates
+    domain = request.args.get("domain", "all")
+    payment_param = request.args.get("payment", "").lower()
+    if payment_param:
+        paid_only = (payment_param == "paid")
+    else:
+        paid_only = request.args.get("paid_only", "true").lower() in ("true", "1", "yes")
+    search = request.args.get("search", "")
+
+    participants = get_participants_for_certificates(domain_filter=domain, paid_only=paid_only, search=search)
+    return jsonify({
+        "success": True,
+        "count": len(participants),
+        "participants": participants,
+        "data": participants
+    }), 200
+
+
+@admin_bp.route("/api/admin/certificates/preview", methods=["GET"])
+@login_required
+def api_preview_certificate():
+    """Generates and returns an inline PDF certificate for browser preview or direct download."""
+    from app.services.certificate_service import get_participants_for_certificates, generate_single_certificate_pdf
+
+    participant_id = request.args.get("participant_id")
+    participant_data = None
+    if participant_id:
+        all_participants = get_participants_for_certificates(paid_only=False)
+        for p in all_participants:
+            if p["id"] == participant_id:
+                participant_data = p
+                break
+
+    if not participant_data:
+        participant_data = {
+            "name": request.args.get("name") or "Aarav Patel",
+            "role": request.args.get("role") or "Team Leader",
+            "domain": request.args.get("domain") or "AI & Machine Learning",
+            "team_name": request.args.get("team_name") or "Neural Pioneers",
+            "college": request.args.get("college") or "National Institute of Technology",
+            "public_id": request.args.get("public_id") or "SYNEX-DEMO",
+            "certificate_id": "SYNEX-CERT-SAMPLE-01",
+            "issue_date": datetime.utcnow().strftime("%B %d, %Y")
+        }
+
+    try:
+        pdf_bytes, filename = generate_single_certificate_pdf(participant_data)
+        as_attachment = request.args.get("download", "false").lower() in ("true", "1")
+        disposition = "attachment" if as_attachment else "inline"
+        
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = f"{disposition}; filename=\"{filename}\""
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
+    except Exception as e:
+        logger.error(f"Certificate preview generation error: {e}")
+        return jsonify({"success": False, "error": f"Failed to generate certificate preview: {str(e)}"}), 500
+
+
+@admin_bp.route("/api/admin/certificates/send-single", methods=["POST"])
+@login_required
+def api_send_single_certificate():
+    """Dispatches a personalized certificate to a single participant or test email."""
+    from app.services.certificate_service import get_participants_for_certificates, send_participant_certificate_email
+    data = request.get_json(silent=True) or {}
+    participant_id = data.get("participant_id")
+    test_email = data.get("test_email", "").strip()
+
+    participant_data = None
+    if participant_id:
+        all_p = get_participants_for_certificates(paid_only=False)
+        for p in all_p:
+            if p["id"] == participant_id:
+                participant_data = dict(p)
+                break
+
+    if not participant_data:
+        participant_data = {
+            "name": data.get("name") or "Sample Participant",
+            "email": test_email or data.get("email") or current_user.email,
+            "role": data.get("role") or "Solo Hacker",
+            "domain": data.get("domain") or "AI & Machine Learning",
+            "team_name": data.get("team_name") or "Solo Participant",
+            "college": data.get("college") or "Recognized Institution",
+            "public_id": data.get("public_id") or "SYNEX-TEST",
+            "certificate_id": "SYNEX-CERT-DEMO-01",
+            "issue_date": datetime.utcnow().strftime("%B %d, %Y"),
+        }
+
+    if test_email:
+        participant_data["email"] = test_email
+
+    custom_subject = data.get("custom_subject")
+    custom_body = data.get("custom_body")
+
+    try:
+        success, message, log = send_participant_certificate_email(
+            participant_data,
+            custom_subject=custom_subject,
+            custom_body=custom_body
+        )
+        is_success = success or (log is not None and log.status == "simulated") or ("SIMULATED" in message)
+        return jsonify({
+            "success": is_success,
+            "delivered": success,
+            "simulated": (log and log.status == "simulated") or ("SIMULATED" in message),
+            "message": message,
+            "recipient": participant_data["email"],
+            "certificate_id": participant_data.get("certificate_id")
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to send single certificate: {e}")
+        return jsonify({"success": False, "error": f"Failed to dispatch certificate: {str(e)}"}), 500
+
+
+@admin_bp.route("/api/admin/certificates/send-bulk", methods=["POST"])
+@login_required
+def api_send_bulk_certificates():
+    """Bulk dispatches personalized certificates to matching or selected participants."""
+    from app.services.certificate_service import get_participants_for_certificates, send_participant_certificate_email
+    data = request.get_json(silent=True) or {}
+    domain = data.get("domain", data.get("filter_domain", "all"))
+    paid_only = data.get("filter_payment", "paid") == "paid" if "filter_payment" in data else bool(data.get("paid_only", True))
+    selected_ids = set(data.get("participant_ids") or [])
+    custom_subject = data.get("custom_subject")
+    custom_body = data.get("custom_body")
+
+    participants = get_participants_for_certificates(domain_filter=domain, paid_only=paid_only)
+    if selected_ids:
+        participants = [p for p in participants if p["id"] in selected_ids]
+
+    if not participants:
+        return jsonify({
+            "success": False,
+            "error": "No matching participants found for certificate distribution."
+        }), 400
+
+    results = []
+    sent_count = 0
+    failed_count = 0
+
+    for p in participants:
+        try:
+            ok, msg, log = send_participant_certificate_email(
+                p,
+                custom_subject=custom_subject,
+                custom_body=custom_body
+            )
+            if ok:
+                sent_count += 1
+                status = "sent"
+            elif (log and log.status == "simulated") or ("SIMULATED" in msg):
+                sent_count += 1
+                status = "simulated"
+            else:
+                failed_count += 1
+                status = "failed"
+            results.append({
+                "participant_id": p["id"],
+                "name": p["name"],
+                "email": p["email"],
+                "certificate_id": p["certificate_id"],
+                "status": status,
+                "message": msg
+            })
+        except Exception as item_err:
+            failed_count += 1
+            results.append({
+                "participant_id": p["id"],
+                "name": p["name"],
+                "email": p["email"],
+                "status": "failed",
+                "message": str(item_err)
+            })
+
+    return jsonify({
+        "success": True,
+        "message": f"Processed {len(participants)} certificates: {sent_count} dispatched, {failed_count} failed.",
+        "summary": {
+            "total": len(participants),
+            "sent": sent_count,
+            "failed": failed_count
+        },
+        "data": {
+            "total": len(participants),
+            "sent_count": sent_count,
+            "failed_count": failed_count
+        },
+        "results": results
+    }), 200
+
+
+@admin_bp.route("/api/admin/certificates/history", methods=["GET"])
+@login_required
+def api_get_certificate_history():
+    """Returns past certificate distribution email logs."""
+    from app.models.email_log import EmailLog
+    limit = request.args.get("limit", 50, type=int)
+    logs = EmailLog.query.filter_by(email_type="certificate").order_by(EmailLog.created_at.desc()).limit(limit).all()
+    data = []
+    for log in logs:
+        data.append({
+            "id": log.id,
+            "recipient": log.recipient,
+            "recipient_email": log.recipient,
+            "subject": log.subject,
+            "status": log.status,
+            "delivery_status": log.status,
+            "delivery_mode": "simulation" if log.status == "simulated" else "live",
+            "sent_at": log.created_at.strftime("%Y-%m-%d %H:%M:%S") if log.created_at else "N/A",
+            "created_at": log.created_at.strftime("%Y-%m-%d %H:%M:%S") if log.created_at else "N/A",
+            "error_message": log.error_message,
+            "notes": log.error_message or "PDF Attached"
+        })
+    return jsonify({"success": True, "history": data, "data": data, "count": len(data)}), 200
+
 
 
 

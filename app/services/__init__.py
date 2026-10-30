@@ -15,6 +15,13 @@ from app.services.admin_service import (
     export_registrations_csv,
 )
 from app.services.email_service import send_confirmation_email
+from app.services.certificate_service import (
+    get_active_template_path,
+    get_default_template_path,
+    get_participants_for_certificates,
+    generate_single_certificate_pdf,
+    send_participant_certificate_email,
+)
 
 __all__ = [
     "register_participant",
@@ -28,4 +35,9 @@ __all__ = [
     "update_registration_status",
     "export_registrations_csv",
     "send_confirmation_email",
+    "get_active_template_path",
+    "get_default_template_path",
+    "get_participants_for_certificates",
+    "generate_single_certificate_pdf",
+    "send_participant_certificate_email",
 ]

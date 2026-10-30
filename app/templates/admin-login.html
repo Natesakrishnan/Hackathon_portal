@@ -37,6 +37,20 @@
         <p class="login-sub">Sign in to manage registrations and monitor hackathon analytics</p>
       </div>
 
+      {% if current_user.is_authenticated %}
+      <!-- Active Session Status Alert -->
+      <div class="alert alert-success" style="font-size: 0.85rem; margin-bottom: 1.25rem; background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-circle-check" style="color: #059669;"></i>
+          <span>Signed in as <strong>{{ current_user.username }}</strong></span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <a href="/admin/dashboard" class="btn btn-primary btn-sm" style="font-size: 0.78rem; padding: 4px 10px;">Go to Dashboard &rarr;</a>
+          <a href="/admin/logout" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 4px 10px;">Log Out</a>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Credentials Hint Alert -->
       <div class="alert alert-info" style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 8px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start;">
         <i class="fa-solid fa-circle-info" style="font-size: 1.1rem; color: #0284C7; margin-top: 2px;" aria-hidden="true"></i>

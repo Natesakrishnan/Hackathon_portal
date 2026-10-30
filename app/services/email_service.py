@@ -1,9 +1,11 @@
 import logging
 import os
 import smtplib
+import base64
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 from email.utils import parseaddr
 from typing import Dict, Any, List, Optional, Tuple
 from flask import current_app
@@ -100,6 +102,7 @@ def send_email(
     body_text: str,
     body_html: Optional[str] = None,
     email_type: str = "direct",
+    attachments: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[bool, str, Optional[EmailLog]]:
     """
     Sends an email to the specified recipient.
@@ -168,6 +171,16 @@ def send_email(
                 "text": body_text,
                 "html": html_content
             }
+            if attachments:
+                resend_attachments = []
+                for att in attachments:
+                    content_bytes = att.get("content_bytes") or b""
+                    resend_attachments.append({
+                        "filename": att.get("filename", "certificate.pdf"),
+                        "content": base64.b64encode(content_bytes).decode("utf-8")
+                    })
+                payload["attachments"] = resend_attachments
+
             resp = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=12)
 
             # If rejected because domain is unverified, auto-retry with onboarding@resend.dev sandbox
@@ -233,12 +246,27 @@ def send_email(
     # PATH B: Standard SMTP Server (smtplib)
     elif cfg["is_configured"]:
         # Construct MIME message
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = sender
-        msg["To"] = to_email
-        msg.attach(MIMEText(body_text, "plain", "utf-8"))
-        msg.attach(MIMEText(html_content, "html", "utf-8"))
+        if attachments:
+            msg = MIMEMultipart("mixed")
+            msg["Subject"] = subject
+            msg["From"] = sender
+            msg["To"] = to_email
+            alt = MIMEMultipart("alternative")
+            alt.attach(MIMEText(body_text, "plain", "utf-8"))
+            alt.attach(MIMEText(html_content, "html", "utf-8"))
+            msg.attach(alt)
+            for att in attachments:
+                part = MIMEApplication(att.get("content_bytes") or b"", _subtype="pdf")
+                fname = att.get("filename", "certificate.pdf")
+                part.add_header('Content-Disposition', 'attachment', filename=fname)
+                msg.attach(part)
+        else:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = sender
+            msg["To"] = to_email
+            msg.attach(MIMEText(body_text, "plain", "utf-8"))
+            msg.attach(MIMEText(html_content, "html", "utf-8"))
 
         try:
             if cfg["use_ssl"]:
@@ -281,13 +309,14 @@ def send_email(
 
     # PATH C: Simulation Mode (No credentials configured)
     else:
+        att_note = f" (With {len(attachments)} PDF attachment(s))" if attachments else ""
         log = EmailLog(
             recipient=to_email,
             subject=subject,
-            message=body_text,
+            message=body_text + att_note,
             email_type=email_type,
             status="simulated",
-            error_message="Simulated Outbox: No live email credentials configured in Event Settings.",
+            error_message="Simulated Outbox: No live email credentials configured in Event Settings." + att_note,
         )
         db.session.add(log)
         db.session.commit()
