@@ -50,6 +50,11 @@ from app.services.content_service import (
     save_schedule_content,
     reset_schedule_to_default,
 )
+from app.services.checkin_service import (
+    verify_and_checkin,
+    undo_checkin,
+    get_checkin_summary_and_roster,
+)
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -454,6 +459,9 @@ def api_get_settings():
             "event_name": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026")),
             "individual_fee": int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299))),
             "team_fee": int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999))),
+            "per_member_fee": int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250))),
+            "min_team_members": int(EventSetting.get_val("MIN_TEAM_MEMBERS", current_app.config.get("MIN_TEAM_MEMBERS", 2))),
+            "max_team_members": int(EventSetting.get_val("MAX_TEAM_MEMBERS", current_app.config.get("MAX_TEAM_MEMBERS", 4))),
             "registration_deadline": EventSetting.get_val("REGISTRATION_DEADLINE", "2026-11-30T23:59"),
             "prize_pool": EventSetting.get_val("TOTAL_PRIZE_POOL", "₹2,50,000"),
             "registration_open": EventSetting.get_val("REGISTRATION_OPEN", "true").lower() in ("true", "1", "yes"),
@@ -500,6 +508,41 @@ def api_update_settings():
         except (TypeError, ValueError):
             return jsonify({"success": False, "error": "Team fee must be a valid integer."}), 400
 
+    # 3a. Validate Per Member Fee
+    per_member_fee = data.get("per_member_fee")
+    if per_member_fee is not None:
+        try:
+            per_member_fee = int(per_member_fee)
+            if per_member_fee < 0 or per_member_fee > 500000:
+                return jsonify({"success": False, "error": "Fee per member must be between 0 and 500,000 INR."}), 400
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "Fee per member must be a valid integer."}), 400
+
+    # 3b. Validate Min Team Members
+    min_team_members = data.get("min_team_members")
+    if min_team_members is not None:
+        try:
+            min_team_members = int(min_team_members)
+            if min_team_members < 1 or min_team_members > 20:
+                return jsonify({"success": False, "error": "Minimum team members must be between 1 and 20."}), 400
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "Minimum team members must be a valid integer."}), 400
+
+    # 3c. Validate Max Team Members
+    max_team_members = data.get("max_team_members")
+    if max_team_members is not None:
+        try:
+            max_team_members = int(max_team_members)
+            if max_team_members < 1 or max_team_members > 20:
+                return jsonify({"success": False, "error": "Maximum team members must be between 1 and 20."}), 400
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "Maximum team members must be a valid integer."}), 400
+
+    current_min = min_team_members if min_team_members is not None else int(EventSetting.get_val("MIN_TEAM_MEMBERS", current_app.config.get("MIN_TEAM_MEMBERS", 2)))
+    current_max = max_team_members if max_team_members is not None else int(EventSetting.get_val("MAX_TEAM_MEMBERS", current_app.config.get("MAX_TEAM_MEMBERS", 4)))
+    if current_min > current_max:
+        return jsonify({"success": False, "error": "Minimum team members cannot be greater than maximum team members."}), 400
+
     # 4. Validate Registration Deadline
     deadline = data.get("registration_deadline")
     if deadline is not None:
@@ -540,6 +583,16 @@ def api_update_settings():
         EventSetting.set_val("EVENT_INDIVIDUAL_FEE", str(indiv_fee), "Individual Entry Fee in INR")
     if team_fee is not None:
         EventSetting.set_val("EVENT_TEAM_FEE", str(team_fee), "Team Entry Fee in INR")
+    if per_member_fee is not None:
+        EventSetting.set_val("EVENT_PER_MEMBER_FEE", str(per_member_fee), "Registration Fee Per Team Member in INR")
+        if indiv_fee is None:
+            EventSetting.set_val("EVENT_INDIVIDUAL_FEE", str(per_member_fee), "Individual Entry Fee in INR")
+        if team_fee is None:
+            EventSetting.set_val("EVENT_TEAM_FEE", str(per_member_fee * current_min), "Team Entry Fee in INR")
+    if min_team_members is not None:
+        EventSetting.set_val("MIN_TEAM_MEMBERS", str(min_team_members), "Minimum Team Members Required")
+    if max_team_members is not None:
+        EventSetting.set_val("MAX_TEAM_MEMBERS", str(max_team_members), "Maximum Team Members Allowed")
     if deadline is not None:
         EventSetting.set_val("REGISTRATION_DEADLINE", str(deadline).strip(), "Registration Deadline ISO timestamp")
     if prize_pool is not None:
@@ -554,6 +607,9 @@ def api_update_settings():
             "event_name": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026")),
             "individual_fee": int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299))),
             "team_fee": int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999))),
+            "per_member_fee": int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250))),
+            "min_team_members": int(EventSetting.get_val("MIN_TEAM_MEMBERS", current_app.config.get("MIN_TEAM_MEMBERS", 2))),
+            "max_team_members": int(EventSetting.get_val("MAX_TEAM_MEMBERS", current_app.config.get("MAX_TEAM_MEMBERS", 4))),
             "registration_deadline": EventSetting.get_val("REGISTRATION_DEADLINE", "2026-11-30T23:59"),
             "prize_pool": EventSetting.get_val("TOTAL_PRIZE_POOL", "₹2,50,000"),
             "registration_open": EventSetting.get_val("REGISTRATION_OPEN", "true").lower() in ("true", "1", "yes"),
@@ -911,6 +967,30 @@ def api_get_email_logs():
     return jsonify({"success": True, "logs": logs}), 200
 
 
+@admin_bp.route("/api/admin/email/logs/reset", methods=["POST", "DELETE"])
+@login_required
+def api_reset_email_logs():
+    """Resets/clears outbound email outbox logs."""
+    filter_type = request.args.get("type", "inquiries").strip().lower()
+    if filter_type == "inquiries":
+        deleted_count = EmailLog.query.filter(
+            EmailLog.email_type.in_(["inquiry_reply", "direct", "test"])
+        ).delete(synchronize_session=False)
+    elif filter_type == "all":
+        deleted_count = EmailLog.query.delete(synchronize_session=False)
+    else:
+        # Clear all non-certificate outbox activity
+        deleted_count = EmailLog.query.filter(
+            EmailLog.email_type != "certificate"
+        ).delete(synchronize_session=False)
+    db.session.commit()
+    return jsonify({
+        "success": True,
+        "message": f"Successfully cleared {deleted_count} outbox log record(s).",
+        "deleted_count": deleted_count
+    }), 200
+
+
 # ==============================================================================
 # E-CERTIFICATE TEMPLATE & DISTRIBUTION ENDPOINTS
 # ==============================================================================
@@ -1244,6 +1324,102 @@ def api_get_certificate_history():
             "notes": log.error_message or "PDF Attached"
         })
     return jsonify({"success": True, "history": data, "data": data, "count": len(data)}), 200
+
+
+@admin_bp.route("/api/admin/certificates/history/reset", methods=["POST", "DELETE"])
+@login_required
+@settings_auth_required
+def api_reset_certificate_history():
+    """Resets/clears all certificate distribution email logs from the database."""
+    from app.models.email_log import EmailLog
+    deleted_count = EmailLog.query.filter_by(email_type="certificate").delete(synchronize_session=False)
+    db.session.commit()
+    return jsonify({
+        "success": True,
+        "message": f"Successfully deleted {deleted_count} certificate dispatch history record(s).",
+        "deleted_count": deleted_count
+    }), 200
+
+
+# ==============================================================================
+# COORDINATOR QR CHECK-IN ENDPOINTS
+# ==============================================================================
+
+@admin_bp.route("/api/admin/checkin", methods=["POST"])
+@login_required
+def api_admin_checkin():
+    """
+    Validates a team QR check-in code and marks the team as checked in.
+    Enforces single-use check-in.
+    Returns team information and full members roster.
+    """
+    data = request.get_json(silent=True) or {}
+    code = data.get("code") or data.get("token") or data.get("ref") or ""
+    notes = data.get("notes")
+
+    coordinator_name = current_user.full_name or current_user.username
+    success, res_data, status_code = verify_and_checkin(code, coordinator_name=coordinator_name, notes=notes)
+    return jsonify(res_data), status_code
+
+
+@admin_bp.route("/api/admin/checkin/undo", methods=["POST"])
+@login_required
+def api_admin_undo_checkin():
+    """
+    Resets/undoes a check-in status for a team.
+    """
+    data = request.get_json(silent=True) or {}
+    reg_id = data.get("registration_id") or data.get("ref") or data.get("id")
+    if not reg_id:
+        return jsonify({"success": False, "error": "registration_id or ref is required."}), 400
+
+    success, message, status_code = undo_checkin(reg_id)
+    return jsonify({"success": success, "message": message}), status_code
+
+
+@admin_bp.route("/api/admin/checkin/stats", methods=["GET"])
+@login_required
+def api_admin_checkin_stats():
+    """
+    Returns live check-in statistics and roster of all teams.
+    """
+    data = get_checkin_summary_and_roster()
+    return jsonify({"success": True, **data}), 200
+
+
+@admin_bp.route("/api/admin/checkin/send-pass", methods=["POST"])
+@login_required
+def api_admin_send_checkin_pass():
+    """
+    Sends or resends the official confirmation pass with QR code to the team leader's registered email.
+    """
+    data = request.get_json(silent=True) or {}
+    code = data.get("ref") or data.get("code") or data.get("registration_id") or ""
+    if not code:
+        return jsonify({"success": False, "error": "Registration reference or code is required."}), 400
+
+    from app.services.checkin_service import resolve_checkin_code
+    from app.services.email_service import send_confirmation_email
+
+    reg = resolve_checkin_code(code)
+    if not reg:
+        return jsonify({"success": False, "error": f"Registration '{code}' not found."}), 404
+
+    leader_email = reg.team.leader.email if (reg.team and reg.team.leader) else (reg.participant.email if reg.participant else None)
+    team_name = reg.team.team_name if reg.team else (reg.participant.full_name if reg.participant else reg.public_id)
+
+    latest_payment = reg.payments.order_by(db.desc(db.text("id"))).first()
+    send_confirmation_email(reg, latest_payment)
+
+    return jsonify({
+        "success": True,
+        "message": f"Confirmation pass with check-in QR code dispatched to team leader: {leader_email}",
+        "recipient_email": leader_email,
+        "team_name": team_name,
+        "public_id": reg.public_id,
+        "checkin_token": reg.checkin_token,
+    }), 200
+
 
 
 

@@ -22,6 +22,13 @@ class Registration(db.Model):
     registration_status = db.Column(db.String(30), default="pending", nullable=False)  # pending, confirmed, cancelled, rejected
     payment_status = db.Column(db.String(30), default="unpaid", nullable=False)  # unpaid, paid, refunded, failed
 
+    # Check-in verification attributes (Unique QR Check-In, Valid Once)
+    checkin_token = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    is_checked_in = db.Column(db.Boolean, default=False, nullable=False)
+    checked_in_at = db.Column(db.DateTime, nullable=True)
+    checked_in_by = db.Column(db.String(120), nullable=True)
+    checkin_notes = db.Column(db.String(255), nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -40,6 +47,11 @@ class Registration(db.Model):
             "currency": self.currency,
             "registration_status": self.registration_status,
             "payment_status": self.payment_status,
+            "checkin_token": self.checkin_token,
+            "is_checked_in": bool(self.is_checked_in),
+            "checked_in_at": self.checked_in_at.isoformat() if self.checked_in_at else None,
+            "checked_in_by": self.checked_in_by,
+            "checkin_notes": self.checkin_notes,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "participant": self.participant.to_dict() if self.participant else None,

@@ -464,6 +464,9 @@ def test_settings_get_and_put(admin_client):
     assert "event_name" in data["settings"]
     assert "individual_fee" in data["settings"]
     assert "team_fee" in data["settings"]
+    assert "per_member_fee" in data["settings"]
+    assert "min_team_members" in data["settings"]
+    assert "max_team_members" in data["settings"]
     assert "registration_deadline" in data["settings"]
     assert "prize_pool" in data["settings"]
 
@@ -472,6 +475,9 @@ def test_settings_get_and_put(admin_client):
         "event_name": "SYNEX Grand Hackathon 2026",
         "individual_fee": 349,
         "team_fee": 1199,
+        "per_member_fee": 300,
+        "min_team_members": 2,
+        "max_team_members": 5,
         "registration_deadline": "2026-12-15T23:59",
         "prize_pool": "₹3,00,000",
         "registration_open": True,
@@ -483,12 +489,18 @@ def test_settings_get_and_put(admin_client):
     assert updated_data["settings"]["event_name"] == "SYNEX Grand Hackathon 2026"
     assert updated_data["settings"]["individual_fee"] == 349
     assert updated_data["settings"]["team_fee"] == 1199
+    assert updated_data["settings"]["per_member_fee"] == 300
+    assert updated_data["settings"]["min_team_members"] == 2
+    assert updated_data["settings"]["max_team_members"] == 5
     assert updated_data["settings"]["prize_pool"] == "₹3,00,000"
 
     # 3. Verify persistence with a fresh GET
     res_get2 = admin_client.get("/api/admin/settings")
     assert res_get2.get_json()["settings"]["individual_fee"] == 349
     assert res_get2.get_json()["settings"]["team_fee"] == 1199
+    assert res_get2.get_json()["settings"]["per_member_fee"] == 300
+    assert res_get2.get_json()["settings"]["min_team_members"] == 2
+    assert res_get2.get_json()["settings"]["max_team_members"] == 5
 
 
 def test_settings_invalid_inputs_rejected(admin_client):
@@ -497,6 +509,21 @@ def test_settings_invalid_inputs_rejected(admin_client):
     res_neg = admin_client.put("/api/admin/settings", json={"individual_fee": -50})
     assert res_neg.status_code == 400
     assert "between 0 and 500,000" in res_neg.get_json()["error"]
+
+    # Negative per member fee
+    res_neg_pm = admin_client.put("/api/admin/settings", json={"per_member_fee": -25})
+    assert res_neg_pm.status_code == 400
+    assert "between 0 and 500,000" in res_neg_pm.get_json()["error"]
+
+    # Invalid min team members (< 1)
+    res_bad_min = admin_client.put("/api/admin/settings", json={"min_team_members": 0})
+    assert res_bad_min.status_code == 400
+    assert "between 1 and 20" in res_bad_min.get_json()["error"]
+
+    # Min team members greater than max team members
+    res_min_gt_max = admin_client.put("/api/admin/settings", json={"min_team_members": 6, "max_team_members": 4})
+    assert res_min_gt_max.status_code == 400
+    assert "cannot be greater than" in res_min_gt_max.get_json()["error"]
 
     # Invalid deadline format
     res_bad_date = admin_client.put("/api/admin/settings", json={"registration_deadline": "not-a-date"})
@@ -518,6 +545,9 @@ def test_public_config_sync_with_settings(client, admin_client):
             "event_name": "SYNEX 2026 Mega Hack",
             "individual_fee": 399,
             "team_fee": 1299,
+            "per_member_fee": 350,
+            "min_team_members": 2,
+            "max_team_members": 4,
             "registration_deadline": "2026-12-31T23:59:59",
             "prize_pool": "₹5,00,000",
             "registration_open": False,
@@ -531,6 +561,9 @@ def test_public_config_sync_with_settings(client, admin_client):
     assert cfg["event_name"] == "SYNEX 2026 Mega Hack"
     assert cfg["individual_fee"] == 399
     assert cfg["team_fee"] == 1299
+    assert cfg["per_member_fee"] == 350
+    assert cfg["min_team_members"] == 2
+    assert cfg["max_team_members"] == 4
     assert cfg["prize_pool"] == "₹5,00,000"
     assert cfg["registration_open"] is False
     assert cfg["registration_deadline"] == "2026-12-31T23:59:59"
@@ -1116,6 +1149,65 @@ def test_admin_certificate_dispatch_and_history(admin_client):
     recent_entry = hist_data["data"][0]
     assert recent_entry["recipient_email"] == "karthik@test.edu"
     assert "Certificate" in recent_entry["subject"]
+
+
+def test_admin_reset_email_logs(admin_client):
+    """Test resetting inquiries outbound email logs."""
+    # 1. Send an email to ensure an outbox record exists
+    send_res = admin_client.post(
+        "/api/admin/send-email",
+        json={
+            "to_email": "outbox-reset-test@example.com",
+            "subject": "Testing Outbox Reset",
+            "message": "This log should be cleared by reset.",
+        },
+    )
+    assert send_res.status_code == 200
+
+    # 2. Reset outbox logs
+    reset_res = admin_client.post("/api/admin/email/logs/reset?type=inquiries")
+    assert reset_res.status_code == 200
+    reset_data = reset_res.get_json()
+    assert reset_data["success"] is True
+    assert reset_data["deleted_count"] >= 1
+
+    # 3. Verify logs are cleared
+    logs_res = admin_client.get("/api/admin/email/logs")
+    assert logs_res.status_code == 200
+    logs = logs_res.get_json()["logs"]
+    assert not any(l["recipient"] == "outbox-reset-test@example.com" for l in logs)
+
+
+def test_admin_reset_certificate_history(app, admin_client):
+    """Test resetting certificate dispatch history from event settings."""
+    # 1. Unauthorized client without settings auth should be rejected
+    anon = app.test_client()
+    unauth_res = anon.post("/api/admin/certificates/history/reset")
+    assert unauth_res.status_code in (401, 403, 302)
+
+    # 2. Seed a certificate dispatch log
+    send_res = admin_client.post(
+        "/api/admin/certificates/send-single",
+        json={
+            "name": "Reset Test User",
+            "email": "reset-cert@test.edu",
+            "role": "Solo Hacker",
+            "domain": "Web3 & Blockchain",
+        },
+    )
+    assert send_res.status_code == 200
+
+    # 3. Reset certificate dispatch history
+    reset_res = admin_client.post("/api/admin/certificates/history/reset")
+    assert reset_res.status_code == 200
+    reset_data = reset_res.get_json()
+    assert reset_data["success"] is True
+    assert reset_data["deleted_count"] >= 1
+
+    # 4. Verify history is empty
+    hist_res = admin_client.get("/api/admin/certificates/history")
+    assert hist_res.status_code == 200
+    assert len(hist_res.get_json()["data"]) == 0
 
 
 

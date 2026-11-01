@@ -72,6 +72,12 @@ const ADMIN_PAGE_CONFIG = {
     hash: "#certificates",
     path: "/admin/certificates",
   },
+  "checkin": {
+    title: "Coordinator QR Check-In & Team Attendance",
+    viewId: "view-checkin",
+    hash: "#checkin",
+    path: "/admin/checkin",
+  },
   "settings": {
     title: "Event Configuration & Parameters",
     viewId: "view-settings",
@@ -153,9 +159,16 @@ function switchAdminPage(pageKey, updateHistory = true) {
     renderPaymentsDirectory();
   } else if (pageKey === "certificates") {
     loadCertificateSection();
+  } else if (pageKey === "checkin") {
+    loadCheckinSummaryAndRoster();
   }
 
-  // 7. Scroll smoothly to top
+  // 7. Stop camera scanner if navigating away from check-in page
+  if (pageKey !== "checkin" && typeof stopQrScanner === "function") {
+    stopQrScanner();
+  }
+
+  // 8. Scroll smoothly to top
   const mainEl = document.querySelector(".admin-main");
   if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1613,6 +1626,9 @@ async function loadEventSettings() {
       const nameInput = document.getElementById("settingEventName");
       const indivInput = document.getElementById("settingIndividualFee");
       const teamInput = document.getElementById("settingTeamFee");
+      const perMemberInput = document.getElementById("settingPerMemberFee");
+      const minTeamInput = document.getElementById("settingMinTeamMembers");
+      const maxTeamInput = document.getElementById("settingMaxTeamMembers");
       const deadlineInput = document.getElementById("settingDeadline");
       const prizeInput = document.getElementById("settingPrizePool");
       const openSelect = document.getElementById("settingRegistrationOpen");
@@ -1620,6 +1636,9 @@ async function loadEventSettings() {
       if (nameInput) nameInput.value = s.event_name || "";
       if (indivInput) indivInput.value = s.individual_fee ?? 299;
       if (teamInput) teamInput.value = s.team_fee ?? 999;
+      if (perMemberInput) perMemberInput.value = s.per_member_fee ?? s.individual_fee ?? 250;
+      if (minTeamInput) minTeamInput.value = s.min_team_members ?? 2;
+      if (maxTeamInput) maxTeamInput.value = s.max_team_members ?? 4;
       if (prizeInput) prizeInput.value = s.prize_pool || "₹2,50,000";
       if (openSelect) openSelect.value = String(s.registration_open);
 
@@ -1729,8 +1748,18 @@ function setupSettingsHandlers() {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const eventName = document.getElementById("settingEventName").value.trim();
-      const indivFee = parseInt(document.getElementById("settingIndividualFee").value, 10);
-      const teamFee = parseInt(document.getElementById("settingTeamFee").value, 10);
+      const perMemberInput = document.getElementById("settingPerMemberFee");
+      const minTeamInput = document.getElementById("settingMinTeamMembers");
+      const maxTeamInput = document.getElementById("settingMaxTeamMembers");
+      const indivFeeInput = document.getElementById("settingIndividualFee");
+      const teamFeeInput = document.getElementById("settingTeamFee");
+
+      const perMemberFee = perMemberInput ? parseInt(perMemberInput.value, 10) : (indivFeeInput ? parseInt(indivFeeInput.value, 10) : 250);
+      const minTeamMembers = minTeamInput ? parseInt(minTeamInput.value, 10) : 2;
+      const maxTeamMembers = maxTeamInput ? parseInt(maxTeamInput.value, 10) : 4;
+      const indivFee = perMemberFee;
+      const teamFee = perMemberFee * minTeamMembers;
+
       const deadline = document.getElementById("settingDeadline").value.trim();
       const prizePool = document.getElementById("settingPrizePool").value.trim();
       const regOpen = document.getElementById("settingRegistrationOpen").value === "true";
@@ -1740,12 +1769,16 @@ function setupSettingsHandlers() {
         showBanner(banner, "Event name must be at least 2 characters.", "error");
         return;
       }
-      if (isNaN(indivFee) || indivFee < 0) {
-        showBanner(banner, "Individual fee must be a non-negative number.", "error");
+      if (isNaN(perMemberFee) || perMemberFee < 0) {
+        showBanner(banner, "Fee per member must be a non-negative number.", "error");
         return;
       }
-      if (isNaN(teamFee) || teamFee < 0) {
-        showBanner(banner, "Team fee must be a non-negative number.", "error");
+      if (isNaN(minTeamMembers) || minTeamMembers < 1) {
+        showBanner(banner, "Minimum team members must be at least 1.", "error");
+        return;
+      }
+      if (isNaN(maxTeamMembers) || maxTeamMembers < minTeamMembers) {
+        showBanner(banner, "Maximum team members must be greater than or equal to minimum team members.", "error");
         return;
       }
       if (!deadline) {
@@ -1770,6 +1803,9 @@ function setupSettingsHandlers() {
             event_name: eventName,
             individual_fee: indivFee,
             team_fee: teamFee,
+            per_member_fee: perMemberFee,
+            min_team_members: minTeamMembers,
+            max_team_members: maxTeamMembers,
             registration_deadline: deadline,
             prize_pool: prizePool,
             registration_open: regOpen,
@@ -1783,9 +1819,13 @@ function setupSettingsHandlers() {
             window.SYNEX_CONFIG.eventName = eventName;
             window.SYNEX_CONFIG.eventDate = deadline;
             window.SYNEX_CONFIG.prizePool = prizePool;
+            window.SYNEX_CONFIG.perMemberFee = perMemberFee;
+            window.SYNEX_CONFIG.minTeamMembers = minTeamMembers;
+            window.SYNEX_CONFIG.maxTeamMembers = maxTeamMembers;
             window.SYNEX_CONFIG.fees = {
               individual: indivFee,
               team: teamFee,
+              perMember: perMemberFee,
               currency: "₹",
             };
           }
@@ -2961,6 +3001,48 @@ async function loadEmailLogs() {
     console.error("Error loading email logs:", err);
   }
 }
+window.loadEmailLogs = loadEmailLogs;
+
+async function confirmResetOutboxLog() {
+  if (!confirm("Are you sure you want to reset and clear all recorded inquiries outbound email logs? This cannot be undone.")) {
+    return;
+  }
+  const btn = document.getElementById("btnResetOutboxLog");
+  const banner = document.getElementById("outboxAlertBanner");
+  const origHtml = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Resetting...</span>`;
+  }
+  try {
+    const res = await fetch("/api/admin/email/logs/reset?type=inquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      if (banner) {
+        showBanner(banner, json.message || "Outbox log reset successfully.", "success");
+      }
+      await loadEmailLogs();
+    } else {
+      if (banner) {
+        showBanner(banner, json.error || "Failed to reset outbox log.", "error");
+      }
+    }
+  } catch (err) {
+    console.error("Error resetting outbox log:", err);
+    if (banner) {
+      showBanner(banner, "Network connection error while resetting outbox log.", "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
+}
+window.confirmResetOutboxLog = confirmResetOutboxLog;
 
 let currentEmailSettings = null;
 
@@ -3963,6 +4045,656 @@ async function loadCertificateHistory() {
   }
 }
 window.loadCertificateHistory = loadCertificateHistory;
+
+async function confirmResetCertificateHistory() {
+  if (!confirm("Are you sure you want to permanently reset and delete all certificate dispatch history records? This cannot be undone.")) {
+    return;
+  }
+  const btn = document.getElementById("btnResetCertificateHistory");
+  const banner = document.getElementById("settingsAlertBanner");
+  const origHtml = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Resetting...</span>`;
+  }
+  try {
+    const res = await fetch("/api/admin/certificates/history/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      if (banner) {
+        showBanner(banner, `<strong>Success!</strong> ${json.message || "Certificate dispatch history reset successfully."}`, "success");
+      }
+      if (typeof loadCertificateHistory === "function") {
+        await loadCertificateHistory();
+      }
+    } else {
+      if (banner) {
+        showBanner(banner, json.error || "Failed to reset certificate dispatch history.", "error");
+      }
+    }
+  } catch (err) {
+    console.error("Error resetting certificate history:", err);
+    if (banner) {
+      showBanner(banner, "Network connection error while resetting certificate history.", "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
+}
+window.confirmResetCertificateHistory = confirmResetCertificateHistory;
+
+
+/* ==============================================================================
+   COORDINATOR QR CHECK-IN & ATTENDANCE MODULE
+   ============================================================================== */
+
+let html5QrScannerInstance = null;
+let isQrScannerRunning = false;
+let lastScannedRegistration = null;
+let checkinRosterData = [];
+let checkinScanThrottle = false;
+
+function playCheckinAudioFeedback(type = "success") {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === "success") {
+      // Pleasant double chime: D5 (587Hz) -> A5 (880Hz)
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } else {
+      // Warning buzzer: 320Hz -> 200Hz
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      osc.frequency.setValueAtTime(220, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.45);
+    }
+  } catch (e) {
+    // Audio context not allowed without prior interaction or policy
+  }
+}
+
+async function startQrScanner() {
+  if (isQrScannerRunning) return;
+
+  const placeholder = document.getElementById("qrReaderPlaceholder");
+  const btnStart = document.getElementById("btnStartQrScanner");
+  const btnStop = document.getElementById("btnStopQrScanner");
+  const statusBadge = document.getElementById("scannerStatusBadge");
+
+  if (typeof Html5Qrcode === "undefined") {
+    alert("HTML5 QR Code Scanner library is still loading. Please check your internet connection or try again.");
+    return;
+  }
+
+  try {
+    if (!html5QrScannerInstance) {
+      html5QrScannerInstance = new Html5Qrcode("qrReader");
+    }
+
+    if (placeholder) placeholder.style.display = "none";
+    if (statusBadge) {
+      statusBadge.style.background = "#DCFCE7";
+      statusBadge.style.color = "#15803D";
+      statusBadge.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Initializing camera...`;
+    }
+
+    const qrConfig = {
+      fps: 10,
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0,
+    };
+
+    await html5QrScannerInstance.start(
+      { facingMode: "environment" },
+      qrConfig,
+      (decodedText) => {
+        // Successful QR scan callback
+        if (checkinScanThrottle) return;
+        checkinScanThrottle = true;
+        setTimeout(() => { checkinScanThrottle = false; }, 2500);
+
+        processCheckinCode(decodedText);
+      },
+      (errorMessage) => {
+        // Continuous parse error while searching for QR - ignore noisy logs
+      }
+    );
+
+    isQrScannerRunning = true;
+    if (btnStart) btnStart.style.display = "none";
+    if (btnStop) btnStop.style.display = "inline-flex";
+    if (statusBadge) {
+      statusBadge.style.background = "#DCFCE7";
+      statusBadge.style.color = "#15803D";
+      statusBadge.innerHTML = `<i class="fa-solid fa-circle-dot" style="color: #22C55E;"></i> Camera Active (Scanning)`;
+    }
+  } catch (err) {
+    console.error("Failed to start camera scanner:", err);
+    if (placeholder) placeholder.style.display = "block";
+    if (statusBadge) {
+      statusBadge.style.background = "#FEE2E2";
+      statusBadge.style.color = "#991B1B";
+      statusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Camera Access Denied`;
+    }
+    alert("Could not access camera: " + (err.message || err) + ". You can still check in teams using manual code entry below.");
+  }
+}
+
+async function stopQrScanner() {
+  if (!isQrScannerRunning || !html5QrScannerInstance) return;
+
+  const placeholder = document.getElementById("qrReaderPlaceholder");
+  const btnStart = document.getElementById("btnStartQrScanner");
+  const btnStop = document.getElementById("btnStopQrScanner");
+  const statusBadge = document.getElementById("scannerStatusBadge");
+
+  try {
+    await html5QrScannerInstance.stop();
+    isQrScannerRunning = false;
+  } catch (err) {
+    console.warn("Error stopping QR scanner:", err);
+  } finally {
+    isQrScannerRunning = false;
+    if (placeholder) placeholder.style.display = "block";
+    if (btnStart) btnStart.style.display = "inline-flex";
+    if (btnStop) btnStop.style.display = "none";
+    if (statusBadge) {
+      statusBadge.style.background = "#E2E8F0";
+      statusBadge.style.color = "#475569";
+      statusBadge.innerHTML = `<i class="fa-solid fa-power-off"></i> Camera Offline`;
+    }
+  }
+}
+
+async function handleQrFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  if (typeof Html5Qrcode === "undefined") {
+    alert("HTML5 QR Code Scanner library is loading. Please try again.");
+    return;
+  }
+
+  try {
+    const scanner = html5QrScannerInstance || new Html5Qrcode("qrReader");
+    const decodedText = await scanner.scanFile(file, true);
+    if (decodedText) {
+      processCheckinCode(decodedText);
+    }
+  } catch (err) {
+    console.error("Error reading QR from image file:", err);
+    const alertEl = document.getElementById("checkinAlertBanner");
+    if (alertEl) {
+      showBanner(alertEl, "Could not detect a valid QR code in the uploaded image. Please try another photo or enter code manually.", "error");
+    }
+  } finally {
+    event.target.value = "";
+  }
+}
+
+function handleManualCheckin() {
+  const inputEl = document.getElementById("manualCheckinInput");
+  if (!inputEl) return;
+  const code = (inputEl.value || "").trim();
+  if (!code) {
+    inputEl.focus();
+    return;
+  }
+  processCheckinCode(code);
+}
+
+async function processCheckinCode(rawCode) {
+  const alertEl = document.getElementById("checkinAlertBanner");
+  const submitBtn = document.getElementById("btnSubmitManualCheckin");
+
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const res = await fetch("/api/admin/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: rawCode })
+    });
+
+    const data = await res.json();
+
+    if (res.status === 200 && data.success) {
+      // 1. Success Check-In
+      playCheckinAudioFeedback("success");
+      lastScannedRegistration = data.registration;
+
+      if (alertEl) {
+        showBanner(alertEl, `
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-circle-check" style="font-size: 1.25rem; color: #16A34A;"></i>
+            <div>
+              <strong>CHECK-IN SUCCESSFUL!</strong> ${data.message}
+              <div style="font-size: 0.78rem; opacity: 0.9;">Pass is validated and marked as used. Single-use token is now locked.</div>
+            </div>
+          </div>
+        `, "success");
+      }
+
+      renderScannedTeamDetails(data.registration, true);
+      // Reload stats and roster
+      loadCheckinSummaryAndRoster(false);
+
+    } else if (res.status === 409 || data.already_checked_in) {
+      // 2. Already Checked In (Violation of single-use)
+      playCheckinAudioFeedback("warning");
+      lastScannedRegistration = data.registration;
+
+      if (alertEl) {
+        showBanner(alertEl, `
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.25rem; color: #DC2626;"></i>
+            <div>
+              <strong>REUSE REJECTED: ALREADY CHECKED IN</strong>
+              <div style="font-size: 0.82rem; margin-top: 2px;">${data.error}</div>
+            </div>
+          </div>
+        `, "error");
+      }
+
+      if (data.registration) {
+        renderScannedTeamDetails(data.registration, false);
+      }
+
+    } else {
+      // 3. Error / Not Found
+      playCheckinAudioFeedback("warning");
+      if (alertEl) {
+        showBanner(alertEl, `
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-circle-xmark" style="font-size: 1.25rem; color: #DC2626;"></i>
+            <div>
+              <strong>CHECK-IN FAILED:</strong> ${data.error || "Invalid or unregistered check-in code."}
+            </div>
+          </div>
+        `, "error");
+      }
+    }
+  } catch (err) {
+    console.error("Network error during checkin:", err);
+    if (alertEl) {
+      showBanner(alertEl, "Network connection error while communicating with check-in service.", "error");
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+function renderScannedTeamDetails(reg, isSuccess) {
+  const emptyState = document.getElementById("checkinEmptyState");
+  const detailsState = document.getElementById("checkinDetailsState");
+
+  if (emptyState) emptyState.style.display = "none";
+  if (detailsState) detailsState.style.display = "flex";
+
+  const teamName = reg.team ? reg.team.team_name : (reg.participant ? reg.participant.full_name : reg.public_id);
+  const leaderName = reg.team && reg.team.leader_name ? reg.team.leader_name : (reg.participant ? reg.participant.full_name : "-");
+  const college = reg.participant ? reg.participant.college : "-";
+  const feePaid = reg.payment_status === "paid" ? `PAID (₹${reg.entry_fee})` : `UNPAID (₹${reg.entry_fee})`;
+  const coordinator = reg.checked_in_by || "Coordinator";
+  const timestamp = reg.checked_in_at ? new Date(reg.checked_in_at).toLocaleString() : "Just now";
+
+  const elTeamName = document.getElementById("scannedTeamName");
+  if (elTeamName) elTeamName.textContent = teamName;
+
+  const elDomain = document.getElementById("scannedDomainBadge");
+  if (elDomain) elDomain.textContent = reg.domain || "Track";
+
+  const elRef = document.getElementById("scannedRefId");
+  if (elRef) elRef.textContent = reg.public_id;
+
+  const elToken = document.getElementById("scannedCheckinToken");
+  if (elToken) elToken.textContent = reg.checkin_token || "N/A";
+
+  const elLeader = document.getElementById("scannedLeaderName");
+  if (elLeader) elLeader.textContent = leaderName;
+
+  const elCollege = document.getElementById("scannedCollege");
+  if (elCollege) elCollege.textContent = college;
+
+  const elPayment = document.getElementById("scannedPaymentStatus");
+  if (elPayment) {
+    elPayment.textContent = feePaid;
+    elPayment.style.color = reg.payment_status === "paid" ? "#10B981" : "#EF4444";
+  }
+
+  const elCoord = document.getElementById("scannedCoordinator");
+  if (elCoord) elCoord.textContent = coordinator;
+
+  const elTime = document.getElementById("scannedCheckinTimestamp");
+  if (elTime) elTime.textContent = timestamp;
+
+  const elStatusPill = document.getElementById("scannedCheckinStatusPill");
+  if (elStatusPill) {
+    if (reg.is_checked_in) {
+      elStatusPill.textContent = "CHECKED IN";
+      elStatusPill.style.background = "#DCFCE7";
+      elStatusPill.style.color = "#15803D";
+    } else {
+      elStatusPill.textContent = "PENDING";
+      elStatusPill.style.background = "#F1F5F9";
+      elStatusPill.style.color = "#475569";
+    }
+  }
+
+  // Render Check-in Team Members List Table
+  const tbody = document.getElementById("scannedTeamMembersTbody");
+  const countBadge = document.getElementById("scannedMemberCountBadge");
+
+  let membersList = [];
+  if (reg.team && Array.isArray(reg.team.members) && reg.team.members.length > 0) {
+    membersList = reg.team.members;
+  } else if (reg.participant) {
+    membersList = [{
+      role: "leader",
+      name: reg.participant.full_name,
+      email: reg.participant.email,
+      phone: reg.participant.phone,
+      department: reg.participant.department,
+      year_of_study: reg.participant.year_of_study
+    }];
+  }
+
+  if (countBadge) {
+    countBadge.textContent = `${membersList.length} Member${membersList.length > 1 ? 's' : ''}`;
+  }
+
+  if (tbody) {
+    if (membersList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: var(--color-text-muted);">No members recorded.</td></tr>`;
+    } else {
+      tbody.innerHTML = membersList.map((m) => {
+        const isLead = (m.role || "").toLowerCase() === "leader";
+        const roleBadge = isLead
+          ? `<span class="badge" style="background: #FEF3C7; color: #B45309; font-weight: 700; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-crown" style="color: #D97706;"></i> Leader</span>`
+          : `<span class="badge" style="background: #F1F5F9; color: #475569; font-weight: 600; font-size: 0.72rem; padding: 2px 7px;">Member</span>`;
+
+        return `
+          <tr style="${isLead ? 'background: #FFFDF5;' : ''}">
+            <td>${roleBadge}</td>
+            <td><strong style="color: var(--color-text-main);">${escapeHtml(m.name || m.full_name || 'N/A')}</strong></td>
+            <td><a href="mailto:${escapeHtml(m.email || '')}" style="color: var(--color-primary); font-family: monospace;">${escapeHtml(m.email || 'N/A')}</a></td>
+            <td><span style="font-family: monospace;">${escapeHtml(m.phone || 'N/A')}</span></td>
+            <td>${escapeHtml(m.department || '')} ${m.year_of_study ? '• ' + escapeHtml(m.year_of_study) : ''}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+}
+
+function clearScannedResult() {
+  const emptyState = document.getElementById("checkinEmptyState");
+  const detailsState = document.getElementById("checkinDetailsState");
+  const alertEl = document.getElementById("checkinAlertBanner");
+  const manualInput = document.getElementById("manualCheckinInput");
+
+  if (alertEl) {
+    alertEl.style.display = "none";
+    alertEl.innerHTML = "";
+  }
+  if (detailsState) detailsState.style.display = "none";
+  if (emptyState) emptyState.style.display = "flex";
+  if (manualInput) {
+    manualInput.value = "";
+    manualInput.focus();
+  }
+  lastScannedRegistration = null;
+}
+
+async function handleUndoCurrentCheckin() {
+  if (!lastScannedRegistration || !lastScannedRegistration.id) return;
+  if (!confirm(`Are you sure you want to undo check-in for team '${lastScannedRegistration.team ? lastScannedRegistration.team.team_name : lastScannedRegistration.public_id}'?`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/admin/checkin/undo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registration_id: lastScannedRegistration.id })
+    });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      alert("Check-in has been undone.");
+      clearScannedResult();
+      loadCheckinSummaryAndRoster();
+    } else {
+      alert("Failed to undo check-in: " + (json.error || json.message));
+    }
+  } catch (err) {
+    alert("Network error while undoing check-in: " + err.message);
+  }
+}
+
+async function loadCheckinSummaryAndRoster(showLoading = true) {
+  const tbody = document.getElementById("checkinRosterTbody");
+  if (showLoading && tbody) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--color-text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading live check-in roster...</td></tr>`;
+  }
+
+  try {
+    const res = await fetch("/api/admin/checkin/stats");
+    if (!res.ok) throw new Error("Status " + res.status);
+    const data = await res.json();
+
+    if (data.success) {
+      const metrics = data.metrics || {};
+      const elTotal = document.getElementById("checkinMetricTotalTeams");
+      if (elTotal) elTotal.textContent = metrics.total_teams || 0;
+
+      const elChecked = document.getElementById("checkinMetricCheckedIn");
+      if (elChecked) elChecked.textContent = metrics.checked_in_teams || 0;
+
+      const elPercent = document.getElementById("checkinMetricCheckedInPercent");
+      if (elPercent) elPercent.textContent = `${metrics.checkin_percentage || 0}% Admitted`;
+
+      const elPending = document.getElementById("checkinMetricPending");
+      if (elPending) elPending.textContent = metrics.pending_teams || 0;
+
+      const elParts = document.getElementById("checkinMetricTotalParticipants");
+      if (elParts) elParts.textContent = metrics.total_checked_in_participants || 0;
+
+      // Update sidebar badge
+      const sbBadge = document.getElementById("sidebarCheckinBadge");
+      if (sbBadge) {
+        sbBadge.textContent = metrics.checked_in_teams || 0;
+        sbBadge.style.display = (metrics.checked_in_teams > 0) ? "inline-block" : "none";
+      }
+
+      // Store roster data for search & filtering
+      checkinRosterData = data.roster || [];
+      renderCheckinRosterTable(checkinRosterData);
+    }
+  } catch (err) {
+    console.error("Error loading checkin summary:", err);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--color-error);"><i class="fa-solid fa-triangle-exclamation"></i> Failed to load check-in roster. Please try again.</td></tr>`;
+    }
+  }
+}
+
+function renderCheckinRosterTable(items) {
+  const tbody = document.getElementById("checkinRosterTbody");
+  if (!tbody) return;
+
+  if (!items || items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">No team registrations match the current filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map((r) => {
+    const teamName = r.team ? r.team.team_name : (r.participant ? r.participant.full_name : r.public_id);
+    const leadName = r.team && r.team.leader_name ? r.team.leader_name : (r.participant ? r.participant.full_name : "-");
+    const leadEmail = r.team && r.team.leader_email ? r.team.leader_email : (r.participant ? r.participant.email : "-");
+    const isChecked = Boolean(r.is_checked_in);
+    const checkinTime = r.checked_in_at ? new Date(r.checked_in_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "-";
+
+    const statusBadge = isChecked
+      ? `<span class="badge" style="background: #DCFCE7; color: #15803D; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 999px;"><i class="fa-solid fa-circle-check"></i> Checked In</span>`
+      : `<span class="badge" style="background: #F1F5F9; color: #64748B; font-weight: 600; font-size: 0.75rem; padding: 3px 8px; border-radius: 999px;"><i class="fa-solid fa-clock"></i> Pending</span>`;
+
+    return `
+      <tr>
+        <td>
+          <div style="font-weight: 700; color: var(--color-text-main);">${escapeHtml(teamName)}</div>
+          <div style="font-family: monospace; font-size: 0.75rem; color: var(--color-primary);">${escapeHtml(r.public_id)}</div>
+          <code style="font-size: 0.7rem; color: #64748B;">${escapeHtml(r.checkin_token || '')}</code>
+        </td>
+        <td><span class="badge badge-primary" style="font-size: 0.72rem;">${escapeHtml(r.domain || '-')}</span></td>
+        <td>
+          <div style="font-weight: 600;">${escapeHtml(leadName)}</div>
+          <div style="font-size: 0.75rem; color: var(--color-text-muted);">${escapeHtml(leadEmail)}</div>
+        </td>
+        <td><span class="badge badge-info" style="font-size: 0.72rem;">${r.member_count || 1} Members</span></td>
+        <td>
+          <div>${statusBadge}</div>
+          <div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px;">${checkinTime}</div>
+        </td>
+        <td><span style="font-size: 0.78rem; color: #334155;">${escapeHtml(r.checked_in_by || '-')}</span></td>
+        <td>
+          <div style="display: flex; gap: 0.35rem; align-items: center;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="previewTeamAttendance(${r.id});" title="View Team Members" style="padding: 2px 7px; font-size: 0.72rem;">
+              <i class="fa-solid fa-users"></i>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="emailCheckinPass('${escapeHtml(r.public_id)}');" title="Email Pass & QR to Team Leader" style="padding: 2px 7px; font-size: 0.72rem; color: #2563EB;">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+            ${!isChecked ? `
+              <button type="button" class="btn btn-primary btn-sm" onclick="processCheckinCode('${r.checkin_token || r.public_id}');" title="Fast Check-In" style="padding: 2px 7px; font-size: 0.72rem;">
+                <i class="fa-solid fa-check"></i>
+              </button>
+            ` : `
+              <button type="button" class="btn btn-outline btn-sm" onclick="undoRosterCheckin(${r.id});" title="Undo Check-In" style="padding: 2px 7px; font-size: 0.72rem; color: var(--color-error); border-color: #FECACA;">
+                <i class="fa-solid fa-rotate-left"></i>
+              </button>
+            `}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function filterCheckinRoster() {
+  const searchInput = document.getElementById("checkinRosterSearch");
+  const statusFilter = document.getElementById("checkinStatusFilter");
+  const query = (searchInput ? searchInput.value : "").trim().toLowerCase();
+  const filter = statusFilter ? statusFilter.value : "all";
+
+  const filtered = checkinRosterData.filter((r) => {
+    const teamName = (r.team ? r.team.team_name : (r.participant ? r.participant.full_name : r.public_id)).toLowerCase();
+    const leader = (r.team && r.team.leader_name ? r.team.leader_name : (r.participant ? r.participant.full_name : "")).toLowerCase();
+    const ref = (r.public_id || "").toLowerCase();
+    const token = (r.checkin_token || "").toLowerCase();
+    const domain = (r.domain || "").toLowerCase();
+
+    const matchesQuery = !query || teamName.includes(query) || leader.includes(query) || ref.includes(query) || token.includes(query) || domain.includes(query);
+
+    let matchesStatus = true;
+    if (filter === "checked_in") {
+      matchesStatus = Boolean(r.is_checked_in);
+    } else if (filter === "pending") {
+      matchesStatus = !Boolean(r.is_checked_in);
+    }
+
+    return matchesQuery && matchesStatus;
+  });
+
+  renderCheckinRosterTable(filtered);
+}
+
+function previewTeamAttendance(regId) {
+  const item = checkinRosterData.find(r => r.id === regId);
+  if (item) {
+    renderScannedTeamDetails(item, Boolean(item.is_checked_in));
+    // Scroll smoothly to result card
+    const card = document.getElementById("checkinResultCard");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+async function undoRosterCheckin(regId) {
+  if (!confirm("Are you sure you want to undo check-in for this team?")) return;
+  try {
+    const res = await fetch("/api/admin/checkin/undo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registration_id: regId })
+    });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      loadCheckinSummaryAndRoster(false);
+    } else {
+      alert("Failed to undo check-in: " + (json.error || json.message));
+    }
+  } catch (err) {
+    alert("Network error: " + err.message);
+  }
+}
+
+async function emailCheckinPass(ref) {
+  if (!ref) {
+    alert("No registration reference provided.");
+    return;
+  }
+  try {
+    const res = await fetch("/api/admin/checkin/send-pass", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: ref })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert(`Check-in pass with QR code sent successfully to team leader:\n${data.recipient_email} (Team: ${data.team_name})`);
+    } else {
+      alert(data.error || "Failed to dispatch confirmation pass email.");
+    }
+  } catch (err) {
+    console.error("Error sending checkin pass email:", err);
+    alert("Connection error while requesting email dispatch: " + err.message);
+  }
+}
+
+window.startQrScanner = startQrScanner;
+window.stopQrScanner = stopQrScanner;
+window.handleQrFileUpload = handleQrFileUpload;
+window.handleManualCheckin = handleManualCheckin;
+window.processCheckinCode = processCheckinCode;
+window.clearScannedResult = clearScannedResult;
+window.handleUndoCurrentCheckin = handleUndoCurrentCheckin;
+window.loadCheckinSummaryAndRoster = loadCheckinSummaryAndRoster;
+window.filterCheckinRoster = filterCheckinRoster;
+window.previewTeamAttendance = previewTeamAttendance;
+window.undoRosterCheckin = undoRosterCheckin;
+window.emailCheckinPass = emailCheckinPass;
+
+
 
 
 

@@ -38,6 +38,18 @@ def generate_public_id() -> str:
     return f"SYNEX-{int(time.time()) % 1000000:06d}"
 
 
+def generate_checkin_token() -> str:
+    """Generates a unique, secure check-in pass token like CHK-7B4F92C1D8E3."""
+    alphabet = string.ascii_uppercase + string.digits
+    for _ in range(10):
+        code = "".join(secrets.choice(alphabet) for _ in range(12))
+        candidate = f"CHK-{code}"
+        if not Registration.query.filter_by(checkin_token=candidate).first():
+            return candidate
+    return f"CHK-{secrets.token_hex(6).upper()}"
+
+
+
 def validate_participant_data(data: Dict[str, Any], label: str = "Participant") -> Tuple[bool, str]:
     """Validates participant fields."""
     name = (data.get("full_name") or data.get("name") or "").strip()
@@ -102,7 +114,10 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
     if domain not in VALID_DOMAINS:
         return False, {"error": f"Invalid domain selected. Must be one of: {', '.join(VALID_DOMAINS)}"}, 400
 
-    # Determine Fee
+    # Determine Fees & Team Size Bounds
+    min_team_members = int(EventSetting.get_val("MIN_TEAM_MEMBERS", getattr(Config, "MIN_TEAM_MEMBERS", 2)))
+    max_team_members = int(EventSetting.get_val("MAX_TEAM_MEMBERS", getattr(Config, "MAX_TEAM_MEMBERS", 4)))
+    per_member_fee_str = EventSetting.get_val("EVENT_PER_MEMBER_FEE", None)
     indiv_fee = int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", Config.EVENT_INDIVIDUAL_FEE))
     team_fee = int(EventSetting.get_val("EVENT_TEAM_FEE", Config.EVENT_TEAM_FEE))
 
@@ -116,16 +131,18 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
             participant = get_or_create_participant(payload)
 
             public_id = generate_public_id()
+            checkin_token = generate_checkin_token()
             registration = Registration(
                 public_id=public_id,
                 registration_type="individual",
                 participant_id=participant.id,
                 team_id=None,
                 domain=domain,
-                entry_fee=indiv_fee,
+                entry_fee=int(per_member_fee_str) if per_member_fee_str is not None else indiv_fee,
                 currency="INR",
                 registration_status="pending",
                 payment_status="unpaid",
+                checkin_token=checkin_token,
             )
             db.session.add(registration)
             db.session.commit()
@@ -135,8 +152,9 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
                 "success": True,
                 "message": "Registration created successfully. Proceed to payment.",
                 "registration_id": public_id,
+                "checkin_token": checkin_token,
                 "registration_type": "individual",
-                "entry_fee": indiv_fee,
+                "entry_fee": int(per_member_fee_str) if per_member_fee_str is not None else indiv_fee,
                 "domain": domain,
                 "participant": participant.to_dict(),
                 "redirect_url": f"/payment?ref={public_id}",
@@ -167,10 +185,14 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
 
             # Members validation
             members_list = payload.get("members", [])
-            if not isinstance(members_list, list) or len(members_list) < 1:
-                return False, {"error": "Team must include at least 1 additional team member (minimum 2 members total)."}, 400
-            if len(members_list) > 3:
-                return False, {"error": "Team cannot exceed 4 members total (1 leader + max 3 members)."}, 400
+            if not isinstance(members_list, list):
+                members_list = []
+            
+            total_members = 1 + len(members_list)
+            if total_members < min_team_members:
+                return False, {"error": f"Team must include at least {min_team_members} members total (1 leader + {min_team_members - 1} members). Currently: {total_members}."}, 400
+            if total_members > max_team_members:
+                return False, {"error": f"Team cannot exceed {max_team_members} members total (1 leader + {max_team_members - 1} members max). Currently: {total_members}."}, 400
 
             # Check unique emails within team
             all_emails = [leader_data.get("email", "").strip().lower()]
@@ -201,30 +223,39 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
                 member_rel = TeamMember(team_id=team.id, participant_id=member_participant.id, role="member")
                 db.session.add(member_rel)
 
+            # Calculate server-side dynamic fee
+            if per_member_fee_str is not None:
+                calculated_fee = total_members * int(per_member_fee_str)
+            else:
+                calculated_fee = team_fee
+
             # Create Registration record
             public_id = generate_public_id()
+            checkin_token = generate_checkin_token()
             registration = Registration(
                 public_id=public_id,
                 registration_type="team",
                 participant_id=leader.id,
                 team_id=team.id,
                 domain=domain,
-                entry_fee=team_fee,
+                entry_fee=calculated_fee,
                 currency="INR",
                 registration_status="pending",
                 payment_status="unpaid",
+                checkin_token=checkin_token,
             )
             db.session.add(registration)
             db.session.commit()
 
-            logger.info(f"Team registration created: {public_id} for team '{team_name}' (Leader: {leader.email})")
+            logger.info(f"Team registration created: {public_id} for team '{team_name}' ({total_members} members, Fee: ₹{calculated_fee})")
             return True, {
                 "success": True,
                 "message": "Team registration created successfully. Proceed to payment.",
                 "registration_id": public_id,
+                "checkin_token": checkin_token,
                 "registration_type": "team",
                 "team_name": team_name,
-                "entry_fee": team_fee,
+                "entry_fee": calculated_fee,
                 "domain": domain,
                 "members_count": len(all_emails),
                 "redirect_url": f"/payment?ref={public_id}",

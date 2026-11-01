@@ -194,6 +194,11 @@ def get_single_registration(ref_or_id: str) -> Optional[Dict[str, Any]]:
     else:
         reg = Registration.query.filter_by(public_id=ref_or_id).first()
 
+    if reg and not reg.checkin_token:
+        import secrets, string
+        reg.checkin_token = f"CHK-{''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(12))}"
+        db.session.commit()
+
     return reg.to_dict(include_team_details=True) if reg else None
 
 

@@ -20,6 +20,9 @@
   <!-- Chart.js via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- HTML5 QR Code Scanner via CDN -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
   <!-- Stylesheets -->
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
@@ -101,6 +104,13 @@
           <a href="#certificates" onclick="event.preventDefault(); switchAdminPage('certificates');">
             <i class="fa-solid fa-award"></i>
             <span>E-Certificates</span>
+          </a>
+        </li>
+        <li class="sidebar-item" data-page="checkin">
+          <a href="#checkin" onclick="event.preventDefault(); switchAdminPage('checkin');">
+            <i class="fa-solid fa-qrcode"></i>
+            <span>QR Check-In</span>
+            <span class="badge" id="sidebarCheckinBadge" style="margin-left: auto; display: none; background: #10B981; color: #FFF; font-size: 0.72rem; padding: 2px 7px; border-radius: 999px; font-weight: 700;">0</span>
           </a>
         </li>
         <li class="sidebar-item" data-page="settings">
@@ -351,6 +361,15 @@
               <div>
                 <div style="font-weight: 700; font-size: 0.92rem;">E-Certificates</div>
                 <div style="font-size: 0.78rem; color: var(--color-text-secondary);">PPT template &amp; PDF dispatch</div>
+              </div>
+            </div>
+            <div class="quick-nav-card" onclick="switchAdminPage('checkin');">
+              <div class="quick-nav-icon" style="background: #DCFCE7; color: #16A34A;">
+                <i class="fa-solid fa-qrcode"></i>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.92rem;">QR Check-In</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-secondary);">Scanner &amp; team attendance</div>
               </div>
             </div>
             <div class="quick-nav-card" onclick="switchAdminPage('settings');">
@@ -845,14 +864,20 @@
 
             <!-- Outbox / Activity toggle drawer -->
             <div style="margin-top: 2rem; border-top: 1px solid var(--color-border); padding-top: 1.25rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--color-text-main); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
                   <i class="fa-solid fa-clock-rotate-left" style="color: var(--color-primary);"></i> Outbound Email Activity &amp; Outbox Log
                 </h4>
-                <button type="button" class="btn btn-outline btn-sm" id="btnToggleOutboxLog">
-                  <i class="fa-solid fa-list-check"></i> <span id="outboxToggleText">Show Outbox Log</span>
-                </button>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <button type="button" class="btn btn-outline btn-sm" id="btnResetOutboxLog" style="color: #DC2626; border-color: #FECACA;" onclick="confirmResetOutboxLog();">
+                    <i class="fa-solid fa-trash-can"></i> <span>Reset Outbox Log</span>
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" id="btnToggleOutboxLog">
+                    <i class="fa-solid fa-list-check"></i> <span id="outboxToggleText">Show Outbox Log</span>
+                  </button>
+                </div>
               </div>
+              <div id="outboxAlertBanner" class="admin-alert-banner" style="display: none; margin-bottom: 0.75rem;"></div>
               <div id="outboxLogContainer" style="display: none;">
                 <div class="table-responsive">
                   <table class="announcement-history-table" style="font-size: 0.82rem;">
@@ -1079,15 +1104,23 @@
                 </div>
 
                 <div class="admin-form-group">
-                  <label for="settingIndividualFee">Individual Entry Fee (INR ₹) <span style="color: var(--color-error);">*</span></label>
-                  <input type="number" id="settingIndividualFee" class="admin-form-control" min="0" max="500000" placeholder="299" required>
-                  <span class="form-helper">Authoritative fee enforced by server backend for solo hackers.</span>
+                  <label for="settingPerMemberFee">Fee Per Team Member (INR ₹) <span style="color: var(--color-error);">*</span></label>
+                  <input type="number" id="settingPerMemberFee" class="admin-form-control" min="0" max="500000" placeholder="250" required>
+                  <span class="form-helper">Registration fee charged per person (Total = Team Size × Fee Per Member).</span>
+                  <input type="hidden" id="settingIndividualFee" value="250">
+                  <input type="hidden" id="settingTeamFee" value="500">
                 </div>
 
                 <div class="admin-form-group">
-                  <label for="settingTeamFee">Team Entry Fee (INR ₹) <span style="color: var(--color-error);">*</span></label>
-                  <input type="number" id="settingTeamFee" class="admin-form-control" min="0" max="500000" placeholder="999" required>
-                  <span class="form-helper">Authoritative fee enforced by server backend for teams of 2 to 4 hackers.</span>
+                  <label for="settingMinTeamMembers">Minimum Team Size (Members) <span style="color: var(--color-error);">*</span></label>
+                  <input type="number" id="settingMinTeamMembers" class="admin-form-control" min="1" max="20" placeholder="2" required>
+                  <span class="form-helper">Minimum team members required per registration (including Team Leader).</span>
+                </div>
+
+                <div class="admin-form-group">
+                  <label for="settingMaxTeamMembers">Maximum Team Size (Members) <span style="color: var(--color-error);">*</span></label>
+                  <input type="number" id="settingMaxTeamMembers" class="admin-form-control" min="1" max="20" placeholder="4" required>
+                  <span class="form-helper">Maximum team members permitted per registration (including Team Leader).</span>
                 </div>
 
                 <div class="admin-form-group">
@@ -1285,6 +1318,24 @@
                 <button type="button" class="btn btn-danger" id="btnResetParticipants" style="background: #DC2626; color: #FFFFFF; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s;">
                   <i class="fa-solid fa-trash-can"></i>
                   <span>Reset All Participants</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Danger Zone: Reset Certificate Dispatch History -->
+            <div class="danger-zone-card" style="margin-top: 1.25rem; padding: 1.25rem 1.5rem; border: 1px solid #FECACA; background: #FFF5F5; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                  <h4 style="color: #991B1B; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.25rem 0;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Danger Zone: Reset Certificate Dispatch History
+                  </h4>
+                  <p style="color: #7F1D1D; font-size: 0.82rem; margin: 0;">
+                    Permanently delete all certificate email delivery logs and dispatch history records from the database.
+                  </p>
+                </div>
+                <button type="button" class="btn btn-danger" id="btnResetCertificateHistory" onclick="confirmResetCertificateHistory();" style="background: #DC2626; color: #FFFFFF; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s;">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>Reset Certificate History</span>
                 </button>
               </div>
             </div>
@@ -1555,6 +1606,249 @@
         </div>
 
       </div> <!-- /#view-certificates -->
+
+      <!-- ==========================================
+           PAGE 10: COORDINATOR QR CHECK-IN & ATTENDANCE
+           ========================================== -->
+      <div class="admin-page-view" id="view-checkin" style="display: none;">
+        <div class="admin-view-header">
+          <div>
+            <h2 class="view-heading"><i class="fa-solid fa-qrcode" style="color: #2563EB;"></i> Coordinator QR Check-In &amp; Attendance</h2>
+            <p class="view-subheading">Scan team QR passes via camera or enter tokens. Passes are strictly single-use and instantly retrieve the complete team member roster.</p>
+          </div>
+          <div class="view-header-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadCheckinSummaryAndRoster();">
+              <i class="fa-solid fa-rotate"></i> <span>Refresh Roster</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Checkin KPI Metrics Cards -->
+        <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+          <div class="metric-card metric-primary">
+            <div class="metric-header">
+              <span class="metric-label">Total Teams</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-people-group"></i></div>
+            </div>
+            <div class="metric-val" id="checkinMetricTotalTeams">0</div>
+            <span class="metric-sub">Registered Squads</span>
+          </div>
+
+          <div class="metric-card metric-success">
+            <div class="metric-header">
+              <span class="metric-label">Checked In</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="metric-val" id="checkinMetricCheckedIn">0</div>
+            <span class="metric-sub" id="checkinMetricCheckedInPercent">0% Admitted</span>
+          </div>
+
+          <div class="metric-card metric-warning">
+            <div class="metric-header">
+              <span class="metric-label">Pending Check-In</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-clock"></i></div>
+            </div>
+            <div class="metric-val" id="checkinMetricPending">0</div>
+            <span class="metric-sub">Awaiting Arrival</span>
+          </div>
+
+          <div class="metric-card metric-purple">
+            <div class="metric-header">
+              <span class="metric-label">Members Present</span>
+              <div class="metric-icon-box"><i class="fa-solid fa-user-check"></i></div>
+            </div>
+            <div class="metric-val" id="checkinMetricTotalParticipants">0</div>
+            <span class="metric-sub">Individuals in Teams</span>
+          </div>
+        </div>
+
+        <!-- Scanner & Verification Workspace Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          
+          <!-- Column 1: Live QR Scanner & Manual Input -->
+          <div class="chart-card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-main); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-camera" style="color: #2563EB;"></i> Camera QR Code Scanner
+              </h3>
+              <span class="badge" id="scannerStatusBadge" style="background: #E2E8F0; color: #475569; font-size: 0.75rem; padding: 3px 8px; border-radius: 999px;">
+                <i class="fa-solid fa-power-off"></i> Camera Offline
+              </span>
+            </div>
+
+            <!-- Viewport Container -->
+            <div id="qrScannerContainer" style="position: relative; width: 100%; min-height: 280px; max-height: 340px; background: #0F172A; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 2px dashed #334155;">
+              <div id="qrReader" style="width: 100%;"></div>
+              <div id="qrReaderPlaceholder" style="position: absolute; text-align: center; color: #94A3B8; padding: 1.5rem; pointer-events: none;">
+                <i class="fa-solid fa-qrcode" style="font-size: 3.5rem; color: #38BDF8; margin-bottom: 0.75rem; opacity: 0.85;"></i>
+                <p style="font-size: 0.88rem; margin: 0; font-weight: 500; line-height: 1.4;">
+                  Camera is inactive.<br>Click <strong>Start Camera Scanner</strong> to begin scanning passes.
+                </p>
+              </div>
+            </div>
+
+            <!-- Scanner Controls -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+              <button type="button" class="btn btn-primary btn-sm" id="btnStartQrScanner" onclick="startQrScanner();" style="display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-play"></i> <span>Start Camera Scanner</span>
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnStopQrScanner" onclick="stopQrScanner();" style="display: none; align-items: center; gap: 0.4rem; color: var(--color-error); border-color: #FECACA;">
+                <i class="fa-solid fa-stop"></i> <span>Stop Camera</span>
+              </button>
+              <label class="btn btn-outline btn-sm" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-file-image"></i> <span>Scan QR File</span>
+                <input type="file" id="qrFileInput" accept="image/*" style="display: none;" onchange="handleQrFileUpload(event);">
+              </label>
+            </div>
+
+            <!-- Manual Input Fallback -->
+            <div style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem;">
+              <label for="manualCheckinInput" style="font-size: 0.82rem; font-weight: 700; color: var(--color-text-main); display: block; margin-bottom: 0.4rem;">
+                <i class="fa-solid fa-keyboard" style="color: #64748B;"></i> Manual Code / Registration ID Entry:
+              </label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="manualCheckinInput" class="admin-form-control" placeholder="e.g., CHK-A3F8B9C1E2D4 or SYNEX-X99EGQ" onkeydown="if(event.key==='Enter'){event.preventDefault(); handleManualCheckin();}">
+                <button type="button" class="btn btn-primary btn-sm" id="btnSubmitManualCheckin" onclick="handleManualCheckin();" style="white-space: nowrap;">
+                  <i class="fa-solid fa-check"></i> <span>Check In</span>
+                </button>
+              </div>
+              <span style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 0.35rem; display: block;">
+                Accepts Pass Token (CHK-...), Reference (SYNEX-...), or direct QR text.
+              </span>
+            </div>
+          </div>
+
+          <!-- Column 2: Scanned Result & Team Members Roster -->
+          <div class="chart-card" id="checkinResultCard" style="padding: 1.5rem; display: flex; flex-direction: column;">
+            <!-- Alert Banner -->
+            <div id="checkinAlertBanner" style="display: none; margin-bottom: 1.25rem;"></div>
+
+            <!-- Empty State -->
+            <div id="checkinEmptyState" style="text-align: center; padding: 3rem 1rem; color: var(--color-text-muted); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <div style="width: 72px; height: 72px; border-radius: 50%; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem;">
+                <i class="fa-solid fa-id-card-clip"></i>
+              </div>
+              <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 0.4rem;">Waiting for Scan</h4>
+              <p style="font-size: 0.85rem; max-width: 320px; margin: 0; line-height: 1.5;">Scan a participant pass with the camera or enter their check-in code to verify credentials and check in all team members.</p>
+            </div>
+
+            <!-- Populated Team State -->
+            <div id="checkinDetailsState" style="display: none; flex: 1; flex-direction: column;">
+              <!-- Team Meta Card -->
+              <div style="background: #F8FAFC; border: 1px solid var(--color-border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.75rem;">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--color-text-main); margin: 0;" id="scannedTeamName">Team Name</h3>
+                      <span class="badge badge-primary" id="scannedDomainBadge">AI &amp; ML</span>
+                    </div>
+                    <span style="font-family: monospace; font-size: 0.85rem; font-weight: 700; color: var(--color-primary);" id="scannedRefId">SYNEX-000000</span>
+                    <span style="font-size: 0.78rem; color: var(--color-text-muted); margin-left: 0.5rem;">• Token: <code id="scannedCheckinToken" style="color: #475569;">CHK-0000</code></span>
+                  </div>
+                  <div style="text-align: right;">
+                    <span class="badge" id="scannedCheckinStatusPill" style="font-size: 0.82rem; padding: 4px 10px; border-radius: 999px; font-weight: 800; background: #DCFCE7; color: #15803D;">CHECKED IN</span>
+                    <div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 0.25rem;" id="scannedCheckinTimestamp">Just now</div>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; font-size: 0.8rem; border-top: 1px solid var(--color-border); padding-top: 0.75rem;">
+                  <div><span style="color: var(--color-text-muted);">Leader:</span> <strong id="scannedLeaderName">-</strong></div>
+                  <div><span style="color: var(--color-text-muted);">College:</span> <strong id="scannedCollege">-</strong></div>
+                  <div><span style="color: var(--color-text-muted);">Payment:</span> <strong id="scannedPaymentStatus" style="color: #10B981;">PAID (₹0)</strong></div>
+                  <div><span style="color: var(--color-text-muted);">Coordinator:</span> <strong id="scannedCoordinator">-</strong></div>
+                </div>
+              </div>
+
+              <!-- Team Members Roster Table -->
+              <div style="margin-bottom: 1rem; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fa-solid fa-users" style="color: #2563EB;"></i> Team Members Attendance List
+                    <span class="badge badge-info" id="scannedMemberCountBadge" style="font-size: 0.72rem; padding: 2px 7px;">3 Members</span>
+                  </h4>
+                </div>
+
+                <div class="admin-table-container" style="max-height: 240px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px;">
+                  <table class="admin-table" style="font-size: 0.82rem; margin: 0;">
+                    <thead>
+                      <tr>
+                        <th>Role</th>
+                        <th>Member Name</th>
+                        <th>Email Address</th>
+                        <th>Phone</th>
+                        <th>Department &amp; Year</th>
+                      </tr>
+                    </thead>
+                    <tbody id="scannedTeamMembersTbody">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; border-top: 1px solid var(--color-border); padding-top: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline btn-sm" id="btnUndoScannedCheckin" onclick="handleUndoCurrentCheckin();" style="color: var(--color-error); border-color: #FECACA; font-size: 0.78rem;">
+                  <i class="fa-solid fa-rotate-left"></i> <span>Undo Check-In</span>
+                </button>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button type="button" class="btn btn-outline btn-sm" id="btnEmailScannedPass" onclick="emailCheckinPass(lastScannedRegistration ? lastScannedRegistration.public_id : '');" style="color: #2563EB; border-color: #BFDBFE; font-size: 0.78rem;">
+                    <i class="fa-solid fa-paper-plane"></i> <span>Email Pass to Leader</span>
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="clearScannedResult();">
+                    <i class="fa-solid fa-check"></i> <span>Ready for Next Scan</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Live Checked-In Teams Roster Table -->
+        <div class="chart-card" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text-main); margin: 0 0 0.2rem 0;">
+                Live Event Check-In Roster
+              </h3>
+              <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0;">Complete list of all registered teams with real-time check-in timestamps and attendance.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="checkinRosterSearch" class="admin-form-control" placeholder="Search teams, leaders, or tokens..." style="font-size: 0.82rem; width: 240px;" oninput="filterCheckinRoster();">
+              <select id="checkinStatusFilter" class="admin-form-control" style="font-size: 0.82rem; width: 140px;" onchange="filterCheckinRoster();">
+                <option value="all">All Teams</option>
+                <option value="checked_in">Checked In Only</option>
+                <option value="pending">Pending Only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Team &amp; Ref</th>
+                  <th>Domain</th>
+                  <th>Lead &amp; Contact</th>
+                  <th>Members</th>
+                  <th>Check-In Status</th>
+                  <th>Coordinator</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="checkinRosterTbody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                    Loading live check-in roster...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div> <!-- /#view-checkin -->
 
       </main>
     </div>

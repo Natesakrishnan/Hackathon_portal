@@ -14,3 +14,4 @@ pytest>=8.0.0
 python-pptx>=1.0.0
 comtypes>=1.4.0
 reportlab>=4.0.0
+qrcode>=8.0.0

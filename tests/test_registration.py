@@ -2,6 +2,8 @@ import json
 from app.models.registration import Registration
 from app.models.participant import Participant
 from app.models.team import Team
+from app.models.event_setting import EventSetting
+
 
 
 def test_individual_registration_success(client):
@@ -305,4 +307,175 @@ def test_registration_flow_response_structure_for_step2(client):
     assert data["registration_type"] == "team"
     assert data["domain"] == "IoT & Embedded Systems"
     assert data["redirect_url"] == f"/payment?ref={data['registration_id']}"
+
+
+def test_team_registration_dynamic_per_member_fee(client):
+    """Test that team fee dynamically scales based on per-member fee * total members."""
+    # Configure per-member fee to 350 INR
+    EventSetting.set_val("EVENT_PER_MEMBER_FEE", "350")
+    EventSetting.set_val("MIN_TEAM_MEMBERS", "2")
+    EventSetting.set_val("MAX_TEAM_MEMBERS", "4")
+
+    # Team of 2 (Leader + 1 Member) -> 2 * 350 = 700 INR
+    payload_2 = {
+        "registration_type": "team",
+        "team_name": "Dynamic Duo",
+        "domain": "AI & Machine Learning",
+        "leader": {
+            "name": "Alpha Leader",
+            "email": "alpha.leader@college.edu",
+            "phone": "9876543210",
+            "college": "Tech College",
+            "department": "CSE",
+            "year_of_study": "3rd Year",
+        },
+        "members": [
+            {
+                "name": "Beta Member",
+                "email": "beta.member@college.edu",
+                "phone": "9876543211",
+                "college": "Tech College",
+                "department": "CSE",
+                "year_of_study": "3rd Year",
+            }
+        ],
+    }
+    res2 = client.post("/api/registrations", json=payload_2)
+    assert res2.status_code == 201
+    data2 = res2.get_json()
+    assert data2["success"] is True
+    assert data2["entry_fee"] == 700  # 2 * 350
+
+    # Team of 3 (Leader + 2 Members) -> 3 * 350 = 1050 INR
+    payload_3 = {
+        "registration_type": "team",
+        "team_name": "Trio Force",
+        "domain": "Cloud & Cybersecurity",
+        "leader": {
+            "name": "Gamma Leader",
+            "email": "gamma.leader@college.edu",
+            "phone": "9876543220",
+            "college": "Tech College",
+            "department": "IT",
+            "year_of_study": "4th Year",
+        },
+        "members": [
+            {
+                "name": "Delta Member",
+                "email": "delta.member@college.edu",
+                "phone": "9876543221",
+                "college": "Tech College",
+                "department": "IT",
+                "year_of_study": "4th Year",
+            },
+            {
+                "name": "Epsilon Member",
+                "email": "epsilon.member@college.edu",
+                "phone": "9876543222",
+                "college": "Tech College",
+                "department": "IT",
+                "year_of_study": "4th Year",
+            },
+        ],
+    }
+    res3 = client.post("/api/registrations", json=payload_3)
+    assert res3.status_code == 201
+    data3 = res3.get_json()
+    assert data3["success"] is True
+    assert data3["entry_fee"] == 1050  # 3 * 350
+
+
+def test_team_registration_min_team_members_validation(client):
+    """Test enforcement of configurable minimum team size."""
+    # Set minimum team size to 3 members
+    EventSetting.set_val("MIN_TEAM_MEMBERS", "3")
+    EventSetting.set_val("MAX_TEAM_MEMBERS", "5")
+    EventSetting.set_val("EVENT_PER_MEMBER_FEE", "250")
+
+    # Try registering with only 2 members (Leader + 1 member) -> Must fail with 400
+    under_sized_payload = {
+        "registration_type": "team",
+        "team_name": "Under Min Team",
+        "domain": "Open Innovation & FinTech",
+        "leader": {
+            "name": "Solo Leader",
+            "email": "solo.leader@college.edu",
+            "phone": "9876543230",
+            "college": "Tech College",
+            "department": "CSE",
+            "year_of_study": "2nd Year",
+        },
+        "members": [
+            {
+                "name": "Single Member",
+                "email": "single.member@college.edu",
+                "phone": "9876543231",
+                "college": "Tech College",
+                "department": "CSE",
+                "year_of_study": "2nd Year",
+            }
+        ],
+    }
+    res_fail = client.post("/api/registrations", json=under_sized_payload)
+    assert res_fail.status_code == 400
+    assert "at least 3 members total" in res_fail.get_json()["error"]
+
+    # Now add another member to reach 3 total -> Must succeed
+    under_sized_payload["team_name"] = "Valid Sized Team"
+    under_sized_payload["members"].append({
+        "name": "Second Member",
+        "email": "second.member@college.edu",
+        "phone": "9876543232",
+        "college": "Tech College",
+        "department": "CSE",
+        "year_of_study": "2nd Year",
+    })
+    res_ok = client.post("/api/registrations", json=under_sized_payload)
+    assert res_ok.status_code == 201
+    assert res_ok.get_json()["entry_fee"] == 750  # 3 * 250
+
+
+def test_team_registration_max_team_members_validation(client):
+    """Test enforcement of configurable maximum team size."""
+    # Set maximum team size to 2 members
+    EventSetting.set_val("MIN_TEAM_MEMBERS", "2")
+    EventSetting.set_val("MAX_TEAM_MEMBERS", "2")
+    EventSetting.set_val("EVENT_PER_MEMBER_FEE", "200")
+
+    # Try registering with 3 members (Leader + 2 members) -> Must fail with 400
+    over_sized_payload = {
+        "registration_type": "team",
+        "team_name": "Over Max Team",
+        "domain": "Web3 & Blockchain",
+        "leader": {
+            "name": "Leader Max",
+            "email": "leader.max@college.edu",
+            "phone": "9876543240",
+            "college": "Tech College",
+            "department": "ECE",
+            "year_of_study": "4th Year",
+        },
+        "members": [
+            {
+                "name": "Member A",
+                "email": "member.a@college.edu",
+                "phone": "9876543241",
+                "college": "Tech College",
+                "department": "ECE",
+                "year_of_study": "4th Year",
+            },
+            {
+                "name": "Member B",
+                "email": "member.b@college.edu",
+                "phone": "9876543242",
+                "college": "Tech College",
+                "department": "ECE",
+                "year_of_study": "4th Year",
+            },
+        ],
+    }
+    res_fail = client.post("/api/registrations", json=over_sized_payload)
+    assert res_fail.status_code == 400
+    assert "cannot exceed 2 members total" in res_fail.get_json()["error"]
+
 

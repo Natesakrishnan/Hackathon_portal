@@ -69,11 +69,17 @@ def create_app(config_name: str = None) -> Flask:
             event_name = EventSetting.get_val("EVENT_NAME", app.config.get("EVENT_NAME", "SYNEX 2026"))
             indiv_fee = int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", app.config.get("EVENT_INDIVIDUAL_FEE", 299)))
             team_fee = int(EventSetting.get_val("EVENT_TEAM_FEE", app.config.get("EVENT_TEAM_FEE", 999)))
+            per_member_fee = int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", app.config.get("EVENT_PER_MEMBER_FEE", 250)))
+            min_team_members = int(EventSetting.get_val("MIN_TEAM_MEMBERS", app.config.get("MIN_TEAM_MEMBERS", 2)))
+            max_team_members = int(EventSetting.get_val("MAX_TEAM_MEMBERS", app.config.get("MAX_TEAM_MEMBERS", 4)))
             prize_pool = EventSetting.get_val("TOTAL_PRIZE_POOL", app.config.get("TOTAL_PRIZE_POOL", "₹2,50,000"))
         except Exception:
             event_name = app.config.get("EVENT_NAME", "SYNEX 2026")
             indiv_fee = app.config.get("EVENT_INDIVIDUAL_FEE", 299)
             team_fee = app.config.get("EVENT_TEAM_FEE", 999)
+            per_member_fee = app.config.get("EVENT_PER_MEMBER_FEE", 250)
+            min_team_members = app.config.get("MIN_TEAM_MEMBERS", 2)
+            max_team_members = app.config.get("MAX_TEAM_MEMBERS", 4)
             prize_pool = app.config.get("TOTAL_PRIZE_POOL", "₹2,50,000")
 
         return {
@@ -81,6 +87,9 @@ def create_app(config_name: str = None) -> Flask:
             "event_name": event_name,
             "individual_fee": indiv_fee,
             "team_fee": team_fee,
+            "per_member_fee": per_member_fee,
+            "min_team_members": min_team_members,
+            "max_team_members": max_team_members,
             "prize_pool": prize_pool,
             "currency": app.config.get("EVENT_CURRENCY", "INR"),
             "razorpay_key_id": app.config.get("RAZORPAY_KEY_ID", ""),

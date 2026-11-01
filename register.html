@@ -120,33 +120,33 @@
 
           <form id="registrationForm" novalidate>
 
-            <!-- Registration Type Selection -->
-            <div class="type-selector-group">
-              <span class="type-selector-label">Select Registration Type <span class="required">*</span></span>
-              <div class="type-pills">
-                <label class="type-pill">
-                  <input type="radio" name="regType" id="typeIndividual" value="individual" checked>
-                  <div class="type-pill-box">
-                    <div class="type-pill-icon"><i class="fa-solid fa-user"></i></div>
-                    <div>
-                      <div class="type-pill-title">Individual</div>
-                      <div class="type-pill-desc">Solo hacker participation</div>
-                    </div>
-                    <div class="type-pill-fee" id="pillIndividualFee" data-fee-pill="individual">₹{{ individual_fee }}</div>
+            <!-- Team Registration Banner (Individual removed, dynamic per-member pricing) -->
+            <div class="team-registration-banner" id="teamRegistrationBanner">
+              <input type="radio" name="regType" id="typeTeam" value="team" checked style="display: none;">
+              <input type="hidden" name="regTypeHidden" id="regType" value="team">
+              <div class="team-banner-left">
+                <div class="team-banner-icon">
+                  <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <div class="team-banner-header-row">
+                    <span class="team-format-tag"><i class="fa-solid fa-shield-halved"></i> Team Registration</span>
+                    <span class="team-size-limit-badge" id="teamSizeLimitBadge">2 to 4 Members</span>
                   </div>
-                </label>
-
-                <label class="type-pill">
-                  <input type="radio" name="regType" id="typeTeam" value="team">
-                  <div class="type-pill-box">
-                    <div class="type-pill-icon"><i class="fa-solid fa-users"></i></div>
-                    <div>
-                      <div class="type-pill-title">Team Entry</div>
-                      <div class="type-pill-desc">2 to 4 members capacity</div>
-                    </div>
-                    <div class="type-pill-fee" id="pillTeamFee" data-fee-pill="team">₹{{ team_fee }}</div>
-                  </div>
-                </label>
+                  <h3 class="team-banner-title">Team Hackathon Entry</h3>
+                  <p class="team-banner-subtitle">
+                    Participant entry fee scales dynamically (<strong id="bannerRateDisplay">₹250</strong> per member).
+                  </p>
+                </div>
+              </div>
+              <div class="team-banner-calc" id="teamBannerCalc">
+                <div class="team-calc-label">Total Entry Fee</div>
+                <div class="team-calc-formula">
+                  <span id="bannerCalcMembers">2</span> members &times; ₹<span id="bannerCalcRate">250</span>
+                </div>
+                <div class="team-calc-total" id="bannerCalcTotal">
+                  ₹500
+                </div>
               </div>
             </div>
 
@@ -257,14 +257,14 @@
               </div>
             </div>
 
-            <!-- Dynamic Team Section (Visible only when Team is selected) -->
-            <div class="team-section" id="teamSection">
+            <!-- Dynamic Team Section -->
+            <div class="team-section active" id="teamSection">
               <div class="team-section-header">
                 <div class="team-section-title">
                   <i class="fa-solid fa-people-group" aria-hidden="true"></i>
-                  <span>Team Composition Details</span>
+                  <span>Additional Team Members</span>
                 </div>
-                <span class="team-size-badge" id="teamSizeBadge">3 of 4 max</span>
+                <span class="team-size-badge" id="teamSizeBadge">2 of 4 max</span>
               </div>
 
               <!-- Team Name Input -->
@@ -274,7 +274,7 @@
                   <span class="required">*</span>
                 </label>
                 <div class="input-wrapper">
-                  <input type="text" id="teamName" class="form-input" placeholder="e.g. NeuralVoyagers">
+                  <input type="text" id="teamName" class="form-input" placeholder="e.g. NeuralVoyagers" required>
                   <i class="fa-solid fa-flag input-icon" aria-hidden="true"></i>
                 </div>
                 <span class="field-error">Please provide a unique team name.</span>
@@ -354,7 +354,7 @@
             <div class="review-grid">
               <div class="review-item">
                 <span class="review-label">Registration Type</span>
-                <strong class="review-value" id="reviewRegType">Individual</strong>
+                <strong class="review-value" id="reviewRegType">Team Registration</strong>
               </div>
               <div class="review-item">
                 <span class="review-label">Domain Track</span>
@@ -375,11 +375,11 @@
           <div class="review-section" style="margin-top: 1.5rem;">
             <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--color-text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
               <i class="fa-solid fa-users" style="color: var(--color-primary);" aria-hidden="true"></i>
-              <span id="reviewParticipantsTitle">Participant Credentials</span>
+              <span id="reviewParticipantsTitle">Team Credentials</span>
             </h2>
 
-            <!-- Team Name Row (if team) -->
-            <div id="reviewTeamNameRow" style="display: none; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--color-bg-alt); border-radius: var(--radius-md); border-left: 4px solid var(--color-primary);">
+            <!-- Team Name Row -->
+            <div id="reviewTeamNameRow" style="display: block; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--color-bg-alt); border-radius: var(--radius-md); border-left: 4px solid var(--color-primary);">
               <span style="font-size: 0.85rem; color: var(--color-text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block;">Team Name</span>
               <strong id="reviewTeamName" style="font-size: 1.1rem; color: var(--color-text-main);">NeuralVoyagers</strong>
             </div>
@@ -400,7 +400,7 @@
             <div class="pricing-rows-review">
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
                 <span style="color: var(--color-text-secondary);">Base Hackathon Entry Fee:</span>
-                <strong id="reviewBaseFee" style="color: var(--color-text-main);">₹{{ individual_fee }}</strong>
+                <strong id="reviewBaseFee" style="color: var(--color-text-main);">₹500</strong>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
                 <span style="color: var(--color-text-secondary);">Swag Kit &amp; Meals Surcharge:</span>
@@ -412,7 +412,7 @@
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 0 0.25rem 0; font-size: 1.15rem; font-weight: 800;">
                 <span style="color: var(--color-text-main);">Total Payable Amount:</span>
-                <span id="reviewTotalAmount" style="color: var(--color-primary); font-size: 1.4rem;">₹{{ individual_fee }}</span>
+                <span id="reviewTotalAmount" style="color: var(--color-primary); font-size: 1.4rem;">₹500</span>
               </div>
             </div>
           </div>
@@ -448,17 +448,22 @@
 
             <div class="summary-row">
               <span>Selected Type:</span>
-              <strong id="summaryRegType">Individual Registration</strong>
+              <strong id="summaryRegType">Team Registration</strong>
             </div>
 
-            <div class="summary-row" id="summaryMembersRow" style="display: none;">
+            <div class="summary-row" id="summaryMembersRow" style="display: flex;">
               <span>Team Size:</span>
-              <strong id="summaryMembersCount">3 Members</strong>
+              <strong id="summaryMembersCount">2 Members</strong>
+            </div>
+
+            <div class="summary-row">
+              <span>Rate Per Member:</span>
+              <strong id="summaryRatePerPerson">₹250</strong>
             </div>
 
             <div class="summary-row">
               <span>Base Entry Fee:</span>
-              <strong id="summaryBaseFee">₹{{ individual_fee }}</strong>
+              <strong id="summaryBaseFee">₹500</strong>
             </div>
 
             <div class="summary-row">
@@ -470,7 +475,7 @@
 
             <div class="summary-total">
               <span class="summary-total-label">Total Payable:</span>
-              <span class="summary-total-price" id="summaryTotalPrice">₹{{ individual_fee }}</span>
+              <span class="summary-total-price" id="summaryTotalPrice">₹500</span>
             </div>
 
             <div class="alert alert-info" style="margin-bottom: 0; font-size: 0.78rem; line-height: 1.45;">

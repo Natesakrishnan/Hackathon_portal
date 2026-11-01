@@ -35,3 +35,22 @@ def get_registration_by_ref(ref):
         return jsonify({"success": False, "error": f"Registration '{ref}' not found."}), 404
 
     return jsonify({"success": True, "registration": reg}), 200
+
+
+@registration_bp.route("/api/registrations/<ref>/qr.png", methods=["GET"])
+def get_registration_qr_image(ref):
+    """
+    Returns the check-in QR code as a PNG image for this registration reference.
+    """
+    import io
+    from flask import send_file
+    from app.models.registration import Registration
+    from app.services.checkin_service import get_qr_code_payload, generate_qr_code_png_bytes
+
+    reg = Registration.query.filter_by(public_id=ref).first()
+    if not reg:
+        return jsonify({"success": False, "error": f"Registration '{ref}' not found."}), 404
+
+    payload_str = get_qr_code_payload(reg)
+    png_bytes = generate_qr_code_png_bytes(payload_str)
+    return send_file(io.BytesIO(png_bytes), mimetype="image/png", download_name=f"synex_qr_{ref}.png")

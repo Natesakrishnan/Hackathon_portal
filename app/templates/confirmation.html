@@ -17,6 +17,9 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+  <!-- QRCode.js library for dynamic check-in pass generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <!-- Stylesheets -->
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/register.css">
@@ -148,29 +151,18 @@
             </div>
           </div>
 
-          <!-- QR Code Mockup Side -->
+          <!-- Unique Dynamic QR Code Pass Side -->
           <div class="pass-qr-side">
-            <div class="qr-box">
-              <!-- Inline Scalable SVG Mock QR -->
-              <svg width="90" height="90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Mock Pass QR Code">
-                <rect x="5" y="5" width="30" height="30" rx="4" stroke="#1E293B" stroke-width="4" fill="white"/>
-                <rect x="12" y="12" width="16" height="16" fill="#2563EB"/>
-                <rect x="65" y="5" width="30" height="30" rx="4" stroke="#1E293B" stroke-width="4" fill="white"/>
-                <rect x="72" y="12" width="16" height="16" fill="#2563EB"/>
-                <rect x="5" y="65" width="30" height="30" rx="4" stroke="#1E293B" stroke-width="4" fill="white"/>
-                <rect x="12" y="72" width="16" height="16" fill="#2563EB"/>
-                <!-- Mock QR Bits -->
-                <rect x="42" y="10" width="8" height="8" fill="#1E293B"/>
-                <rect x="52" y="18" width="8" height="8" fill="#1E293B"/>
-                <rect x="42" y="42" width="16" height="16" rx="2" fill="#7C3AED"/>
-                <rect x="65" y="45" width="8" height="8" fill="#1E293B"/>
-                <rect x="80" y="55" width="8" height="8" fill="#1E293B"/>
-                <rect x="45" y="70" width="8" height="8" fill="#1E293B"/>
-                <rect x="65" y="75" width="12" height="12" fill="#1E293B"/>
-                <rect x="85" y="80" width="8" height="8" fill="#1E293B"/>
-              </svg>
+            <div class="qr-box" id="passQrBox" style="display: flex; align-items: center; justify-content: center; min-width: 130px; min-height: 130px; background: #FFFFFF; border-radius: 8px; padding: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);">
+              <div id="passQrCanvas" style="display: flex; align-items: center; justify-content: center;"></div>
             </div>
-            <span class="qr-caption">Scan at Check-In</span>
+            <div id="checkinStatusBadge" class="qr-status-badge" style="margin-top: 0.6rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: #DCFCE7; color: #15803D; border: 1px solid #86EFAC; text-align: center; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-qrcode"></i> <span>Valid for Check-In</span>
+            </div>
+            <div class="qr-caption" style="margin-top: 0.35rem; font-size: 0.72rem; color: var(--color-text-secondary); text-align: center;">
+              <span>Single-Use Pass</span><br>
+              <code id="passTokenDisplay" style="font-size: 0.68rem; font-weight: 600; color: #475569; letter-spacing: 0.5px;">CHK-LOADING</code>
+            </div>
           </div>
         </div>
 
@@ -364,6 +356,54 @@
             .filter(m => m.role !== "leader")
             .map(m => `${m.name || m.full_name} (${m.email})`)
             .join(" • ");
+        }
+      }
+
+      // Generate Unique Check-in QR Code (Valid Once)
+      const checkinToken = reg.checkin_token || `CHK-${publicId.replace('SYNEX-', '')}`;
+      const tokenDisp = document.getElementById("passTokenDisplay");
+      if (tokenDisp) tokenDisp.textContent = checkinToken;
+
+      const checkinPayload = JSON.stringify({
+        type: "synex_checkin",
+        ref: publicId,
+        token: checkinToken,
+        team: teamName || pName,
+        action: "checkin"
+      });
+
+      const qrCanvas = document.getElementById("passQrCanvas");
+      if (qrCanvas) {
+        qrCanvas.innerHTML = "";
+        if (typeof QRCode !== "undefined") {
+          new QRCode(qrCanvas, {
+            text: checkinPayload,
+            width: 120,
+            height: 120,
+            colorDark: "#0F172A",
+            colorLight: "#FFFFFF",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } else {
+          // Fallback SVG representation if CDN blocked
+          qrCanvas.innerHTML = `<svg width="110" height="110" viewBox="0 0 100 100" fill="none"><rect width="100" height="100" fill="#F8FAFC"/><text x="50" y="55" font-size="10" text-anchor="middle" fill="#64748B">${checkinToken}</text></svg>`;
+        }
+      }
+
+      // Update Single-Use Check-In Status Badge
+      const statusBadge = document.getElementById("checkinStatusBadge");
+      if (statusBadge) {
+        if (reg.is_checked_in) {
+          const checkedTime = reg.checked_in_at ? new Date(reg.checked_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+          statusBadge.style.background = "#FEF2F2";
+          statusBadge.style.color = "#991B1B";
+          statusBadge.style.borderColor = "#F87171";
+          statusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>CHECKED IN ${checkedTime ? '• ' + checkedTime : ''}</span>`;
+        } else {
+          statusBadge.style.background = "#DCFCE7";
+          statusBadge.style.color = "#15803D";
+          statusBadge.style.borderColor = "#86EFAC";
+          statusBadge.innerHTML = `<i class="fa-solid fa-qrcode"></i> <span>Valid for Check-In (Once)</span>`;
         }
       }
 

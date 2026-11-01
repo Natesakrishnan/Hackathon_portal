@@ -176,7 +176,7 @@ def send_email(
                 for att in attachments:
                     content_bytes = att.get("content_bytes") or b""
                     resend_attachments.append({
-                        "filename": att.get("filename", "certificate.pdf"),
+                        "filename": att.get("filename", "attachment.bin"),
                         "content": base64.b64encode(content_bytes).decode("utf-8")
                     })
                 payload["attachments"] = resend_attachments
@@ -256,8 +256,9 @@ def send_email(
             alt.attach(MIMEText(html_content, "html", "utf-8"))
             msg.attach(alt)
             for att in attachments:
-                part = MIMEApplication(att.get("content_bytes") or b"", _subtype="pdf")
-                fname = att.get("filename", "certificate.pdf")
+                subtype = att.get("subtype", "pdf")
+                fname = att.get("filename", f"attachment.{subtype}")
+                part = MIMEApplication(att.get("content_bytes") or b"", _subtype=subtype)
                 part.add_header('Content-Disposition', 'attachment', filename=fname)
                 msg.attach(part)
         else:
@@ -386,89 +387,330 @@ def get_recent_email_logs(limit: int = 50) -> List[Dict[str, Any]]:
 
 
 def send_confirmation_email(registration, payment=None) -> bool:
-    """Dispatches registration and payment confirmation email to participant."""
+    """
+    Dispatches the official registration and check-in confirmation email to the team leader's registered email.
+    Includes the unique single-use check-in QR code, check-in token, complete team members attendance roster,
+    and link to the digital confirmation pass.
+    """
     if not registration or not registration.participant:
+        logger.warning("Cannot send confirmation email: Missing registration or primary participant.")
         return False
 
-    recipient_email = registration.participant.email
-    recipient_name = registration.participant.full_name
-    event_name = current_app.config.get("EVENT_NAME", "SYNEX 2026")
-    subject = f"[{event_name}] Registration & Payment Confirmed - {registration.public_id}"
+    import io
+    import json
+    import base64
+    import urllib.parse
+    from app.services.checkin_service import get_qr_code_payload, generate_qr_code_png_bytes
+    from app.services.registration_service import generate_checkin_token
 
-    team_info_html = ""
-    if registration.registration_type == "team" and registration.team:
-        members_list = "".join([f"<li>{m.full_name} ({m.email})</li>" for m in registration.team.members])
-        team_info_html = f"""
-        <div style="margin-top: 20px; padding: 14px; background: #F1F5F9; border-radius: 8px;">
-            <p style="margin: 0 0 6px 0; font-weight: 600; color: #1E293B;">Team: {registration.team.team_name}</p>
-            <ul style="margin: 0; padding-left: 20px; color: #4B5563; font-size: 14px;">{members_list}</ul>
+    # 1. Ensure checkin_token exists on the registration
+    if not registration.checkin_token:
+        registration.checkin_token = generate_checkin_token()
+        try:
+            db.session.commit()
+        except Exception as e:
+            logger.warning(f"Error persisting generated checkin_token for {registration.public_id}: {e}")
+
+    # 2. Identify Team Leader and Recipient
+    is_team = registration.registration_type == "team"
+    if is_team and registration.team and registration.team.leader:
+        recipient_email = registration.team.leader.email
+        recipient_name = registration.team.leader.full_name
+        team_name = registration.team.team_name
+    elif registration.participant:
+        recipient_email = registration.participant.email
+        recipient_name = registration.participant.full_name
+        team_name = registration.team.team_name if (is_team and registration.team) else recipient_name
+    else:
+        return False
+
+    event_name = current_app.config.get("EVENT_NAME", "SYNEX 2026")
+    subject = f"[{event_name}] Registration & Check-In Pass Confirmed - {team_name} ({registration.public_id})"
+
+    # 3. Generate Unique Check-In QR Code
+    qr_payload_str = get_qr_code_payload(registration)
+    try:
+        qr_png_bytes = generate_qr_code_png_bytes(qr_payload_str)
+    except Exception as e:
+        logger.error(f"Failed to generate QR code PNG: {e}")
+        qr_png_bytes = b""
+
+    # High-availability HTTPS QR code URL (100% compatible with Gmail, Outlook, Apple Mail image proxies)
+    encoded_qr_data = urllib.parse.quote(qr_payload_str)
+    qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={encoded_qr_data}&margin=2"
+
+    # Base URL for confirmation pass link
+    base_url = current_app.config.get("BASE_URL", "http://localhost:5000").rstrip("/")
+    confirmation_pass_url = f"{base_url}/confirmation?ref={registration.public_id}"
+
+    # 4. Format Team Members Roster
+    team_members_html = ""
+    team_members_text = ""
+    members_count = 1
+
+    if is_team and registration.team and registration.team.members:
+        members_count = len(registration.team.members)
+        rows_html = []
+        text_lines = []
+
+        for idx, m in enumerate(registration.team.members, 1):
+            is_lead = (m.role or "").lower() == "leader" or (registration.team.leader_id and m.participant_id == registration.team.leader_id)
+            role_label = "👑 LEADER" if is_lead else "MEMBER"
+            p = m.participant
+            name = p.full_name if p else "N/A"
+            email = p.email if p else "N/A"
+            phone = p.phone if p else "N/A"
+            college = p.college if p else ""
+            dept = p.department if p else ""
+            year = p.year_of_study if p else ""
+            academic = f"{dept} ({year})" if dept and year else (dept or college or "-")
+
+            badge_style = "background: #FEF3C7; color: #B45309; border: 1px solid #FCD34D;" if is_lead else "background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0;"
+
+            rows_html.append(f"""
+            <tr style="border-bottom: 1px solid #E2E8F0; { 'background: #FFFDF5;' if is_lead else '' }">
+              <td style="padding: 10px 8px; text-align: center;">
+                <span style="display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 700; border-radius: 999px; {badge_style}">
+                  {role_label}
+                </span>
+              </td>
+              <td style="padding: 10px 8px; font-weight: 700; color: #0F172A; font-size: 13px;">{name}</td>
+              <td style="padding: 10px 8px; font-family: monospace; font-size: 12px; color: #2563EB;">{email}</td>
+              <td style="padding: 10px 8px; font-family: monospace; font-size: 12px; color: #475569;">{phone}</td>
+              <td style="padding: 10px 8px; font-size: 12px; color: #64748B;">{academic}</td>
+            </tr>
+            """)
+
+            text_lines.append(f"  {idx}. [{role_label}] {name} | {email} | {phone} | {academic}")
+
+        team_members_html = f"""
+        <div style="margin: 24px 0;">
+          <div style="margin-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0F172A;">
+              👥 Team Members Attendance Roster ({members_count} Members)
+            </h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748B;">All listed members are covered by this official check-in pass.</p>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
+            <thead>
+              <tr style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 11px; text-transform: uppercase; text-align: left;">
+                <th style="padding: 8px; text-align: center;">Role</th>
+                <th style="padding: 8px;">Name</th>
+                <th style="padding: 8px;">Email</th>
+                <th style="padding: 8px;">Phone</th>
+                <th style="padding: 8px;">Academic Info</th>
+              </tr>
+            </thead>
+            <tbody>
+              {''.join(rows_html)}
+            </tbody>
+          </table>
         </div>
         """
+        team_members_text = "\nTeam Members:\n" + "\n".join(text_lines)
 
+    # 5. Build Plain Text Version
     body_text = f"""
-Hi {recipient_name},
+Hi {recipient_name} (Team Leader),
 
-Thank you for registering for {event_name}!
-Your registration and payment have been verified.
+Congratulations! Your team registration for {event_name} is CONFIRMED and paid.
+Your official single-use check-in QR code is ready.
 
-Registration ID: {registration.public_id}
-Category: {registration.registration_type.capitalize()}
-Domain: {registration.domain}
-Amount Paid: ₹{payment.amount if payment else registration.entry_fee}
-Payment Ref: {payment.gateway_payment_id if payment else 'N/A'}
+==================================================
+REGISTRATION INFORMATION
+==================================================
+Team Name:         {team_name}
+Registration ID:   {registration.public_id}
+Check-In Token:    {registration.checkin_token}
+Category:          {registration.registration_type.capitalize()} Registration ({members_count} Members)
+Domain Track:      {registration.domain}
+Fee Paid:          ₹{payment.amount if payment else registration.entry_fee} (Verified)
+Payment Ref:       {payment.gateway_payment_id if payment else 'COMPLETED'}
+Event Date:        Nov 14, 2026 - 08:30 AM IST
+Venue:             Campus Innovation Hub, Main Auditorium, Bengaluru
+{team_members_text}
 
-See you at the hackathon!
-    """
+IMPORTANT CHECK-IN INSTRUCTIONS:
+1. Present the check-in QR code at the registration desk on Nov 14, 2026.
+2. The check-in QR code is valid ONCE only. Scanning checks in your entire team roster.
+3. All team members must carry their original college photo ID cards.
+
+==================================================
+OFFICIAL CHECK-IN PASS & QR CODE
+==================================================
+Check-In Token:    {registration.checkin_token}
+QR Image URL:      {qr_image_url}
+
+View or Print Official Pass Online:
+{confirmation_pass_url}
+
+Need help? Contact support@synex.org.
+- SYNEX 2026 Organizing Committee
+    """.strip()
+
+    # 6. Build High-Fidelity Branded HTML Email
+    fee_val = payment.amount if payment else registration.entry_fee
+    payment_ref = payment.gateway_payment_id if payment else 'VERIFIED'
 
     body_html = f"""
-    <div style="font-family: 'Inter', Arial, sans-serif; background-color: #F8FAFC; margin: 0; padding: 24px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-            <div style="background: linear-gradient(135deg, #2563EB, #7C3AED); padding: 32px 24px; text-align: center; color: #FFFFFF;">
-                <h1 style="margin: 0; font-size: 26px; font-weight: 700;">Registration Confirmed!</h1>
-                <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 15px;">Welcome to {event_name} - 36-Hour National Innovation Hackathon</p>
-            </div>
-            
-            <div style="padding: 28px 24px;">
-                <p style="font-size: 16px; color: #1F2937; margin-top: 0;">Hi <strong>{recipient_name}</strong>,</p>
-                <p style="color: #4B5563; line-height: 1.6;">Thank you for registering. Your payment has been successfully verified, and your entry slot is officially locked!</p>
-                
-                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 18px; margin: 20px 0;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                        <tr>
-                            <td style="padding: 6px 0; color: #64748B;">Registration ID:</td>
-                            <td style="padding: 6px 0; font-weight: 700; color: #2563EB; text-align: right;">{registration.public_id}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 6px 0; color: #64748B;">Category:</td>
-                            <td style="padding: 6px 0; font-weight: 600; color: #1E293B; text-align: right;">{registration.registration_type.capitalize()} Registration</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 6px 0; color: #64748B;">Domain:</td>
-                            <td style="padding: 6px 0; font-weight: 600; color: #1E293B; text-align: right;">{registration.domain}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 6px 0; color: #64748B;">Amount Paid:</td>
-                            <td style="padding: 6px 0; font-weight: 700; color: #059669; text-align: right;">₹{payment.amount if payment else registration.entry_fee}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 6px 0; color: #64748B;">Payment Reference:</td>
-                            <td style="padding: 6px 0; font-family: monospace; color: #475569; text-align: right;">{payment.gateway_payment_id if payment else 'N/A'}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                {team_info_html}
-
-                <p style="margin-top: 28px; color: #64748B; font-size: 13px; line-height: 1.5;">
-                    If you have any questions, reach out to us at <a href="mailto:support@synex.org" style="color: #2563EB;">support@synex.org</a>.
-                </p>
-            </div>
-            <div style="background: #F1F5F9; padding: 16px 24px; text-align: center; font-size: 12px; color: #64748B;">
-                © 2026 SYNEX Hackathon Committee. All rights reserved.
-            </div>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Registration &amp; Check-In Pass Confirmed - {event_name}</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F1F5F9; margin: 0; padding: 24px;">
+      <div style="max-width: 640px; margin: 0 auto; background: #FFFFFF; border-radius: 14px; border: 1px solid #E2E8F0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.06);">
+        
+        <!-- 1. Header Banner -->
+        <div style="background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #7C3AED 100%); padding: 32px 24px; text-align: center; color: #FFFFFF;">
+          <div style="display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">
+            Official Registration Confirmation
+          </div>
+          <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Registration Confirmed!</h1>
+          <p style="margin: 6px 0 0 0; opacity: 0.92; font-size: 14px;">{event_name} &bull; 36-Hour National Innovation Hackathon</p>
         </div>
-    </div>
+
+        <div style="padding: 28px 24px;">
+          <!-- 2. Salutation -->
+          <p style="font-size: 16px; color: #0F172A; margin: 0 0 8px 0;">
+            Hi <strong>{recipient_name}</strong> (Team Leader),
+          </p>
+          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
+            Congratulations! Your payment has been verified, and your team entry for <strong>{team_name}</strong> is officially locked in. Below are your full registration details, team members attendance roster, and official <strong>Check-In Pass with QR code</strong>.
+          </p>
+
+          <!-- 3. TOP SECTION: Registration & Payment Information Card -->
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px;">
+            <div style="border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 13px; font-weight: 700; color: #1E293B; text-transform: uppercase; letter-spacing: 0.5px;">📋 Registration Information</span>
+              <span style="font-family: monospace; font-size: 13px; font-weight: 700; color: #2563EB; background: #EFF6FF; border: 1px solid #BFDBFE; padding: 2px 8px; border-radius: 4px;">{registration.public_id}</span>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <tr>
+                <td style="padding: 6px 0; color: #64748B; width: 35%;">Team Name:</td>
+                <td style="padding: 6px 0; font-weight: 700; color: #0F172A;">{team_name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748B;">Category:</td>
+                <td style="padding: 6px 0; font-weight: 600; color: #0F172A;">Team Registration ({members_count} Members)</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748B;">Track / Domain:</td>
+                <td style="padding: 6px 0; font-weight: 700; color: #2563EB;">{registration.domain}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748B;">Payment Status:</td>
+                <td style="padding: 6px 0; font-weight: 800; color: #16A34A;">₹{fee_val} (Paid &amp; Verified)</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748B;">Txn Reference:</td>
+                <td style="padding: 6px 0; font-family: monospace; font-size: 12px; color: #475569;">{payment_ref}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748B;">Kickoff Date:</td>
+                <td style="padding: 6px 0; font-weight: 600; color: #0F172A;">Nov 14, 2026 &bull; 08:30 AM IST</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748B;">Venue:</td>
+                <td style="padding: 6px 0; font-weight: 600; color: #0F172A;">Campus Innovation Hub, Main Auditorium, Bengaluru</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- 4. MIDDLE SECTION: Team Members Attendance Roster -->
+          {team_members_html}
+
+          <!-- 5. Important Event Check-In Guidelines -->
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px 16px; margin: 20px 0 28px 0; font-size: 12px; color: #475569; line-height: 1.6;">
+            <strong style="color: #0F172A; font-size: 13px;">Important Event Check-In Guidelines:</strong>
+            <ul style="margin: 6px 0 0 0; padding-left: 18px;">
+              <li>Please have the check-in QR code below ready on your mobile device or printed copy at the entrance desk.</li>
+              <li>Every team member must present their valid college/university photo identity card.</li>
+              <li>The QR code PNG is also attached to this email as <code>synex_checkin_qr_{registration.public_id}.png</code> for offline access.</li>
+              <li>Registration desk opens at 08:30 AM IST. Keynote and hackathon kickoff begins at 10:00 AM IST.</li>
+            </ul>
+          </div>
+
+          <!-- 6. BOTTOM SECTION (DOWN TO THE INFORMATION): Dedicated Check-In Pass with Prominent QR Code -->
+          <div style="border: 2px solid #2563EB; border-radius: 14px; background: #FFFFFF; overflow: hidden; margin-top: 10px; margin-bottom: 24px; box-shadow: 0 6px 20px rgba(37,99,235,0.12);">
+            
+            <!-- Pass Card Header -->
+            <div style="background: linear-gradient(135deg, #1E40AF, #2563EB); color: #FFFFFF; padding: 14px 20px; text-align: center;">
+              <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; opacity: 0.9;">Official Venue Check-In Pass</span>
+              <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">{team_name}</div>
+              <div style="font-family: monospace; font-size: 12px; opacity: 0.85; margin-top: 2px;">Reference: {registration.public_id}</div>
+            </div>
+
+            <!-- Pass Card Body: Centered QR Code Image & Verification -->
+            <div style="padding: 24px 20px; text-align: center; background: #F8FAFC;">
+              
+              <p style="margin: 0 0 16px 0; font-size: 13px; color: #475569; font-weight: 500;">
+                Scan this QR code at the reception desk to check in all <strong>{members_count} team members</strong>:
+              </p>
+
+              <!-- Prominent QR Code Image Container -->
+              <div style="display: inline-block; background: #FFFFFF; border: 2px solid #CBD5E1; border-radius: 12px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+                <a href="{confirmation_pass_url}" target="_blank" style="text-decoration: none; display: block;" title="Click to view digital pass">
+                  <img src="{qr_image_url}" alt="Check-In QR Code for {team_name}" width="220" height="220" style="display: block; margin: 0 auto; width: 220px; height: 220px; max-width: 100%; border: 0; outline: none; text-decoration: none;" />
+                </a>
+              </div>
+
+              <!-- Valid For Check-In Status Badge -->
+              <div style="margin-top: 14px;">
+                <span style="display: inline-block; background: #DCFCE7; color: #15803D; border: 1px solid #86EFAC; font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 4px 14px; border-radius: 999px; letter-spacing: 0.5px;">
+                  &#10003; Valid For Check-In &bull; Single-Use Only
+                </span>
+              </div>
+
+              <!-- Single-Use Token Code -->
+              <div style="margin-top: 10px; font-size: 12px; color: #64748B;">
+                Single-Use Token:<br>
+                <code style="font-family: monospace; font-size: 14px; font-weight: 800; color: #0F172A; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 4px 12px; border-radius: 6px; display: inline-block; margin-top: 4px; letter-spacing: 0.5px;">{registration.checkin_token}</code>
+              </div>
+
+              <!-- Single-Use Warning Notice -->
+              <div style="margin-top: 16px; padding: 10px 14px; background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 8px; font-size: 12px; color: #92400E; text-align: left; line-height: 1.5;">
+                ⚠️ <strong>SINGLE-USE PASS:</strong> This QR code is strictly valid once. When scanned by an event coordinator at check-in, attendance will be recorded for your entire team ({members_count} members). Duplicate scan attempts will be rejected.
+              </div>
+
+              <!-- Online Digital Pass Link Button -->
+              <div style="margin-top: 20px;">
+                <a href="{confirmation_pass_url}" target="_blank" style="display: inline-block; background: #2563EB; color: #FFFFFF; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 8px; box-shadow: 0 2px 8px rgba(37,99,235,0.25);">
+                  View &amp; Print Digital Pass Online &rarr;
+                </a>
+              </div>
+
+              <div style="font-size: 11px; color: #94A3B8; margin-top: 10px;">
+                Pass Link: <a href="{confirmation_pass_url}" style="color: #2563EB;">{confirmation_pass_url}</a><br>
+                <em>(The high-resolution QR image is also attached to this email as synex_checkin_qr_{registration.public_id}.png)</em>
+              </div>
+
+            </div>
+          </div>
+
+          <p style="margin-top: 24px; color: #64748B; font-size: 12px; line-height: 1.5; text-align: center;">
+            Questions or support? Reply to this email or contact us at <a href="mailto:support@synex.org" style="color: #2563EB;">support@synex.org</a>.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #F8FAFC; padding: 16px 24px; text-align: center; font-size: 11px; color: #94A3B8; border-top: 1px solid #E2E8F0;">
+          &copy; 2026 SYNEX Hackathon Organizing Committee &bull; Campus Innovation Hub, Bengaluru
+        </div>
+      </div>
+    </body>
+    </html>
     """
+
+    # 7. Attach QR Code PNG for offline access
+    attachments = []
+    if qr_png_bytes:
+        attachments.append({
+            "filename": f"synex_checkin_qr_{registration.public_id}.png",
+            "content_bytes": qr_png_bytes,
+            "subtype": "png"
+        })
 
     success, msg, log = send_email(
         to_email=recipient_email,
@@ -476,5 +718,12 @@ See you at the hackathon!
         body_text=body_text,
         body_html=body_html,
         email_type="confirmation",
+        attachments=attachments,
     )
+
+    if success:
+        logger.info(f"Confirmation pass email with check-in QR successfully dispatched to team leader {recipient_email} ({registration.public_id})")
+    else:
+        logger.info(f"Confirmation pass email recorded/simulated for team leader {recipient_email} ({registration.public_id}): {msg}")
+
     return success

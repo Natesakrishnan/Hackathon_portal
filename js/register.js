@@ -6,18 +6,60 @@
  */
 
 const REG_CONFIG = {
-  individualFee: 299,
-  teamFee: 999,
+  individualFee: 250,
+  teamFee: 500,
+  perMemberFee: 250,
   currency: "₹",
   minTeamSize: 2,
   maxTeamSize: 4,
-  currentTeamSize: 3 // Default starting size: Leader + 2 members
+  currentTeamSize: 2 // Default starting size: Leader + 1 member
 };
 
 document.addEventListener("DOMContentLoaded", () => {
   initRegistrationForm();
   fetchEventFees();
 });
+
+/**
+ * Recalculates total team fee in real-time based on member count
+ */
+function updateDynamicPricing() {
+  const totalAmount = REG_CONFIG.currentTeamSize * REG_CONFIG.perMemberFee;
+
+  // Banner Calculation Display
+  const bannerMembers = document.getElementById("bannerCalcMembers");
+  const bannerRate = document.getElementById("bannerCalcRate");
+  const bannerTotal = document.getElementById("bannerCalcTotal");
+  if (bannerMembers) bannerMembers.textContent = REG_CONFIG.currentTeamSize;
+  if (bannerRate) bannerRate.textContent = REG_CONFIG.perMemberFee;
+  if (bannerTotal) bannerTotal.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+
+  // Team Size Badge in form section
+  const sizeBadge = document.getElementById("teamSizeBadge");
+  if (sizeBadge) {
+    sizeBadge.textContent = `${REG_CONFIG.currentTeamSize} of ${REG_CONFIG.maxTeamSize} max`;
+  }
+
+  // Sidebar Summary
+  const summaryFeeEl = document.getElementById("summaryBaseFee");
+  const summaryTotalEl = document.getElementById("summaryTotalPrice");
+  const summaryMembersCount = document.getElementById("summaryMembersCount");
+  const summaryRegType = document.getElementById("summaryRegType");
+  const summaryRate = document.getElementById("summaryRatePerPerson");
+  if (summaryRegType) summaryRegType.textContent = "Team Registration";
+  if (summaryRate) summaryRate.textContent = `${REG_CONFIG.currency}${REG_CONFIG.perMemberFee}`;
+  if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+  if (summaryTotalEl) summaryTotalEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+  if (summaryMembersCount) {
+    summaryMembersCount.textContent = `${REG_CONFIG.currentTeamSize} Members (1 Leader + ${REG_CONFIG.currentTeamSize - 1} Members)`;
+  }
+
+  // Step 2 Review Fee Elements
+  const reviewFeeEl = document.getElementById("reviewBaseFee");
+  const reviewTotalEl = document.getElementById("reviewTotalAmount");
+  if (reviewFeeEl) reviewFeeEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+  if (reviewTotalEl) reviewTotalEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+}
 
 /**
  * Fetch dynamic fees and domain tracks from backend
@@ -27,33 +69,39 @@ async function fetchEventFees() {
     const res = await fetch("/api/config");
     if (res.ok) {
       const data = await res.json();
+      if (data.per_member_fee !== undefined) REG_CONFIG.perMemberFee = data.per_member_fee;
       if (data.individual_fee !== undefined) REG_CONFIG.individualFee = data.individual_fee;
       if (data.team_fee !== undefined) REG_CONFIG.teamFee = data.team_fee;
+      if (data.min_team_members !== undefined) REG_CONFIG.minTeamSize = data.min_team_members;
+      if (data.max_team_members !== undefined) REG_CONFIG.maxTeamSize = data.max_team_members;
       if (data.currency) REG_CONFIG.currency = data.currency === "INR" ? "₹" : data.currency;
 
-      // Update Type Selection Pills
-      const pillIndiv = document.getElementById("pillIndividualFee");
-      const pillTeam = document.getElementById("pillTeamFee");
-      if (pillIndiv) pillIndiv.textContent = `${REG_CONFIG.currency}${REG_CONFIG.individualFee}`;
-      if (pillTeam) pillTeam.textContent = `${REG_CONFIG.currency}${REG_CONFIG.teamFee}`;
-      document.querySelectorAll('[data-fee-pill="individual"]').forEach(el => el.textContent = `${REG_CONFIG.currency}${REG_CONFIG.individualFee}`);
-      document.querySelectorAll('[data-fee-pill="team"]').forEach(el => el.textContent = `${REG_CONFIG.currency}${REG_CONFIG.teamFee}`);
+      // Bound current team size to [minTeamSize, maxTeamSize]
+      if (REG_CONFIG.currentTeamSize < REG_CONFIG.minTeamSize) {
+        REG_CONFIG.currentTeamSize = REG_CONFIG.minTeamSize;
+      }
+      if (REG_CONFIG.currentTeamSize > REG_CONFIG.maxTeamSize) {
+        REG_CONFIG.currentTeamSize = REG_CONFIG.maxTeamSize;
+      }
 
-      // Update fee tags on screen if present
-      const summaryFeeEl = document.getElementById("summaryBaseFee");
-      const summaryTotalEl = document.getElementById("summaryTotalPrice");
-      const reviewFeeEl = document.getElementById("reviewBaseFee");
-      const reviewTotalEl = document.getElementById("reviewTotalAmount");
-      const isTeam = document.querySelector('input[name="regType"]:checked')?.value === "team";
-      const currentFee = isTeam ? REG_CONFIG.teamFee : REG_CONFIG.individualFee;
+      // Update UI elements in banner
+      const limitBadge = document.getElementById("teamSizeLimitBadge");
+      if (limitBadge) {
+        limitBadge.textContent = `${REG_CONFIG.minTeamSize} to ${REG_CONFIG.maxTeamSize} Members`;
+      }
+      const rateDisplay = document.getElementById("bannerRateDisplay");
+      if (rateDisplay) rateDisplay.textContent = `${REG_CONFIG.currency}${REG_CONFIG.perMemberFee}`;
+      const summaryRate = document.getElementById("summaryRatePerPerson");
+      if (summaryRate) summaryRate.textContent = `${REG_CONFIG.currency}${REG_CONFIG.perMemberFee}`;
 
-      if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
-      if (summaryTotalEl) summaryTotalEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
-      if (reviewFeeEl) reviewFeeEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
-      if (reviewTotalEl) reviewTotalEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
+      updateDynamicPricing();
+      if (typeof window.renderTeamMembersFunc === "function") {
+        window.renderTeamMembersFunc();
+      }
     }
   } catch (err) {
     // Graceful fallback to default config
+    updateDynamicPricing();
   }
 
   // Also verify domain options from /api/domains
@@ -75,53 +123,17 @@ async function fetchEventFees() {
 
 function initRegistrationForm() {
   const form = document.getElementById("registrationForm");
-  const typeRadios = document.querySelectorAll('input[name="regType"]');
   const teamSection = document.getElementById("teamSection");
   const membersContainer = document.getElementById("dynamicMembersContainer");
   const btnAddMember = document.getElementById("btnAddMember");
-
-  // Fee Display Elements
-  const summaryTypeEl = document.getElementById("summaryRegType");
-  const summaryFeeEl = document.getElementById("summaryBaseFee");
-  const summaryTotalEl = document.getElementById("summaryTotalPrice");
-  const summaryMembersRow = document.getElementById("summaryMembersRow");
-  const summaryMembersCount = document.getElementById("summaryMembersCount");
 
   if (!form) return;
 
   // Restore draft if user navigated back from payment
   restoreDraftIfPresent();
 
-  // Handle Individual vs Team Radio Switch
-  typeRadios.forEach((radio) => {
-    radio.addEventListener("change", (e) => {
-      const isTeam = e.target.value === "team";
-      updateFormType(isTeam);
-    });
-  });
-
-  function updateFormType(isTeam) {
-    const currentFee = isTeam ? REG_CONFIG.teamFee : REG_CONFIG.individualFee;
-    const reviewFeeEl = document.getElementById("reviewBaseFee");
-    const reviewTotalEl = document.getElementById("reviewTotalAmount");
-    if (reviewFeeEl) reviewFeeEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
-    if (reviewTotalEl) reviewTotalEl.textContent = `${REG_CONFIG.currency}${currentFee}`;
-
-    if (isTeam) {
-      teamSection.classList.add("active");
-      summaryTypeEl.textContent = "Team Registration";
-      summaryFeeEl.textContent = `${REG_CONFIG.currency}${REG_CONFIG.teamFee}`;
-      summaryTotalEl.textContent = `${REG_CONFIG.currency}${REG_CONFIG.teamFee}`;
-      if (summaryMembersRow) summaryMembersRow.style.display = "flex";
-      renderTeamMembers();
-    } else {
-      teamSection.classList.remove("active");
-      summaryTypeEl.textContent = "Individual Registration";
-      summaryFeeEl.textContent = `${REG_CONFIG.currency}${REG_CONFIG.individualFee}`;
-      summaryTotalEl.textContent = `${REG_CONFIG.currency}${REG_CONFIG.individualFee}`;
-      if (summaryMembersRow) summaryMembersRow.style.display = "none";
-    }
-  }
+  // Ensure team section is active (team registration only)
+  if (teamSection) teamSection.classList.add("active");
 
   // Render dynamic team member cards
   function renderTeamMembers() {
@@ -190,10 +202,6 @@ function initRegistrationForm() {
       membersContainer.appendChild(memberCard);
     }
 
-    if (summaryMembersCount) {
-      summaryMembersCount.textContent = `${REG_CONFIG.currentTeamSize} Members (1 Lead + ${REG_CONFIG.currentTeamSize - 1} Members)`;
-    }
-
     // Bind remove buttons
     const removeBtns = membersContainer.querySelectorAll(".btn-remove-member");
     removeBtns.forEach((btn) => {
@@ -202,21 +210,26 @@ function initRegistrationForm() {
           REG_CONFIG.currentTeamSize--;
           renderTeamMembers();
           updateAddButtonState();
+          updateDynamicPricing();
         }
       });
     });
 
     updateAddButtonState();
+    updateDynamicPricing();
   }
+
+  // Expose for external calls
+  window.renderTeamMembersFunc = renderTeamMembers;
 
   function updateAddButtonState() {
     if (!btnAddMember) return;
     if (REG_CONFIG.currentTeamSize >= REG_CONFIG.maxTeamSize) {
       btnAddMember.disabled = true;
-      btnAddMember.innerHTML = `<i class="fa-solid fa-ban" aria-hidden="true"></i> <span>Maximum Team Size Reached (4 Members)</span>`;
+      btnAddMember.innerHTML = `<i class="fa-solid fa-ban" aria-hidden="true"></i> <span>Maximum Team Size Reached (${REG_CONFIG.maxTeamSize} Members)</span>`;
     } else {
       btnAddMember.disabled = false;
-      btnAddMember.innerHTML = `<i class="fa-solid fa-plus" aria-hidden="true"></i> <span>Add Member ${REG_CONFIG.currentTeamSize + 1}</span>`;
+      btnAddMember.innerHTML = `<i class="fa-solid fa-plus" aria-hidden="true"></i> <span>Add Member ${REG_CONFIG.currentTeamSize + 1} (+${REG_CONFIG.currency}${REG_CONFIG.perMemberFee})</span>`;
     }
   }
 
@@ -226,9 +239,15 @@ function initRegistrationForm() {
       if (REG_CONFIG.currentTeamSize < REG_CONFIG.maxTeamSize) {
         REG_CONFIG.currentTeamSize++;
         renderTeamMembers();
+        updateAddButtonState();
+        updateDynamicPricing();
       }
     });
   }
+
+  // Initial render
+  renderTeamMembers();
+  updateDynamicPricing();
 
   // Real-time error clearance on input
   form.addEventListener("input", (e) => {
@@ -258,7 +277,7 @@ function initRegistrationForm() {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const isTeam = document.querySelector('input[name="regType"]:checked')?.value === "team";
+    const isTeam = true;
     let isValid = true;
     let firstInvalidField = null;
 
@@ -559,7 +578,7 @@ function advanceToStep2(result, payload, isTeam) {
   const reviewTotalAmount = document.getElementById("reviewTotalAmount");
 
   if (reviewRefCode) reviewRefCode.textContent = result.registration_id;
-  if (reviewRegType) reviewRegType.textContent = isTeam ? "Team Entry" : "Individual Registration";
+  if (reviewRegType) reviewRegType.textContent = "Team Registration";
   if (reviewDomain) reviewDomain.textContent = payload.domain;
 
   const leadCollege = isTeam ? payload.leader.college : payload.college;
@@ -635,9 +654,10 @@ function advanceToStep2(result, payload, isTeam) {
     }
   }
 
-  // Server-calculated Entry Fee
-  const calculatedFee = result.entry_fee || (isTeam ? REG_CONFIG.teamFee : REG_CONFIG.individualFee);
-  if (reviewBaseFee) reviewBaseFee.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
+  // Server-calculated Entry Fee with member count breakdown
+  const totalCount = (payload.members ? payload.members.length : 0) + 1;
+  const calculatedFee = result.entry_fee || (totalCount * REG_CONFIG.perMemberFee);
+  if (reviewBaseFee) reviewBaseFee.textContent = `${REG_CONFIG.currency}${calculatedFee} (${totalCount} members × ${REG_CONFIG.currency}${REG_CONFIG.perMemberFee})`;
   if (reviewTotalAmount) reviewTotalAmount.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
 
   // Update Summary Sidebar if present

@@ -19,6 +19,12 @@ def auto_setup():
                 EventSetting.set_val("EVENT_INDIVIDUAL_FEE", "299", "Individual Registration Fee in INR")
             if not EventSetting.query.filter_by(key="EVENT_TEAM_FEE").first():
                 EventSetting.set_val("EVENT_TEAM_FEE", "999", "Team Registration Fee in INR")
+            if not EventSetting.query.filter_by(key="EVENT_PER_MEMBER_FEE").first():
+                EventSetting.set_val("EVENT_PER_MEMBER_FEE", "250", "Registration Fee Per Team Member in INR")
+            if not EventSetting.query.filter_by(key="MIN_TEAM_MEMBERS").first():
+                EventSetting.set_val("MIN_TEAM_MEMBERS", "2", "Minimum Team Members Required")
+            if not EventSetting.query.filter_by(key="MAX_TEAM_MEMBERS").first():
+                EventSetting.set_val("MAX_TEAM_MEMBERS", "4", "Maximum Team Members Allowed")
             if not EventSetting.query.filter_by(key="REGISTRATION_DEADLINE").first():
                 EventSetting.set_val("REGISTRATION_DEADLINE", "2026-11-30T23:59:59", "Registration Deadline ISO timestamp")
             if not EventSetting.query.filter_by(key="TOTAL_PRIZE_POOL").first():
@@ -55,6 +61,34 @@ def auto_setup():
                 db.session.add(settings_admin)
                 db.session.commit()
                 print("[OK] Confidential Settings Administrator ready: username='krish@01'")
+
+            # Check-in columns schema migration & token backfill
+            from sqlalchemy import inspect
+            from app.models.registration import Registration
+            import secrets, string
+            insp = inspect(db.engine)
+            if "registrations" in insp.get_table_names():
+                existing_cols = {c["name"] for c in insp.get_columns("registrations")}
+                with db.engine.connect() as conn:
+                    if "checkin_token" not in existing_cols:
+                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checkin_token VARCHAR(64) UNIQUE NULL"))
+                    if "is_checked_in" not in existing_cols:
+                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN is_checked_in BOOLEAN DEFAULT FALSE NOT NULL"))
+                    if "checked_in_at" not in existing_cols:
+                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checked_in_at DATETIME NULL"))
+                    if "checked_in_by" not in existing_cols:
+                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checked_in_by VARCHAR(120) NULL"))
+                    if "checkin_notes" not in existing_cols:
+                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checkin_notes VARCHAR(255) NULL"))
+                    conn.commit()
+
+            # Backfill any existing registrations that lack a check-in token
+            untokened_regs = Registration.query.filter(Registration.checkin_token.is_(None)).all()
+            if untokened_regs:
+                for r in untokened_regs:
+                    r.checkin_token = f"CHK-{''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(12))}"
+                db.session.commit()
+                print(f"[OK] Backfilled check-in tokens for {len(untokened_regs)} existing registration(s).")
         except Exception as e:
             print(f"Notice during auto-setup: {e}")
 

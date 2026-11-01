@@ -79,6 +79,9 @@ def test_dynamic_fee_reflected_across_public_site(client):
     from app.models.event_setting import EventSetting
     EventSetting.set_val("EVENT_INDIVIDUAL_FEE", "499", "Individual Fee")
     EventSetting.set_val("EVENT_TEAM_FEE", "1499", "Team Fee")
+    EventSetting.set_val("EVENT_PER_MEMBER_FEE", "499", "Per Member Fee")
+    EventSetting.set_val("MIN_TEAM_MEMBERS", "2", "Min Members")
+    EventSetting.set_val("MAX_TEAM_MEMBERS", "4", "Max Members")
 
     # 1. /api/config
     cfg_res = client.get("/api/config")
@@ -86,6 +89,9 @@ def test_dynamic_fee_reflected_across_public_site(client):
     cfg = cfg_res.get_json()
     assert cfg["individual_fee"] == 499
     assert cfg["team_fee"] == 1499
+    assert cfg["per_member_fee"] == 499
+    assert cfg["min_team_members"] == 2
+    assert cfg["max_team_members"] == 4
 
     # 2. Homepage (hero badge & FAQ)
     home_res = client.get("/")
@@ -95,16 +101,16 @@ def test_dynamic_fee_reflected_across_public_site(client):
     assert "Individual (₹499)" in home_html
     assert "Team of 2 to 4 members (₹1499 total)" in home_html
 
-    # 3. Registration page (Type pills, review fees, summary fees)
+    # 3. Registration page (Team Registration Banner, per-member rate, and calculated total)
     reg_res = client.get("/register")
     assert reg_res.status_code == 200
     reg_html = reg_res.get_data(as_text=True)
-    assert 'id="pillIndividualFee" data-fee-pill="individual">₹499' in reg_html
-    assert 'id="pillTeamFee" data-fee-pill="team">₹1499' in reg_html
-    assert 'id="reviewBaseFee" style="color: var(--color-text-main);">₹499' in reg_html
-    assert 'id="reviewTotalAmount" style="color: var(--color-primary); font-size: 1.4rem;">₹499' in reg_html
-    assert 'id="summaryBaseFee">₹499' in reg_html
-    assert 'id="summaryTotalPrice">₹499' in reg_html
+    assert 'id="teamRegistrationBanner"' in reg_html
+    assert 'Team Registration' in reg_html
+    assert 'id="bannerRateDisplay">₹499<' in reg_html
+    assert 'id="bannerCalcTotal"' in reg_html
+    assert 'id="reviewTotalAmount"' in reg_html
+    assert 'id="summaryTotalPrice"' in reg_html
 
     # 4. Rules page
     rules_res = client.get("/rules")
