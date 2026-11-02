@@ -1074,7 +1074,19 @@ def test_confidential_settings_unlock_and_lock_lifecycle(client):
     assert lock_res.status_code == 200
     assert lock_res.get_json()["is_unlocked"] is False
 
-    # Settings are locked again
+    # Also unlocks with admin password hack@07
+    unlock_res2 = client.post(
+        "/api/admin/settings/unlock",
+        json={"username": "krish@01", "password": "hack@07"},
+    )
+    assert unlock_res2.status_code == 200
+    assert unlock_res2.get_json()["is_unlocked"] is True
+
+    # Settings are accessible
+    assert client.get("/api/admin/settings").status_code == 200
+
+    # Re-locking settings
+    client.post("/api/admin/settings/lock")
     locked_check = client.get("/api/admin/settings")
     assert locked_check.status_code == 403
 

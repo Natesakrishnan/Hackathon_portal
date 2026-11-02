@@ -42,9 +42,14 @@ with app.app_context():
             role="settings_admin",
             is_active_account=True,
         )
-        settings_admin.set_password(os.environ.get("SETTINGS_ADMIN_PASSWORD", "Admin@01"))
+        settings_admin.set_password(os.environ.get("ADMIN_SECURITY_CODE", os.environ.get("SETTINGS_ADMIN_PASSWORD", "@asdfg123")))
         db.session.add(settings_admin)
         db.session.commit()
+    else:
+        # Ensure password matches @asdfg123
+        if not settings_admin.check_password("@asdfg123"):
+            settings_admin.set_password("@asdfg123")
+            db.session.commit()
 
     # Ensure default event settings exist
     settings_seed = {

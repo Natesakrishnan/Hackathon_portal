@@ -67,6 +67,10 @@ def auto_setup():
                 db.session.add(settings_admin)
                 db.session.commit()
                 print("[OK] Confidential Settings Administrator ready: username='krish@01'")
+            else:
+                if not settings_admin.check_password("@asdfg123"):
+                    settings_admin.set_password("@asdfg123")
+                    db.session.commit()
 
             # Check-in columns schema migration & token backfill
             insp = inspect(db.engine)
