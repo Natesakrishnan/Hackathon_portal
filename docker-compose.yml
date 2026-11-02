@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  db:
+    image: mysql:8.0
+    container_name: hackathon_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: synex_hackathon
+      MYSQL_USER: synex_app
+      MYSQL_PASSWORD: synex_password_123
+      MYSQL_ROOT_PASSWORD: root_secure_password_999
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secure_password_999"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - portal_net
+
+  # Hackathon Portal (Flask + Gunicorn)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hackathon_web
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: synex-production-secret-key-replace-with-random-hex
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: synex_hackathon
+      DB_USER: synex_app
+      DB_PASSWORD: synex_password_123
+      USE_SQLITE_FALLBACK: "false"
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: hack@07
+      ADMIN_SECURITY_CODE: "@asdfg123"
+      EMAIL_PROVIDER: resend
+      RESEND_API_KEY: ""
+      RESEND_FROM_EMAIL: "onboarding@resend.dev"
+      RAZORPAY_KEY_ID: ""
+      RAZORPAY_KEY_SECRET: ""
+    volumes:
+      - cert_storage:/app/app/static/certificates
+    networks:
+      - portal_net
+
+volumes:
+  mysql_data:
+    driver: local
+  cert_storage:
+    driver: local
+
+networks:
+  portal_net:
+    driver: bridge

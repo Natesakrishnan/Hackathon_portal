@@ -1,0 +1,48 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: portal-ingress
+  namespace: hackathon-portal
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+spec:
+  tls:
+    - hosts:
+        - portal.yourhackathon.org
+        - admin.yourhackathon.org
+      secretName: portal-tls-certificates
+  rules:
+    # =========================================================================
+    # LINK 1: PUBLIC INTERFACE LINK (for Participants, Students & Judges)
+    # URL: https://portal.yourhackathon.org/
+    # =========================================================================
+    - host: portal.yourhackathon.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: portal-service
+                port:
+                  number: 80
+
+    # =========================================================================
+    # LINK 2: ADMIN INTERFACE LINK (Private for Organizers & Admins)
+    # URL: https://admin.yourhackathon.org/
+    # (Directly opens Organizer Login / Dashboard with hidden public isolation)
+    # =========================================================================
+    - host: admin.yourhackathon.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: portal-service
+                port:
+                  number: 80

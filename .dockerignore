@@ -1,0 +1,23 @@
+# Git & IDE
+.git
+.gitignore
+.vscode
+.idea
+
+# Python environment & cache
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+
+# Local secrets & databases (injected via k8s or docker-compose)
+.env
+instance/*.db
+instance/*.sqlite
+*.log
+
+# Scratch scripts
+scratch/
