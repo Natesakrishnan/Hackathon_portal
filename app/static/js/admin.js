@@ -3159,10 +3159,14 @@ function scrollToEmailSettings() {
 }
 
 async function loadSmtpSettings() {
+  const radioBrevo = document.getElementById("providerRadioBrevo");
   const radioResend = document.getElementById("providerRadioResend");
   const radioSmtp = document.getElementById("providerRadioSmtp");
+  const brevoGroup = document.getElementById("brevoFieldsGroup");
   const resendGroup = document.getElementById("resendFieldsGroup");
   const smtpGroup = document.getElementById("smtpFieldsGroup");
+  const brevoApiKeyEl = document.getElementById("brevoApiKey");
+  const brevoSenderEmailEl = document.getElementById("brevoSenderEmail");
   const resendApiKeyEl = document.getElementById("resendApiKey");
   const resendSenderEl = document.getElementById("resendSender");
 
@@ -3183,12 +3187,25 @@ async function loadSmtpSettings() {
       const s = json.settings;
       currentEmailSettings = s;
 
+      const isBrevo = (s.provider === "brevo");
       const isResend = (s.provider === "resend");
-      if (radioResend) radioResend.checked = isResend;
-      if (radioSmtp) radioSmtp.checked = !isResend;
+      const isSmtp = (!isBrevo && !isResend);
 
+      if (radioBrevo) radioBrevo.checked = isBrevo;
+      if (radioResend) radioResend.checked = isResend;
+      if (radioSmtp) radioSmtp.checked = isSmtp;
+
+      if (brevoGroup) brevoGroup.style.display = isBrevo ? "block" : "none";
       if (resendGroup) resendGroup.style.display = isResend ? "block" : "none";
-      if (smtpGroup) smtpGroup.style.display = isResend ? "none" : "block";
+      if (smtpGroup) smtpGroup.style.display = isSmtp ? "none" : "block";
+
+      if (brevoApiKeyEl) {
+        brevoApiKeyEl.value = "";
+        brevoApiKeyEl.placeholder = s.has_brevo_key ? "•••••••••••• (API Key Configured - leave blank to keep)" : "xkeysib-123456789_abcdef...";
+      }
+      if (brevoSenderEmailEl) {
+        brevoSenderEmailEl.value = s.brevo_sender_email || s.username || "natesakrishna0@gmail.com";
+      }
 
       if (resendApiKeyEl) {
         resendApiKeyEl.value = "";
@@ -3215,7 +3232,7 @@ async function loadSmtpSettings() {
 
       if (statusBadge) {
         if (s.is_configured) {
-          const providerLabel = isResend ? "Resend HTTPS Active (Port 443)" : "SMTP Live Active";
+          const providerLabel = isBrevo ? "Brevo HTTPS Active (Port 443 • Sends to ALL)" : (isResend ? "Resend HTTPS Active (Port 443)" : "SMTP Live Active");
           statusBadge.innerHTML = `<span class="badge" style="background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(providerLabel)}</span>`;
         } else {
           statusBadge.innerHTML = `<span class="badge" style="background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode (Credentials Missing)</span>`;
@@ -3235,27 +3252,34 @@ function setupSmtpHandlers() {
   const btnTest = document.getElementById("btnTestSmtp");
   const banner = document.getElementById("smtpAlertBanner");
 
+  const radioBrevo = document.getElementById("providerRadioBrevo");
   const radioResend = document.getElementById("providerRadioResend");
   const radioSmtp = document.getElementById("providerRadioSmtp");
+  const brevoGroup = document.getElementById("brevoFieldsGroup");
   const resendGroup = document.getElementById("resendFieldsGroup");
   const smtpGroup = document.getElementById("smtpFieldsGroup");
 
-  if (radioResend && radioSmtp) {
-    radioResend.addEventListener("change", () => {
-      if (resendGroup) resendGroup.style.display = "block";
-      if (smtpGroup) smtpGroup.style.display = "none";
-    });
-    radioSmtp.addEventListener("change", () => {
-      if (resendGroup) resendGroup.style.display = "none";
-      if (smtpGroup) smtpGroup.style.display = "block";
-    });
+  function updateProviderVisibility() {
+    const isBrevo = radioBrevo && radioBrevo.checked;
+    const isResend = radioResend && radioResend.checked;
+    if (brevoGroup) brevoGroup.style.display = isBrevo ? "block" : "none";
+    if (resendGroup) resendGroup.style.display = isResend ? "block" : "none";
+    if (smtpGroup) smtpGroup.style.display = (!isBrevo && !isResend) ? "block" : "none";
   }
+
+  if (radioBrevo) radioBrevo.addEventListener("change", updateProviderVisibility);
+  if (radioResend) radioResend.addEventListener("change", updateProviderVisibility);
+  if (radioSmtp) radioSmtp.addEventListener("change", updateProviderVisibility);
 
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const isResend = radioResend ? radioResend.checked : true;
-      const provider = isResend ? "resend" : "smtp";
+      const isBrevo = radioBrevo ? radioBrevo.checked : true;
+      const isResend = radioResend ? radioResend.checked : false;
+      const provider = isBrevo ? "brevo" : (isResend ? "resend" : "smtp");
+
+      let brevoApiKey = document.getElementById("brevoApiKey") ? document.getElementById("brevoApiKey").value.trim() : "";
+      const brevoSenderEmail = document.getElementById("brevoSenderEmail") ? document.getElementById("brevoSenderEmail").value.trim() : "";
 
       let resendApiKey = document.getElementById("resendApiKey") ? document.getElementById("resendApiKey").value.trim() : "";
       if (resendApiKey && !resendApiKey.startsWith("re_") && (resendApiKey.includes("@") || resendApiKey.startsWith("Admin"))) {
@@ -3279,10 +3303,13 @@ function setupSmtpHandlers() {
       try {
         const payload = {
           provider: provider,
-          default_sender: isResend ? (resendSender || defaultSender) : defaultSender,
+          default_sender: isBrevo ? (brevoSenderEmail || defaultSender) : (isResend ? (resendSender || defaultSender) : defaultSender),
         };
 
-        if (isResend) {
+        if (isBrevo) {
+          if (brevoApiKey) payload.brevo_key = brevoApiKey;
+          if (brevoSenderEmail) payload.brevo_sender_email = brevoSenderEmail;
+        } else if (isResend) {
           if (resendApiKey) payload.resend_key = resendApiKey;
         } else {
           payload.host = host;

@@ -954,6 +954,9 @@ def api_get_smtp_settings():
     cfg = get_smtp_config()
     safe_cfg = {
         "provider": cfg.get("provider", "smtp"),
+        "has_brevo_key": cfg.get("has_brevo_key", False),
+        "brevo_key_masked": ("xkeysib-" + "•" * 16) if cfg.get("brevo_key") else "",
+        "brevo_sender_email": cfg.get("brevo_sender_email", ""),
         "has_resend_key": cfg.get("has_resend_key", False),
         "resend_key_masked": ("re_" + "•" * 12) if cfg.get("resend_key") else "",
         "host": cfg["host"],

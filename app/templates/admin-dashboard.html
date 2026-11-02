@@ -1360,10 +1360,15 @@
                       <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                         <label
                           style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer; font-weight: 600; color: #1E293B;">
+                          <input type="radio" name="emailProviderRadio" value="brevo" id="providerRadioBrevo">
+                          <span>Brevo HTTPS API <span
+                              style="font-size: 0.75rem; background: #DCFCE7; color: #166534; padding: 2px 6px; border-radius: 3px; font-weight: 700;">Recommended &bull; Sends to ALL Emails &bull; Port 443</span></span>
+                        </label>
+                        <label
+                          style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer; font-weight: 600; color: #1E293B;">
                           <input type="radio" name="emailProviderRadio" value="resend" id="providerRadioResend">
                           <span>Resend HTTPS API <span
-                              style="font-size: 0.75rem; background: #DCFCE7; color: #166534; padding: 2px 6px; border-radius: 3px; font-weight: 700;">Recommended
-                              &bull; Port 443</span></span>
+                              style="font-size: 0.75rem; background: #F1F5F9; color: #475569; padding: 2px 6px; border-radius: 3px;">Sandbox / Custom Domain</span></span>
                         </label>
                         <label
                           style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer; font-weight: 600; color: #1E293B;">
@@ -1375,9 +1380,30 @@
                       </div>
                       <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted);">
                         <i class="fa-solid fa-lightbulb" style="color: #F59E0B;"></i>
-                        <strong>ISP Port Blocking Note:</strong> Many Indian residential &amp; campus ISPs block raw
-                        SMTP ports (587, 465, 2525). Resend uses standard HTTPS (port 443) which connects reliably
-                        without timeouts.
+                        <strong>Port 443 HTTPS Delivery:</strong> Brevo &amp; Resend connect via HTTPS REST API (Port 443) which works reliably on mobile hotspot &amp; cloud servers. Brevo allows sending 300 free emails/day to <em>any</em> recipient email without owning a domain.
+                      </div>
+                    </div>
+
+                    <!-- Brevo Fields Group -->
+                    <div id="brevoFieldsGroup"
+                      style="background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 6px; padding: 1rem; margin-bottom: 1.25rem;">
+                      <div class="admin-form-group" style="margin-bottom: 0.85rem;">
+                        <label for="brevoApiKey">Brevo API Key (v3) <span
+                            style="color: var(--color-error);">*</span></label>
+                        <input type="password" id="brevoApiKey" name="brevo_api_token_no_autofill"
+                          autocomplete="new-password" data-lpignore="true" data-form-type="other"
+                          class="admin-form-control"
+                          placeholder="xkeysib-123456789... (Leave blank to keep existing)">
+                        <span class="form-helper" style="display: block; margin-top: 4px;">
+                          Get your free API key from <a href="https://app.brevo.com/settings/keys/api" target="_blank" rel="noopener"
+                            style="color: #2563EB; text-decoration: underline;">brevo.com &rarr; SMTP &amp; API &rarr; API Keys</a> (300 free live emails/day to any student email address, no custom domain needed).
+                        </span>
+                      </div>
+                      <div class="admin-form-group">
+                        <label for="brevoSenderEmail">Brevo Sender Email <span style="color: var(--color-error);">*</span></label>
+                        <input type="email" id="brevoSenderEmail" class="admin-form-control"
+                          placeholder="natesakrishna0@gmail.com">
+                        <span class="form-helper">The verified Gmail/email address you used to register on Brevo (e.g., <code>natesakrishna0@gmail.com</code>).</span>
                       </div>
                     </div>
 

@@ -22,7 +22,15 @@ def get_smtp_config() -> Dict[str, Any]:
     Prioritizes persistent EventSetting values from database, falling back to Flask config/env.
     Supports both standard SMTP and HTTPS REST API (Resend).
     """
-    provider = EventSetting.get_val("EMAIL_PROVIDER", os.environ.get("EMAIL_PROVIDER", "smtp")).strip().lower()
+    provider = EventSetting.get_val("EMAIL_PROVIDER", os.environ.get("EMAIL_PROVIDER", "brevo" if os.environ.get("BREVO_API_KEY") else ("resend" if os.environ.get("RESEND_API_KEY") else "smtp"))).strip().lower()
+    
+    raw_brevo_key = EventSetting.get_val("BREVO_API_KEY", os.environ.get("BREVO_API_KEY", "")).strip()
+    if raw_brevo_key and not raw_brevo_key.startswith("•"):
+        brevo_key = raw_brevo_key
+    else:
+        brevo_key = ""
+    brevo_sender_email = EventSetting.get_val("BREVO_SENDER_EMAIL", os.environ.get("BREVO_SENDER_EMAIL", "")).strip()
+
     raw_resend_key = EventSetting.get_val("RESEND_API_KEY", os.environ.get("RESEND_API_KEY", "")).strip()
     if raw_resend_key and raw_resend_key.startswith("re_") and "@" not in raw_resend_key:
         resend_key = raw_resend_key
@@ -45,7 +53,10 @@ def get_smtp_config() -> Dict[str, Any]:
         current_app.config.get("MAIL_DEFAULT_SENDER", f"{EventSetting.get_val('EVENT_NAME', 'SYNEX 2026')} Team <noreply@synex.org>")
     ).strip()
 
-    if provider == "resend":
+    if provider == "brevo":
+        is_configured = bool(brevo_key)
+        status_description = "Live Delivery Active (Brevo HTTPS API)" if is_configured else "Simulation Mode (Brevo API Key missing)"
+    elif provider == "resend":
         is_configured = bool(resend_key)
         status_description = "Live Delivery Active (Resend HTTPS API)" if is_configured else "Simulation Mode (Resend API Key missing)"
     else:
@@ -54,6 +65,9 @@ def get_smtp_config() -> Dict[str, Any]:
 
     return {
         "provider": provider,
+        "brevo_key": brevo_key,
+        "has_brevo_key": bool(brevo_key),
+        "brevo_sender_email": brevo_sender_email,
         "resend_key": resend_key,
         "has_resend_key": bool(resend_key),
         "host": host,
@@ -72,6 +86,8 @@ def get_smtp_config() -> Dict[str, Any]:
 def save_smtp_config(data: Dict[str, Any]) -> Tuple[bool, str]:
     """Persists updated email delivery configuration into EventSetting."""
     provider = (data.get("provider") or "smtp").strip().lower()
+    brevo_key = (data.get("brevo_key") or "").strip()
+    brevo_sender_email = (data.get("brevo_sender_email") or data.get("brevo_sender") or "").strip()
     resend_key = (data.get("resend_key") or "").strip()
 
     host = (data.get("host") or "smtp.gmail.com").strip()
@@ -85,7 +101,13 @@ def save_smtp_config(data: Dict[str, Any]) -> Tuple[bool, str]:
     use_ssl = bool(data.get("use_ssl", False))
     sender = (data.get("default_sender") or f"SYNEX Team <{user or 'noreply@synex.org'}>").strip()
 
-    EventSetting.set_val("EMAIL_PROVIDER", provider, "Email Delivery Provider (smtp or resend)")
+    EventSetting.set_val("EMAIL_PROVIDER", provider, "Email Delivery Provider (brevo, resend, or smtp)")
+    if brevo_key:
+        if not brevo_key.startswith("•") and not brevo_key.startswith("xkeysib-••••"):
+            EventSetting.set_val("BREVO_API_KEY", brevo_key, "Brevo HTTPS API Key")
+    if brevo_sender_email:
+        EventSetting.set_val("BREVO_SENDER_EMAIL", brevo_sender_email, "Brevo Verified Sender Email")
+
     if resend_key:
         if resend_key.startswith("•") or resend_key.startswith("re_••••"):
             pass
@@ -153,8 +175,90 @@ def send_email(
     else:
         html_content = body_html
 
-    # PATH A: Resend HTTPS REST API (Bypasses ISP port blocks on 587/465)
-    if cfg["provider"] == "resend" and cfg["resend_key"]:
+    # PATH A: Brevo HTTPS REST API (Port 443 - Sends to ANY recipient email without custom domain)
+    if cfg["provider"] == "brevo" and cfg["brevo_key"]:
+        try:
+            import requests
+            headers = {
+                "api-key": cfg["brevo_key"],
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+            display_name, parsed_addr = parseaddr(sender)
+            sender_email = (cfg.get("brevo_sender_email") or parsed_addr or cfg.get("username") or "natesakrishna0@gmail.com").strip()
+            sender_name = display_name or f"{curr_event_name} Hackathon"
+
+            payload = {
+                "sender": {"name": sender_name, "email": sender_email},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html_content,
+                "textContent": body_text,
+            }
+            if attachments:
+                brevo_attachments = []
+                for att in attachments:
+                    content_bytes = att.get("content_bytes") or b""
+                    brevo_attachments.append({
+                        "name": att.get("filename", "attachment.bin"),
+                        "content": base64.b64encode(content_bytes).decode("utf-8")
+                    })
+                payload["attachment"] = brevo_attachments
+
+            resp = requests.post("https://api.brevo.com/v3/smtp/email", json=payload, headers=headers, timeout=12)
+            if resp.status_code in (200, 201):
+                res_data = resp.json()
+                msg_id = res_data.get("messageId", "")
+                log = EmailLog(
+                    recipient=to_email,
+                    subject=subject,
+                    message=body_text,
+                    email_type=email_type,
+                    status="sent",
+                    error_message=f"Delivered via Brevo HTTPS API (Message ID: {msg_id})",
+                )
+                db.session.add(log)
+                db.session.commit()
+                return True, f"Live email delivered successfully to {to_email} via Brevo API.", log
+            else:
+                try:
+                    err_json = resp.json()
+                    err_msg = err_json.get("message") or resp.text
+                except Exception:
+                    err_msg = resp.text
+
+                logger.error(f"Brevo API error (HTTP {resp.status_code}): {err_msg}")
+                friendly_err = err_msg
+                if "sender" in err_msg.lower() or "unregistered" in err_msg.lower():
+                    friendly_err = f"{err_msg} (Tip: Ensure '{sender_email}' is the email address of your Brevo account under Senders)."
+
+                log = EmailLog(
+                    recipient=to_email,
+                    subject=subject,
+                    message=body_text,
+                    email_type=email_type,
+                    status="failed",
+                    error_message=f"Brevo HTTP {resp.status_code}: {err_msg}",
+                )
+                db.session.add(log)
+                db.session.commit()
+                return False, f"Brevo API error: {friendly_err}", log
+        except Exception as e:
+            err_msg = str(e)
+            log = EmailLog(
+                recipient=to_email,
+                subject=subject,
+                message=body_text,
+                email_type=email_type,
+                status="failed",
+                error_message=err_msg,
+            )
+            db.session.add(log)
+            db.session.commit()
+            return False, f"Email delivery failed: {err_msg}", log
+
+    # PATH B: Resend HTTPS REST API (Bypasses ISP port blocks on 587/465)
+    elif cfg["provider"] == "resend" and cfg["resend_key"]:
         try:
             import requests
             headers = {
@@ -373,6 +477,28 @@ def send_email(
 def test_smtp_connection(test_recipient: Optional[str] = None) -> Tuple[bool, str]:
     """Verifies email delivery connectivity and credentials."""
     cfg = get_smtp_config()
+
+    if cfg["provider"] == "brevo":
+        if not cfg["brevo_key"]:
+            return False, "Brevo API Key is required to test the connection."
+        try:
+            import requests
+            headers = {"api-key": cfg["brevo_key"], "Accept": "application/json"}
+            resp = requests.get("https://api.brevo.com/v3/account", headers=headers, timeout=10)
+            if resp.status_code == 200:
+                acc_info = resp.json()
+                acc_email = acc_info.get("email", "")
+                if test_recipient and "@" in test_recipient:
+                    success, msg, _ = send_email(
+                        to_email=test_recipient,
+                        subject="[SYNEX 2026] Brevo Live Email Test",
+                        body_text="Congratulations! Your SYNEX 2026 Hackathon email delivery is working perfectly via Brevo API on Port 443."
+                    )
+                    return success, f"Brevo API authenticated ({acc_email})! Test ping result: {msg}"
+                return True, f"Brevo API connection established and authenticated successfully for account {acc_email}!"
+            return False, f"Brevo API authentication failed (HTTP {resp.status_code}): {resp.text}"
+        except Exception as e:
+            return False, f"Brevo connection test error: {str(e)}"
 
     if cfg["provider"] == "resend":
         if not cfg["resend_key"]:
