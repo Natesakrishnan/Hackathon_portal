@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: hackathon-portal
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    plan: free
+    region: singapore
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: USE_SQLITE_FALLBACK
+        value: "true"
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: hack@07
+      - key: ADMIN_SECURITY_CODE
+        value: "@asdfg123"
+      - key: ADMIN_SESSION_LIFETIME_HOURS
+        value: "12"
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: RESEND_FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
