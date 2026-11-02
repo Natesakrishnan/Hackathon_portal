@@ -860,6 +860,21 @@ async function openTeamDetailsModal(ref) {
         `).join("");
       }
     }
+
+    const btnResend = document.getElementById("btnModalResendPass");
+    if (btnResend) {
+      btnResend.onclick = async () => {
+        btnResend.disabled = true;
+        const prev = btnResend.innerHTML;
+        btnResend.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending...</span>`;
+        try {
+          await emailCheckinPass(reg.public_id);
+        } finally {
+          btnResend.disabled = false;
+          btnResend.innerHTML = prev;
+        }
+      };
+    }
   } catch (err) {
     console.error("Modal load error:", err);
   }
@@ -1627,6 +1642,7 @@ async function loadEventSettings() {
       const indivInput = document.getElementById("settingIndividualFee");
       const teamInput = document.getElementById("settingTeamFee");
       const perMemberInput = document.getElementById("settingPerMemberFee");
+      const mealsInput = document.getElementById("settingMealsFee");
       const minTeamInput = document.getElementById("settingMinTeamMembers");
       const maxTeamInput = document.getElementById("settingMaxTeamMembers");
       const deadlineInput = document.getElementById("settingDeadline");
@@ -1634,9 +1650,18 @@ async function loadEventSettings() {
       const openSelect = document.getElementById("settingRegistrationOpen");
 
       if (nameInput) nameInput.value = s.event_name || "";
+      if (s.event_name) {
+        const shortName = s.event_name.split(' ')[0] || s.event_name;
+        document.querySelectorAll('.brand-name').forEach(el => el.textContent = shortName);
+        document.querySelectorAll('.brand-logo-icon').forEach(el => el.textContent = (s.event_name[0] || 'S').toUpperCase());
+        if (document.title && document.title.includes('Admin Dashboard')) {
+          document.title = `Admin Dashboard — ${s.event_name}`;
+        }
+      }
       if (indivInput) indivInput.value = s.individual_fee ?? 299;
       if (teamInput) teamInput.value = s.team_fee ?? 999;
       if (perMemberInput) perMemberInput.value = s.per_member_fee ?? s.individual_fee ?? 250;
+      if (mealsInput) mealsInput.value = s.meals_fee ?? 0;
       if (minTeamInput) minTeamInput.value = s.min_team_members ?? 2;
       if (maxTeamInput) maxTeamInput.value = s.max_team_members ?? 4;
       if (prizeInput) prizeInput.value = s.prize_pool || "₹2,50,000";
@@ -1749,12 +1774,14 @@ function setupSettingsHandlers() {
       e.preventDefault();
       const eventName = document.getElementById("settingEventName").value.trim();
       const perMemberInput = document.getElementById("settingPerMemberFee");
+      const mealsInput = document.getElementById("settingMealsFee");
       const minTeamInput = document.getElementById("settingMinTeamMembers");
       const maxTeamInput = document.getElementById("settingMaxTeamMembers");
       const indivFeeInput = document.getElementById("settingIndividualFee");
       const teamFeeInput = document.getElementById("settingTeamFee");
 
       const perMemberFee = perMemberInput ? parseInt(perMemberInput.value, 10) : (indivFeeInput ? parseInt(indivFeeInput.value, 10) : 250);
+      const mealsFee = mealsInput ? parseInt(mealsInput.value, 10) : 0;
       const minTeamMembers = minTeamInput ? parseInt(minTeamInput.value, 10) : 2;
       const maxTeamMembers = maxTeamInput ? parseInt(maxTeamInput.value, 10) : 4;
       const indivFee = perMemberFee;
@@ -1771,6 +1798,10 @@ function setupSettingsHandlers() {
       }
       if (isNaN(perMemberFee) || perMemberFee < 0) {
         showBanner(banner, "Fee per member must be a non-negative number.", "error");
+        return;
+      }
+      if (isNaN(mealsFee) || mealsFee < 0) {
+        showBanner(banner, "Swag kit & meals surcharge must be a non-negative number.", "error");
         return;
       }
       if (isNaN(minTeamMembers) || minTeamMembers < 1) {
@@ -1804,6 +1835,7 @@ function setupSettingsHandlers() {
             individual_fee: indivFee,
             team_fee: teamFee,
             per_member_fee: perMemberFee,
+            meals_fee: mealsFee,
             min_team_members: minTeamMembers,
             max_team_members: maxTeamMembers,
             registration_deadline: deadline,
@@ -1820,6 +1852,9 @@ function setupSettingsHandlers() {
             window.SYNEX_CONFIG.eventDate = deadline;
             window.SYNEX_CONFIG.prizePool = prizePool;
             window.SYNEX_CONFIG.perMemberFee = perMemberFee;
+            if (window.SYNEX_CONFIG.fees) {
+              window.SYNEX_CONFIG.fees.meals_fee = mealsFee;
+            }
             window.SYNEX_CONFIG.minTeamMembers = minTeamMembers;
             window.SYNEX_CONFIG.maxTeamMembers = maxTeamMembers;
             window.SYNEX_CONFIG.fees = {
@@ -1831,6 +1866,15 @@ function setupSettingsHandlers() {
           }
           if (typeof window.updatePublicFeeDisplays === "function") {
             window.updatePublicFeeDisplays(indivFee, teamFee, "₹");
+          }
+          if (typeof window.updateEventNameDisplays === "function") {
+            window.updateEventNameDisplays(eventName);
+          }
+          const savedShort = eventName.split(' ')[0] || eventName;
+          document.querySelectorAll('.brand-name').forEach(el => el.textContent = savedShort);
+          document.querySelectorAll('.brand-logo-icon').forEach(el => el.textContent = (eventName[0] || 'S').toUpperCase());
+          if (document.title && document.title.includes('Admin Dashboard')) {
+            document.title = `Admin Dashboard — ${eventName}`;
           }
         } else {
           showBanner(banner, json.error || "Failed to update settings.", "error");
@@ -3213,7 +3257,11 @@ function setupSmtpHandlers() {
       const isResend = radioResend ? radioResend.checked : true;
       const provider = isResend ? "resend" : "smtp";
 
-      const resendApiKey = document.getElementById("resendApiKey") ? document.getElementById("resendApiKey").value.trim() : "";
+      let resendApiKey = document.getElementById("resendApiKey") ? document.getElementById("resendApiKey").value.trim() : "";
+      if (resendApiKey && !resendApiKey.startsWith("re_") && (resendApiKey.includes("@") || resendApiKey.startsWith("Admin"))) {
+        console.warn("Discarded autofilled password from resendApiKey input");
+        resendApiKey = "";
+      }
       const resendSender = document.getElementById("resendSender") ? document.getElementById("resendSender").value.trim() : "";
 
       const host = document.getElementById("smtpHost") ? document.getElementById("smtpHost").value.trim() : "";
@@ -3494,6 +3542,7 @@ async function loadCertificateParticipants() {
   const countEl = document.getElementById("certRegistryCountText");
   const domainFilter = document.getElementById("certFilterDomain") ? document.getElementById("certFilterDomain").value : "all";
   const paymentFilter = document.getElementById("certFilterPayment") ? document.getElementById("certFilterPayment").value : "paid";
+  const checkinFilter = document.getElementById("certFilterCheckin") ? document.getElementById("certFilterCheckin").value : "checked_in";
 
   if (!tbody) return;
 
@@ -3508,10 +3557,21 @@ async function loadCertificateParticipants() {
   try {
     const params = new URLSearchParams({
       domain: domainFilter,
-      payment: paymentFilter
+      payment: paymentFilter,
+      checkin: checkinFilter
     });
     const res = await fetch(`/api/admin/certificates/participants?${params.toString()}`);
-    const json = await res.json();
+    if (res.status === 401) {
+      window.location.href = "/admin/login";
+      return;
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch (parseErr) {
+      json = { success: false, error: `Server error (HTTP ${res.status})` };
+    }
 
     if (res.ok && json.success && Array.isArray(json.data)) {
       certificateParticipantsCache = json.data;
@@ -3531,7 +3591,7 @@ async function loadCertificateParticipants() {
     tbody.innerHTML = `
       <tr>
         <td colspan="9" style="text-align: center; padding: 2rem; color: #DC2626;">
-          Network error loading participant directory.
+          Error loading participant directory: ${escapeHtml(err.message || "Network error")}
         </td>
       </tr>
     `;
@@ -3541,16 +3601,25 @@ window.loadCertificateParticipants = loadCertificateParticipants;
 
 /**
  * Populates single dispatch participant selector dropdown
+ * STRICT ENFORCEMENT: Only checked-in team members/participants appear in dropdown!
  */
 function populateSingleSelectDropdown() {
   const selectDropdown = document.getElementById("certSingleSelectParticipant");
   if (!selectDropdown) return;
 
   const currentVal = selectDropdown.value;
-  selectDropdown.innerHTML = `<option value="">-- Choose from registered participants or type below --</option>` +
-    certificateParticipantsCache.map(p => `
+  // Strictly filter only checked-in participants
+  const checkedInList = certificateParticipantsCache.filter(p => p.is_checked_in === true);
+
+  if (checkedInList.length === 0) {
+    selectDropdown.innerHTML = `<option value="">-- No checked-in team members found (teams must check in at desk first) --</option>`;
+    return;
+  }
+
+  selectDropdown.innerHTML = `<option value="">-- Choose from verified checked-in team members / attendees --</option>` +
+    checkedInList.map(p => `
       <option value="${p.id}" ${p.id === currentVal ? "selected" : ""}>
-        ${escapeHtml(p.name)} (${escapeHtml(p.role)} • ${escapeHtml(p.team_name || "Solo")} • ${escapeHtml(p.email)})
+        ${escapeHtml(p.name)} (${escapeHtml(p.role)} • ${escapeHtml(p.team_name || "Solo")} • Checked In)
       </option>
     `).join("");
 }
@@ -3566,6 +3635,11 @@ function handleSelectCertParticipantChange() {
 
   const participant = certificateParticipantsCache.find(p => p.id === pId);
   if (participant) {
+    if (!participant.is_checked_in) {
+      alert(`Cannot select ${participant.name}: only verified checked-in team members are eligible for certificates.`);
+      selectEl.value = "";
+      return;
+    }
     const nameInput = document.getElementById("certSingleName");
     const emailInput = document.getElementById("certSingleEmail");
     const domainInput = document.getElementById("certSingleDomain");
@@ -3623,16 +3697,24 @@ function renderCertificateParticipantsTable() {
       ? `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Paid</span>`
       : `<span class="badge badge-warning">${escapeHtml(p.payment_status || "PENDING")}</span>`;
 
+    const checkinBadge = p.is_checked_in
+      ? `<span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-circle-check"></i> Checked In</span>`
+      : `<span class="badge" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA; font-size: 0.72rem; padding: 2px 7px;"><i class="fa-solid fa-clock"></i> Not Checked In</span>`;
+
     const roleBadge = p.role === "Solo Hacker"
       ? `<span class="badge" style="background:#E0E7FF; color:#3730A3;">Solo</span>`
       : p.role === "Team Leader"
         ? `<span class="badge" style="background:#FEF3C7; color:#92400E;"><i class="fa-solid fa-crown" style="font-size:0.65rem;"></i> Leader</span>`
         : `<span class="badge" style="background:#F1F5F9; color:#475569;">Member</span>`;
 
+    const canIssue = p.is_checked_in;
+    const sendBtnTitle = canIssue ? "Dispatch E-Certificate via Email" : "Cannot issue: Participant has not checked in at the event";
+    const sendBtnDisabled = canIssue ? "" : 'disabled style="opacity: 0.4; cursor: not-allowed;"';
+
     return `
-      <tr>
+      <tr class="${canIssue ? 'row-checked-in' : 'row-not-checked-in'}">
         <td style="text-align: center;">
-          <input type="checkbox" class="cert-row-checkbox" value="${p.id}" onchange="updateBatchActionBar();">
+          <input type="checkbox" class="cert-row-checkbox" value="${p.id}" ${canIssue ? '' : 'disabled title="Cannot select: Participant has not checked in"'} onchange="updateBatchActionBar();">
         </td>
         <td>
           <div style="font-weight: 600; color: #1E293B;">${escapeHtml(p.name)}</div>
@@ -3649,7 +3731,10 @@ function renderCertificateParticipantsTable() {
         <td style="font-size: 0.82rem; color: #475569; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(p.college || "")}">
           ${escapeHtml(p.college || "—")}
         </td>
-        <td>${statusBadge}</td>
+        <td>
+          ${statusBadge}
+          <div style="margin-top: 4px;">${checkinBadge}</div>
+        </td>
         <td>
           <code style="font-size: 0.76rem; background: #F1F5F9; padding: 2px 6px; border-radius: 4px; color: #0F172A;">${escapeHtml(p.certificate_id)}</code>
         </td>
@@ -3661,7 +3746,7 @@ function renderCertificateParticipantsTable() {
             <a href="/api/admin/certificates/preview?participant_id=${encodeURIComponent(p.id)}&download=true" target="_blank" class="cert-table-action-btn download" title="Download Certificate PDF">
               <i class="fa-solid fa-download"></i>
             </a>
-            <button type="button" class="cert-table-action-btn send" title="Dispatch E-Certificate via Email" onclick="handleSendSingleCertFromTable('${p.id}');">
+            <button type="button" class="cert-table-action-btn send" title="${sendBtnTitle}" ${sendBtnDisabled} onclick="handleSendSingleCertFromTable('${p.id}');">
               <i class="fa-solid fa-paper-plane"></i>
             </button>
           </div>
@@ -3837,6 +3922,14 @@ async function handleSendSingleCertificate() {
     return;
   }
 
+  if (pId) {
+    const selParticipant = certificateParticipantsCache.find(p => p.id === pId);
+    if (selParticipant && !selParticipant.is_checked_in) {
+      if (banner) showBanner(banner, `Cannot issue certificate: '${selParticipant.name}' has not completed event check-in. Certificates can only be issued to checked-in attendees.`, "error");
+      return;
+    }
+  }
+
   const origHtml = submitBtn ? submitBtn.innerHTML : "";
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -3885,6 +3978,13 @@ async function handleSendSingleCertFromTable(participantId) {
   const participant = certificateParticipantsCache.find(p => p.id === participantId);
   if (!participant) return;
 
+  if (!participant.is_checked_in) {
+    const banner = document.getElementById("certAlertBanner");
+    if (banner) showBanner(banner, `Cannot issue certificate: '${participant.name}' has not completed event check-in. Only checked-in team members are eligible to receive certificates.`, "error");
+    alert(`Cannot issue certificate: '${participant.name}' has not checked in at the event desk yet.`);
+    return;
+  }
+
   if (!confirm(`Generate PDF certificate and email it directly to ${participant.name} (${participant.email})?`)) {
     return;
   }
@@ -3921,18 +4021,32 @@ async function dispatchSelectedCertificates() {
   if (checkboxes.length === 0) return;
 
   const ids = Array.from(checkboxes).map(cb => cb.value);
-  if (!confirm(`Are you sure you want to generate PDF certificates and dispatch emails to all ${ids.length} selected participant(s)?`)) {
+
+  // Validate that selected participants are checked in
+  const eligibleIds = ids.filter(id => {
+    const p = certificateParticipantsCache.find(item => item.id === id);
+    return p && p.is_checked_in;
+  });
+
+  const banner = document.getElementById("certAlertBanner");
+
+  if (eligibleIds.length === 0) {
+    if (banner) showBanner(banner, "Cannot issue certificates: None of the selected participants have completed event check-in. Certificates can only be issued to checked-in attendees.", "error");
+    alert("Cannot issue certificates: None of the selected participants have checked in. Please check in attendees first.");
     return;
   }
 
-  const banner = document.getElementById("certAlertBanner");
-  if (banner) showBanner(banner, `Preparing and dispatching ${ids.length} certificate emails in background...`, "info");
+  if (!confirm(`Are you sure you want to generate PDF certificates and dispatch emails to all ${eligibleIds.length} verified checked-in participant(s)?`)) {
+    return;
+  }
+
+  if (banner) showBanner(banner, `Preparing and dispatching ${eligibleIds.length} certificate emails in background...`, "info");
 
   try {
     const res = await fetch("/api/admin/certificates/send-bulk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ participant_ids: ids })
+      body: JSON.stringify({ participant_ids: eligibleIds })
     });
     const json = await res.json();
 
@@ -4671,7 +4785,8 @@ async function emailCheckinPass(ref) {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      alert(`Check-in pass with QR code sent successfully to team leader:\n${data.recipient_email} (Team: ${data.team_name})`);
+      const extra = data.delivery_info ? `\n\nDelivery Note: ${data.delivery_info}` : "";
+      alert(`Check-in pass with QR code dispatched successfully!\nRecipient: ${data.recipient_email} (Team: ${data.team_name})${extra}`);
     } else {
       alert(data.error || "Failed to dispatch confirmation pass email.");
     }

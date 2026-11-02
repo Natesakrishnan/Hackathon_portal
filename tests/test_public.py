@@ -97,7 +97,7 @@ def test_dynamic_fee_reflected_across_public_site(client):
     home_res = client.get("/")
     assert home_res.status_code == 200
     home_html = home_res.get_data(as_text=True)
-    assert "₹499 Individual / ₹1499 Team" in home_html
+    assert "₹499 / Member" in home_html
     assert "Individual (₹499)" in home_html
     assert "Team of 2 to 4 members (₹1499 total)" in home_html
 
@@ -130,7 +130,7 @@ def test_dynamic_fee_reflected_across_public_site(client):
     conf_res = client.get("/confirmation")
     assert conf_res.status_code == 200
     conf_html = conf_res.get_data(as_text=True)
-    assert "₹499 (Simulated)" in conf_html
+    assert "₹499 (Paid &amp; Confirmed)" in conf_html
 
     # Reset back to defaults
     EventSetting.set_val("EVENT_INDIVIDUAL_FEE", "299", "Individual Fee")

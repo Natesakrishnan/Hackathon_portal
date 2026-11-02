@@ -25,17 +25,52 @@ EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 PHONE_REGEX = re.compile(r"^[0-9]{10}$")
 
 
+def get_event_registration_prefix() -> str:
+    """
+    Derives an event prefix from the configured event name.
+    Formats {event_name} into an uppercase slug suitable for registration IDs.
+    Example:
+      'Hackathon' -> 'HACKATHON'
+      'SYNEX 2026' -> 'SYNEX-2026'
+    """
+    raw_name = None
+    try:
+        raw_name = EventSetting.get_val("EVENT_NAME")
+    except Exception:
+        raw_name = None
+
+    if not raw_name:
+        try:
+            from flask import current_app, has_app_context
+            if has_app_context():
+                raw_name = current_app.config.get("EVENT_NAME")
+        except Exception:
+            pass
+
+    if not raw_name:
+        raw_name = getattr(Config, "EVENT_NAME", "SYNEX")
+
+    # Clean characters: replace spaces/underscores with hyphens, remove special characters
+    clean_slug = re.sub(r"[\s_]+", "-", str(raw_name).strip())
+    clean_slug = re.sub(r"[^A-Za-z0-9-]", "", clean_slug)
+    clean_slug = re.sub(r"-+", "-", clean_slug).strip("-")
+
+    prefix = clean_slug.upper() if clean_slug else "SYNEX"
+    return prefix[:24].rstrip("-")
+
+
 def generate_public_id() -> str:
-    """Generates a unique reference ID like SYNEX-A8F29C."""
+    """Generates a unique reference ID in the form of {event_name}-{unique id}."""
+    prefix = get_event_registration_prefix()
     alphabet = string.ascii_uppercase + string.digits
     for _ in range(10):
         code = "".join(secrets.choice(alphabet) for _ in range(6))
-        candidate = f"SYNEX-{code}"
+        candidate = f"{prefix}-{code}"
         if not Registration.query.filter_by(public_id=candidate).first():
             return candidate
     # Fallback with timestamp component
     import time
-    return f"SYNEX-{int(time.time()) % 1000000:06d}"
+    return f"{prefix}-{int(time.time()) % 1000000:06d}"
 
 
 def generate_checkin_token() -> str:
@@ -118,6 +153,7 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
     min_team_members = int(EventSetting.get_val("MIN_TEAM_MEMBERS", getattr(Config, "MIN_TEAM_MEMBERS", 2)))
     max_team_members = int(EventSetting.get_val("MAX_TEAM_MEMBERS", getattr(Config, "MAX_TEAM_MEMBERS", 4)))
     per_member_fee_str = EventSetting.get_val("EVENT_PER_MEMBER_FEE", None)
+    meals_fee = int(EventSetting.get_val("EVENT_MEALS_FEE", getattr(Config, "EVENT_MEALS_FEE", 0)))
     indiv_fee = int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", Config.EVENT_INDIVIDUAL_FEE))
     team_fee = int(EventSetting.get_val("EVENT_TEAM_FEE", Config.EVENT_TEAM_FEE))
 
@@ -130,6 +166,9 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
 
             participant = get_or_create_participant(payload)
 
+            base_fee = int(per_member_fee_str) if per_member_fee_str is not None else indiv_fee
+            total_fee = base_fee + meals_fee
+
             public_id = generate_public_id()
             checkin_token = generate_checkin_token()
             registration = Registration(
@@ -138,7 +177,7 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
                 participant_id=participant.id,
                 team_id=None,
                 domain=domain,
-                entry_fee=int(per_member_fee_str) if per_member_fee_str is not None else indiv_fee,
+                entry_fee=total_fee,
                 currency="INR",
                 registration_status="pending",
                 payment_status="unpaid",
@@ -147,14 +186,16 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
             db.session.add(registration)
             db.session.commit()
 
-            logger.info(f"Individual registration created: {public_id} for {participant.email}")
+            logger.info(f"Individual registration created: {public_id} for {participant.email} (Base: ₹{base_fee}, Meals: ₹{meals_fee}, Total: ₹{total_fee})")
             return True, {
                 "success": True,
                 "message": "Registration created successfully. Proceed to payment.",
                 "registration_id": public_id,
                 "checkin_token": checkin_token,
                 "registration_type": "individual",
-                "entry_fee": int(per_member_fee_str) if per_member_fee_str is not None else indiv_fee,
+                "entry_fee": total_fee,
+                "base_fee": base_fee,
+                "meals_fee": meals_fee,
                 "domain": domain,
                 "participant": participant.to_dict(),
                 "redirect_url": f"/payment?ref={public_id}",
@@ -225,9 +266,10 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
 
             # Calculate server-side dynamic fee
             if per_member_fee_str is not None:
-                calculated_fee = total_members * int(per_member_fee_str)
+                base_fee = total_members * int(per_member_fee_str)
             else:
-                calculated_fee = team_fee
+                base_fee = team_fee
+            total_fee = base_fee + meals_fee
 
             # Create Registration record
             public_id = generate_public_id()
@@ -238,7 +280,7 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
                 participant_id=leader.id,
                 team_id=team.id,
                 domain=domain,
-                entry_fee=calculated_fee,
+                entry_fee=total_fee,
                 currency="INR",
                 registration_status="pending",
                 payment_status="unpaid",
@@ -247,7 +289,7 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
             db.session.add(registration)
             db.session.commit()
 
-            logger.info(f"Team registration created: {public_id} for team '{team_name}' ({total_members} members, Fee: ₹{calculated_fee})")
+            logger.info(f"Team registration created: {public_id} for team '{team_name}' ({total_members} members, Base: ₹{base_fee}, Meals: ₹{meals_fee}, Total: ₹{total_fee})")
             return True, {
                 "success": True,
                 "message": "Team registration created successfully. Proceed to payment.",
@@ -255,7 +297,9 @@ def register_participant(payload: Dict[str, Any]) -> Tuple[bool, Dict[str, Any],
                 "checkin_token": checkin_token,
                 "registration_type": "team",
                 "team_name": team_name,
-                "entry_fee": calculated_fee,
+                "entry_fee": total_fee,
+                "base_fee": base_fee,
+                "meals_fee": meals_fee,
                 "domain": domain,
                 "members_count": len(all_emails),
                 "redirect_url": f"/payment?ref={public_id}",

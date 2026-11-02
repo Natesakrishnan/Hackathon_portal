@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rules &amp; Guidelines — SYNEX 2026</title>
-  <meta name="description" content="Comprehensive participation rules, eligibility, code of conduct, submission criteria, and intellectual property terms for SYNEX 2026.">
+  <title>Rules &amp; Guidelines — {{ event_name | default('SYNEX 2026') }}</title>
+  <meta name="description" content="Comprehensive participation rules, eligibility, code of conduct, submission criteria, and intellectual property terms for {{ event_name | default('SYNEX 2026') }}.">
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
@@ -123,20 +123,14 @@
 </head>
 <body>
 
-  <!-- Demo Notice Banner -->
-  <div class="demo-banner" role="status" id="rulesNoticeBanner">
-    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-    <span id="rulesNoticeBannerText">{% if rules_data and rules_data.notice_banner %}{{ rules_data.notice_banner }}{% else %}<strong>SAMPLE CONTENT:</strong> Rules, eligibility guidelines, and refund terms are sample content for demonstration.{% endif %}</span>
-  </div>
-
   <!-- Navigation Bar -->
   <header class="navbar">
     <div class="container nav-container">
-      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
-        <div class="brand-logo-icon">S</div>
+      <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX 2026') }} Homepage">
+        <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
         <div class="brand-text">
-          <span class="brand-name">SYNEX</span>
-          <span class="brand-sub">Hackathon 2026</span>
+          <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+          <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
         </div>
       </a>
 
@@ -183,7 +177,7 @@
       </span>
       <h1 style="font-size: 2.75rem; margin-bottom: 0.75rem;">Rules, Ethics &amp; Evaluation Rubric</h1>
       <p style="font-size: 1.1rem; color: var(--color-text-secondary); max-width: 680px; margin: 0 auto;">
-        Clear guidelines ensuring fairness, creative integrity, intellectual property safety, and collaborative excellence at SYNEX 2026.
+        Clear guidelines ensuring fairness, creative integrity, intellectual property safety, and collaborative excellence at {{ event_name | default('SYNEX 2026') }}.
       </p>
     </div>
   </div>
@@ -238,7 +232,7 @@
               <h2 class="rule-block-title">Eligibility &amp; Format</h2>
             </div>
             <p>
-              SYNEX 2026 is open to all students actively pursuing full-time or part-time undergraduate (B.E./B.Tech, BCA, B.Sc), postgraduate (M.E./M.Tech, MCA, M.Sc, MBA), or diploma degrees from accredited educational institutions worldwide.
+              {{ event_name | default('SYNEX 2026') }} is open to all students actively pursuing full-time or part-time undergraduate (B.E./B.Tech, BCA, B.Sc), postgraduate (M.E./M.Tech, MCA, M.Sc, MBA), or diploma degrees from accredited educational institutions worldwide.
             </p>
             <p>
               Both in-person attendance at our Bengaluru tech campus and virtual hybrid participation options are provided. All participants must present a valid student identity card or proof of current enrollment at check-in.
@@ -283,7 +277,7 @@
               <h2 class="rule-block-title">100% Intellectual Property (IP) Retention</h2>
             </div>
             <p>
-              <strong>You own what you build.</strong> Neither the SYNEX organizers, sponsors, nor venue partners claim any rights, equity, or ownership over the intellectual property created during the hackathon.
+              <strong>You own what you build.</strong> Neither the {{ event_short_name | default('SYNEX') }} organizers, sponsors, nor venue partners claim any rights, equity, or ownership over the intellectual property created during the hackathon.
             </p>
             <p>
               Teams remain free to open-source, patent, incorporate into startups, or commercialize their products after the event concludes.
@@ -297,7 +291,7 @@
               <h2 class="rule-block-title">Code of Conduct</h2>
             </div>
             <p>
-              SYNEX is committed to providing a safe, respectful, inclusive, and harassment-free experience for everyone regardless of gender, sexual orientation, disability, physical appearance, race, ethnicity, or religion.
+              {{ event_short_name | default('SYNEX') }} is committed to providing a safe, respectful, inclusive, and harassment-free experience for everyone regardless of gender, sexual orientation, disability, physical appearance, race, ethnicity, or religion.
             </p>
             <p>
               Harassment of any kind, plagiarism, toxic competitive behavior, or violation of venue regulations will result in immediate disqualification and removal from the premises without refund.
@@ -413,7 +407,7 @@
               Slots are capped at 300 teams. Secure your spot and join the most anticipated sprint of the year.
             </p>
             <a href="register.html" class="btn btn-lg" style="background: #FFFFFF; color: var(--color-primary); font-weight: 700;">
-              <span>Register Now For SYNEX</span>
+              <span>Register Now For {{ event_short_name | default('SYNEX') }}</span>
               <i class="fa-solid fa-arrow-right"></i>
             </a>
           </div>
@@ -429,11 +423,11 @@
     <div class="container">
       <div class="footer-top">
         <div class="footer-brand">
-          <a href="index.html" class="brand" aria-label="SYNEX Homepage">
-            <div class="brand-logo-icon">S</div>
+          <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX') }} Homepage">
+            <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
             <div class="brand-text">
-              <span class="brand-name">SYNEX</span>
-              <span class="brand-sub">Hackathon 2026</span>
+              <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+              <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
             </div>
           </a>
           <p class="footer-desc">
@@ -456,29 +450,16 @@
         <div>
           <h4 class="footer-title">Registration</h4>
           <ul class="footer-links">
-            <li><a href="register.html">Individual Entry</a></li>
             <li><a href="register.html">Team Registration</a></li>
-            <li><a href="payment.html">Payment Preview</a></li>
+            <li><a href="payment.html">Fee Payment</a></li>
             <li><a href="confirmation.html">Pass Status</a></li>
           </ul>
         </div>
 
-        <div>
-          <h4 class="footer-title">Administration</h4>
-          <ul class="footer-links">
-            <li><a href="admin-login.html">Organizer Login</a></li>
-            <li><a href="admin-dashboard.html">Dashboard Preview</a></li>
-          </ul>
-        </div>
       </div>
 
       <div class="footer-bottom">
-        <div>&copy; 2026 SYNEX Hackathon. Frontend demonstration prototype.</div>
-        <div>
-          <a href="admin-login.html" class="footer-admin-link">
-            <i class="fa-solid fa-lock"></i> Admin Portal
-          </a>
-        </div>
+        <div>&copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} Hackathon. All rights reserved.</div>
       </div>
     </div>
   </footer>
@@ -508,7 +489,7 @@
                     Slots are capped at 300 teams. Secure your spot and join the most anticipated sprint of the year.
                   </p>
                   <a href="register.html" class="btn btn-lg" style="background: #FFFFFF; color: var(--color-primary); font-weight: 700;">
-                    <span>Register Now For SYNEX</span>
+                    <span>Register Now For {{ event_short_name | default('SYNEX') }}</span>
                     <i class="fa-solid fa-arrow-right"></i>
                   </a>
                 </div>

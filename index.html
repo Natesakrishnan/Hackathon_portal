@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SYNEX 2026 — National Innovation Hackathon</title>
-  <meta name="description" content="Join SYNEX 2026, the premier 36-hour national innovation hackathon. Build the future with ₹2,50,000+ in prizes, world-class mentorship, and 1,200+ creators.">
+  <title>{{ event_name | default('SYNEX 2026') }} — National Innovation Hackathon</title>
+  <meta name="description" content="Join {{ event_name | default('SYNEX 2026') }}, the premier 36-hour national innovation hackathon. Build the future with ₹2,50,000+ in prizes, world-class mentorship, and 1,200+ creators.">
 
   <!-- Favicon / Brand Icon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
@@ -22,20 +22,14 @@
 </head>
 <body>
 
-  <!-- Demo Notice Banner -->
-  <div class="demo-banner" role="status">
-    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-    <span><strong>DEMO PREVIEW:</strong> SYNEX Hackathon Portal — Frontend Architecture Preview. Event dates, fees, and prizes are sample content.</span>
-  </div>
-
   <!-- Navigation Bar -->
   <header class="navbar" id="topNav">
     <div class="container nav-container">
-      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
-        <div class="brand-logo-icon">S</div>
+      <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX 2026') }} Homepage">
+        <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
         <div class="brand-text">
-          <span class="brand-name">SYNEX</span>
-          <span class="brand-sub">Hackathon 2026</span>
+          <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+          <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
         </div>
       </a>
 
@@ -133,7 +127,7 @@
               </div>
               <div class="hero-meta-text">
                 <span class="hero-meta-label">Entry From</span>
-                <span class="hero-meta-val" id="heroEntryFeeDisplay" data-synex-fees="combined">₹{{ individual_fee }} Individual / ₹{{ team_fee }} Team</span>
+                <span class="hero-meta-val" id="heroEntryFeeDisplay" data-synex-fees="combined">₹{{ per_member_fee | default(250) }} / Member</span>
               </div>
             </div>
           </div>
@@ -246,14 +240,14 @@
           <div class="about-info">
             <span class="section-tag">
               <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
-              <span>About SYNEX</span>
+              <span>About {{ event_short_name | default('SYNEX') }}</span>
             </span>
             <h2 class="section-title">Fostering Groundbreaking Solutions For Real-World Challenges</h2>
             <p>
-              SYNEX 2026 is an intensive, high-energy hackathon designed to empower student innovators and tech pioneers. Over 36 exhilarating hours, teams will conceptualize, build, and deploy production-ready prototypes across 8 multidisciplinary domains.
+              {{ event_name | default('SYNEX 2026') }} is an intensive, high-energy hackathon designed to empower student innovators and tech pioneers. Over 36 exhilarating hours, teams will conceptualize, build, and deploy production-ready prototypes across 8 multidisciplinary domains.
             </p>
             <p>
-              Whether you are an experienced systems programmer, an AI enthusiast, an IoT hardware tinkerer, or a product designer, SYNEX provides the ideal launchpad to validate your hypotheses with veteran industry mentors and venture scouts.
+              Whether you are an experienced systems programmer, an AI enthusiast, an IoT hardware tinkerer, or a product designer, {{ event_short_name | default('SYNEX') }} provides the ideal launchpad to validate your hypotheses with veteran industry mentors and venture scouts.
             </p>
 
             <div class="about-features">
@@ -297,7 +291,7 @@
           </div>
 
           <div class="about-highlight-box">
-            <h3 class="about-highlight-title">Why Compete in SYNEX 2026?</h3>
+            <h3 class="about-highlight-title">Why Compete in {{ event_name | default('SYNEX 2026') }}?</h3>
             <p class="about-highlight-p">
               We bridge academic rigor with commercial viability. Gain access to cloud infrastructure credits, API sponsorships, live code review checkpoints, and high-impact jury panels.
             </p>
@@ -667,7 +661,7 @@
             <div class="benefit-icon"><i class="fa-solid fa-shirt"></i></div>
             <div>
               <h4 class="benefit-title">Exclusive Swag Kit</h4>
-              <p class="benefit-desc">SYNEX premium t-shirt, stickers, tech lanyard, and partner goodies.</p>
+              <p class="benefit-desc">{{ event_short_name | default('SYNEX') }} premium t-shirt, stickers, tech lanyard, and partner goodies.</p>
             </div>
           </div>
         </div>
@@ -680,11 +674,11 @@
         <div class="section-header">
           <span class="section-tag">
             <i class="fa-solid fa-book-bookmark" aria-hidden="true"></i>
-            <span>Guidelines Preview</span>
+            <span>Official Guidelines</span>
           </span>
           <h2 class="section-title">Participation Rules at a Glance</h2>
           <p class="section-desc">
-            Fair play, academic integrity, and collaboration are fundamental to the spirit of SYNEX.
+            Fair play, academic integrity, and collaboration are fundamental to the spirit of {{ event_short_name | default('SYNEX') }}.
           </p>
         </div>
 
@@ -748,7 +742,7 @@
           <!-- Q1 -->
           <div class="faq-item">
             <button class="faq-question" aria-expanded="false">
-              <span>Who is eligible to participate in SYNEX 2026?</span>
+              <span>Who is eligible to participate in {{ event_name | default('SYNEX 2026') }}?</span>
               <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
             </button>
             <div class="faq-answer">
@@ -818,7 +812,7 @@
             </button>
             <div class="faq-answer">
               <p>
-                Yes! SYNEX 2026 offers a hybrid track. Remote participants can join mentoring calls and jury presentations via Zoom/Discord while enjoying parity in judging criteria and special online category awards.
+                Yes! {{ event_name | default('SYNEX 2026') }} offers a hybrid track. Remote participants can join mentoring calls and jury presentations via Zoom/Google Meet while enjoying parity in judging criteria and special online category awards.
               </p>
             </div>
           </div>
@@ -854,21 +848,19 @@
     <div class="container">
       <div class="footer-top">
         <div class="footer-brand">
-          <a href="index.html" class="brand" aria-label="SYNEX Homepage">
-            <div class="brand-logo-icon">S</div>
+          <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX') }} Homepage">
+            <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
             <div class="brand-text">
-              <span class="brand-name">SYNEX</span>
-              <span class="brand-sub">Hackathon 2026</span>
+              <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+              <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
             </div>
           </a>
           <p class="footer-desc">
             A premier national 36-hour technology sprint uniting visionary developers, researchers, and designers to create scalable societal solutions.
           </p>
           <div class="footer-socials" aria-label="Social media links">
-            <a href="#github" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
-            <a href="#discord" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
-            <a href="#linkedin" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-            <a href="#x" aria-label="X / Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="https://wa.me/919876543210" target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+            <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
           </div>
         </div>
 
@@ -887,10 +879,9 @@
         <div>
           <h4 class="footer-title">Registration</h4>
           <ul class="footer-links">
-            <li><a href="register.html">Individual Registration</a></li>
             <li><a href="register.html">Team Registration</a></li>
             <li><a href="rules.html#fees">Fee Breakdown</a></li>
-            <li><a href="payment.html">Payment Preview</a></li>
+            <li><a href="payment.html">Fee Payment</a></li>
             <li><a href="confirmation.html">Pass Status</a></li>
           </ul>
         </div>
@@ -903,25 +894,18 @@
           </div>
           <div class="footer-contact-item">
             <i class="fa-solid fa-envelope"></i>
-            <span>contact@synexhackathon.org.demo</span>
+            <span>contact@hackathon.org</span>
           </div>
           <div class="footer-contact-item">
             <i class="fa-solid fa-phone"></i>
-            <span>+91 (080) 555-0199 (Sample Support)</span>
+            <span>+91 (080) 555-0199</span>
           </div>
         </div>
       </div>
 
       <div class="footer-bottom">
         <div>
-          &copy; 2026 SYNEX National Hackathon. All rights reserved. Sample demonstration frontend.
-        </div>
-        <div>
-          <!-- Discreet Admin Login Link -->
-          <a href="admin-login.html" class="footer-admin-link" id="footerAdminLink">
-            <i class="fa-solid fa-lock" aria-hidden="true"></i>
-            <span>Admin Portal</span>
-          </a>
+          &copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} National Hackathon. All rights reserved.
         </div>
       </div>
     </div>

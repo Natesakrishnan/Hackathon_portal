@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard Preview — SYNEX 2026</title>
-  <meta name="description" content="Organizer administration dashboard preview with registration metrics, payment statistics, and participant table.">
+  <title>Admin Dashboard — {{ event_name | default('SYNEX 2026') }}</title>
+  <meta name="description" content="Organizer administration dashboard with registration metrics, payment statistics, and participant management.">
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
@@ -29,23 +29,16 @@
 </head>
 <body>
 
-  <!-- Live Status Banner -->
-  <!-- Live Status Banner -->
-  <div class="demo-banner" role="status" style="background: #1E293B; color: #E2E8F0; border-bottom: 1px solid #334155;">
-    <i class="fa-solid fa-server" style="color: #38BDF8;" aria-hidden="true"></i>
-    <span><strong>SYNEX ORGANIZER DASHBOARD:</strong> Live Flask Backend &amp; Database Connected. Real-time metrics and participant management.</span>
-  </div>
-
   <div class="admin-layout">
 
     <!-- Sidebar Navigation -->
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin Navigation Sidebar">
       <div class="sidebar-header">
-        <a href="/" target="_blank" class="brand" aria-label="SYNEX Public Portal">
-          <div class="brand-logo-icon" style="width: 36px; height: 36px; font-size: 1.1rem;">S</div>
+        <a href="/" target="_blank" class="brand" aria-label="{{ event_name | default('SYNEX') }} Public Portal">
+          <div class="brand-logo-icon" style="width: 36px; height: 36px; font-size: 1.1rem;">{{ brand_initial | default('S') }}</div>
           <div class="brand-text">
-            <span class="brand-name" style="font-size: 1.2rem;">SYNEX</span>
-            <span class="brand-sub">Admin Console</span>
+            <span class="brand-name" style="font-size: 1.2rem;">{{ event_short_name | default('SYNEX') }}</span>
+            <span class="brand-sub">{{ event_name | default('Admin Console') }}</span>
           </div>
         </a>
       </div>
@@ -132,7 +125,7 @@
           <div class="admin-avatar">AD</div>
           <div class="admin-user-info">
             <span class="admin-user-name" id="adminUserName">Organizer Admin</span>
-            <span class="admin-user-role">Super Admin (Demo)</span>
+            <span class="admin-user-role">Super Admin</span>
           </div>
         </div>
       </div>
@@ -157,7 +150,7 @@
           </a>
           <div class="badge badge-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">
             <i class="fa-solid fa-circle" style="color: var(--color-success); font-size: 0.5rem;"></i>
-            <span>Live Sync (Mock)</span>
+            <span>Live Database</span>
           </div>
         </div>
       </header>
@@ -1112,6 +1105,12 @@
                 </div>
 
                 <div class="admin-form-group">
+                  <label for="settingMealsFee">Swag Kit &amp; Meals Surcharge (INR ₹) <span style="color: var(--color-error);">*</span></label>
+                  <input type="number" id="settingMealsFee" class="admin-form-control" min="0" max="500000" placeholder="0" value="0" required>
+                  <span class="form-helper">Additional surcharge for swag kit, catering, and meals during event (0 = Included / Waived).</span>
+                </div>
+
+                <div class="admin-form-group">
                   <label for="settingMinTeamMembers">Minimum Team Size (Members) <span style="color: var(--color-error);">*</span></label>
                   <input type="number" id="settingMinTeamMembers" class="admin-form-control" min="1" max="20" placeholder="2" required>
                   <span class="form-helper">Minimum team members required per registration (including Team Leader).</span>
@@ -1232,9 +1231,12 @@
                 <div id="resendFieldsGroup" style="background: #FFFFFF; border: 1px solid var(--color-border); border-radius: 6px; padding: 1rem; margin-bottom: 1.25rem;">
                   <div class="admin-form-group" style="margin-bottom: 0.85rem;">
                     <label for="resendApiKey">Resend API Key <span style="color: var(--color-error);">*</span></label>
-                    <input type="password" id="resendApiKey" class="admin-form-control" placeholder="re_123456789_abcdef... (Leave blank to keep existing)">
-                    <span class="form-helper">
+                    <input type="password" id="resendApiKey" name="resend_api_token_no_autofill" autocomplete="new-password" data-lpignore="true" data-form-type="other" class="admin-form-control" placeholder="re_123456789_abcdef... (Leave blank to keep existing)">
+                    <span class="form-helper" style="display: block; margin-top: 4px;">
                       Free API key from <a href="https://resend.com" target="_blank" rel="noopener" style="color: #2563EB; text-decoration: underline;">resend.com</a> (Includes 100 free live emails/day, zero card required).
+                    </span>
+                    <span class="form-helper" style="display: block; margin-top: 4px; color: #475569; font-size: 0.78rem;">
+                      <i class="fa-solid fa-circle-info" style="color: #2563EB;"></i> <strong>Sandbox Mode Notice:</strong> Test keys (<code>onboarding@resend.dev</code>) route passes to your verified Resend account. To deliver directly to external student/team leader email inboxes, verify your domain at <a href="https://resend.com/domains" target="_blank" rel="noopener" style="color: #2563EB; text-decoration: underline;">resend.com/domains</a> or select <strong>Standard SMTP Server</strong> below with Gmail.
                     </span>
                   </div>
                   <div class="admin-form-group">
@@ -1267,8 +1269,8 @@
 
                     <div class="admin-form-group">
                       <label for="smtpPassword">SMTP Password / App Password</label>
-                      <input type="password" id="smtpPassword" class="admin-form-control" placeholder="•••••••••••• (Leave blank to keep existing)">
-                      <span class="form-helper">For Gmail, use a 16-character Google App Password.</span>
+                      <input type="password" id="smtpPassword" name="smtp_app_pass_no_autofill" autocomplete="new-password" data-lpignore="true" data-form-type="other" class="admin-form-control" placeholder="•••••••••••• (Leave blank to keep existing)">
+                      <span class="form-helper">For Gmail, use a 16-character Google App Password (sends to any recipient domain).</span>
                     </div>
 
                     <div class="admin-form-group">
@@ -1517,6 +1519,11 @@
                 <option value="all">All Registrations</option>
               </select>
 
+              <select id="certFilterCheckin" class="filter-select" onchange="loadCertificateParticipants();" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;">
+                <option value="checked_in" selected>Checked-In Only</option>
+                <option value="all">All Attendees</option>
+              </select>
+
               <div class="search-box" style="margin-bottom: 0; min-width: 220px;">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="certSearchInput" placeholder="Search name, email, squad, ref..." oninput="handleCertSearchInput();" style="padding: 0.4rem 0.75rem 0.4rem 2rem; font-size: 0.82rem;">
@@ -1553,7 +1560,7 @@
                   <th>Innovation Domain</th>
                   <th>Squad / Team</th>
                   <th>Institution / College</th>
-                  <th>Payment Status</th>
+                  <th>Payment &amp; Check-In</th>
                   <th>Certificate ID</th>
                   <th style="text-align: right;">Actions</th>
                 </tr>
@@ -2085,7 +2092,11 @@
         </div>
       </div>
 
-      <div class="team-modal-footer">
+      <div class="team-modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
+        <button type="button" class="btn btn-outline btn-sm" id="btnModalResendPass" style="color: #2563EB; border-color: #BFDBFE;">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Email Confirmation Pass</span>
+        </button>
         <button type="button" class="btn btn-primary btn-sm" id="btnModalFooterClose">
           <i class="fa-solid fa-check"></i>
           <span>Done</span>

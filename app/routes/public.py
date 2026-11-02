@@ -79,17 +79,24 @@ def get_public_config():
     indiv_fee = int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299)))
     team_fee = int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999)))
     per_member_fee = int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250)))
+    meals_fee = int(EventSetting.get_val("EVENT_MEALS_FEE", current_app.config.get("EVENT_MEALS_FEE", 0)))
     min_team_members = int(EventSetting.get_val("MIN_TEAM_MEMBERS", current_app.config.get("MIN_TEAM_MEMBERS", 2)))
     max_team_members = int(EventSetting.get_val("MAX_TEAM_MEMBERS", current_app.config.get("MAX_TEAM_MEMBERS", 4)))
     deadline = EventSetting.get_val("REGISTRATION_DEADLINE", "2026-11-30T23:59:59")
     prize_pool = EventSetting.get_val("TOTAL_PRIZE_POOL", "₹2,50,000")
     reg_open = EventSetting.get_val("REGISTRATION_OPEN", "true").lower() in ("true", "1", "yes")
     
+    event_short_name = event_name.split()[0] if event_name else "SYNEX"
+    brand_initial = event_name[0].upper() if event_name else "S"
+    
     return jsonify({
         "event_name": event_name,
+        "event_short_name": event_short_name,
+        "brand_initial": brand_initial,
         "individual_fee": indiv_fee,
         "team_fee": team_fee,
         "per_member_fee": per_member_fee,
+        "meals_fee": meals_fee,
         "currency": current_app.config.get("EVENT_CURRENCY", "INR"),
         "registration_deadline": deadline,
         "prize_pool": prize_pool,

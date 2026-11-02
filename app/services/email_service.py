@@ -23,7 +23,11 @@ def get_smtp_config() -> Dict[str, Any]:
     Supports both standard SMTP and HTTPS REST API (Resend).
     """
     provider = EventSetting.get_val("EMAIL_PROVIDER", os.environ.get("EMAIL_PROVIDER", "smtp")).strip().lower()
-    resend_key = EventSetting.get_val("RESEND_API_KEY", os.environ.get("RESEND_API_KEY", "")).strip()
+    raw_resend_key = EventSetting.get_val("RESEND_API_KEY", os.environ.get("RESEND_API_KEY", "")).strip()
+    if raw_resend_key and raw_resend_key.startswith("re_") and "@" not in raw_resend_key:
+        resend_key = raw_resend_key
+    else:
+        resend_key = ""
 
     host = EventSetting.get_val("SMTP_HOST", current_app.config.get("MAIL_SERVER", "smtp.gmail.com")).strip()
     port_str = EventSetting.get_val("SMTP_PORT", str(current_app.config.get("MAIL_PORT", 587)))
@@ -38,7 +42,7 @@ def get_smtp_config() -> Dict[str, Any]:
     use_ssl = EventSetting.get_val("SMTP_USE_SSL", "false").lower() in ("true", "1", "yes")
     default_sender = EventSetting.get_val(
         "SMTP_SENDER",
-        current_app.config.get("MAIL_DEFAULT_SENDER", "SYNEX Hackathon Team <noreply@synex.org>")
+        current_app.config.get("MAIL_DEFAULT_SENDER", f"{EventSetting.get_val('EVENT_NAME', 'SYNEX 2026')} Team <noreply@synex.org>")
     ).strip()
 
     if provider == "resend":
@@ -82,8 +86,13 @@ def save_smtp_config(data: Dict[str, Any]) -> Tuple[bool, str]:
     sender = (data.get("default_sender") or f"SYNEX Team <{user or 'noreply@synex.org'}>").strip()
 
     EventSetting.set_val("EMAIL_PROVIDER", provider, "Email Delivery Provider (smtp or resend)")
-    if resend_key and not resend_key.startswith("•") and not resend_key.startswith("re_••••"):
-        EventSetting.set_val("RESEND_API_KEY", resend_key, "Resend HTTPS API Key")
+    if resend_key:
+        if resend_key.startswith("•") or resend_key.startswith("re_••••"):
+            pass
+        elif not resend_key.startswith("re_") or len(resend_key) < 15 or "@" in resend_key:
+            logger.warning(f"Ignored invalid resend_key value: '{resend_key}' (must start with 're_' and not be a password)")
+        else:
+            EventSetting.set_val("RESEND_API_KEY", resend_key, "Resend HTTPS API Key")
     EventSetting.set_val("SMTP_HOST", host, "SMTP Server Host")
     EventSetting.set_val("SMTP_PORT", str(port), "SMTP Server Port")
     EventSetting.set_val("SMTP_USER", user, "SMTP Authentication Username / Email")
@@ -122,7 +131,8 @@ def send_email(
         return False, "Email message body is required.", None
 
     cfg = get_smtp_config()
-    sender = cfg["default_sender"] or f"SYNEX Hackathon <{cfg['username'] or 'noreply@synex.org'}>"
+    curr_event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
+    sender = cfg["default_sender"] or f"{curr_event_name} Hackathon <{cfg['username'] or 'noreply@synex.org'}>"
     _, from_email = parseaddr(sender)
     envelope_from = from_email if from_email else (cfg["username"] or "noreply@synex.org")
 
@@ -130,12 +140,12 @@ def send_email(
         html_content = f"""
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
           <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 2px solid #2563EB;">
-            <h2 style="margin: 0; color: #1E293B; font-size: 20px; font-weight: 700;">SYNEX 2026 Hackathon</h2>
+            <h2 style="margin: 0; color: #1E293B; font-size: 20px; font-weight: 700;">{curr_event_name} Hackathon</h2>
             <p style="margin: 4px 0 0; color: #64748B; font-size: 13px;">Official Organizing Committee Communication</p>
           </div>
           <div style="color: #334155; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">{body_text}</div>
           <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
-            <p style="margin: 0;">This email was sent by the SYNEX 2026 Admin Portal.</p>
+            <p style="margin: 0;">This email was sent by the {curr_event_name} Admin Portal.</p>
             <p style="margin: 4px 0 0;">Campus Innovation Hub, Bengaluru &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
           </div>
         </div>
@@ -160,7 +170,7 @@ def send_email(
                 or parsed_addr.endswith("@example.com")
             )
             if is_placeholder_domain:
-                resend_sender = f"{display_name or 'SYNEX Hackathon'} <onboarding@resend.dev>"
+                resend_sender = f"{display_name or (curr_event_name + ' Hackathon')} <onboarding@resend.dev>"
             else:
                 resend_sender = sender
 
@@ -213,6 +223,41 @@ def send_email(
 
                 if "only send testing emails to your own email address" in err_msg.lower():
                     friendly_err = f"{err_msg} (Note: In Resend Sandbox mode with 'onboarding@resend.dev', you can only test-send to the email address you signed up with on Resend. To send to any recipient, add and verify your custom domain at https://resend.com/domains)."
+                    import re
+                    m = re.search(r'own email address \(([^)]+)\)', err_msg)
+                    owner_email = m.group(1).strip() if m else "natesakrishna0@gmail.com"
+                    if owner_email and owner_email.lower() != to_email.lower():
+                        logger.info(f"Forwarding confirmation pass to verified owner {owner_email} for team leader {to_email}...")
+                        forward_payload = dict(payload)
+                        forward_payload["to"] = [owner_email]
+                        forward_payload["subject"] = f"[Sandbox Pass for {to_email}] {subject}"
+                        sandbox_banner = f"""
+                        <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #92400E; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                          <strong>⚠️ Resend Sandbox Mode Delivery:</strong><br>
+                          This official confirmation pass is for Team Leader: <strong>{to_email}</strong>.<br>
+                          Because Resend is currently using the free test domain (<code>onboarding@resend.dev</code>), Resend restricts external student recipient domains and routed this pass to your verified account (<code>{owner_email}</code>).<br>
+                          <em>To deliver directly to all student email inboxes, verify a custom domain at <a href="https://resend.com/domains" style="color: #2563EB;">resend.com/domains</a> or configure Standard Gmail SMTP in the Admin Portal.</em>
+                        </div>
+                        """
+                        forward_payload["html"] = sandbox_banner + html_content
+                        forward_payload["text"] = f"[RESEND SANDBOX NOTICE: Intended for team leader {to_email}. Forwarded to {owner_email} due to sandbox testing restrictions.]\n\n" + body_text
+                        try:
+                            f_resp = requests.post("https://api.resend.com/emails", json=forward_payload, headers=headers, timeout=12)
+                            if f_resp.status_code in (200, 201):
+                                f_msg_id = f_resp.json().get("id", "")
+                                log = EmailLog(
+                                    recipient=to_email,
+                                    subject=subject,
+                                    message=body_text,
+                                    email_type=email_type,
+                                    status="sent",
+                                    error_message=f"Delivered to organizer {owner_email} via Resend Sandbox (Forwarded pass for team leader {to_email} - Resend Message ID: {f_msg_id})",
+                                )
+                                db.session.add(log)
+                                db.session.commit()
+                                return True, f"Live email delivered via Resend Sandbox (forwarded to {owner_email} for team leader {to_email}).", log
+                        except Exception as fe:
+                            logger.warning(f"Failed to forward via Resend sandbox: {fe}")
                 elif "domain is not verified" in err_msg.lower():
                     friendly_err = f"{err_msg} (Tip: To test without adding a custom domain, set your Sender Header to 'SYNEX Hackathon <onboarding@resend.dev>')."
                 else:
@@ -363,8 +408,9 @@ def test_smtp_connection(test_recipient: Optional[str] = None) -> Tuple[bool, st
         server.login(cfg["username"], cfg["password"])
 
         if test_recipient and "@" in test_recipient:
-            msg = MIMEText("This is an automated test ping from the SYNEX 2026 Hackathon Admin Portal.")
-            msg["Subject"] = "[SYNEX 2026] SMTP Connection Test Ping"
+            test_evt = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
+            msg = MIMEText(f"This is an automated test ping from the {test_evt} Hackathon Admin Portal.")
+            msg["Subject"] = f"[{test_evt}] SMTP Connection Test Ping"
             msg["From"] = cfg["default_sender"]
             msg["To"] = test_recipient
             _, from_addr = parseaddr(cfg["default_sender"])
@@ -424,7 +470,7 @@ def send_confirmation_email(registration, payment=None) -> bool:
     else:
         return False
 
-    event_name = current_app.config.get("EVENT_NAME", "SYNEX 2026")
+    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
     subject = f"[{event_name}] Registration & Check-In Pass Confirmed - {team_name} ({registration.public_id})"
 
     # 3. Generate Unique Check-In QR Code
@@ -545,7 +591,7 @@ View or Print Official Pass Online:
 {confirmation_pass_url}
 
 Need help? Contact support@synex.org.
-- SYNEX 2026 Organizing Committee
+- {event_name} Organizing Committee
     """.strip()
 
     # 6. Build High-Fidelity Branded HTML Email
@@ -696,7 +742,7 @@ Need help? Contact support@synex.org.
 
         <!-- Footer -->
         <div style="background: #F8FAFC; padding: 16px 24px; text-align: center; font-size: 11px; color: #94A3B8; border-top: 1px solid #E2E8F0;">
-          &copy; 2026 SYNEX Hackathon Organizing Committee &bull; Campus Innovation Hub, Bengaluru
+          &copy; 2026 {event_name} Organizing Committee &bull; Campus Innovation Hub, Bengaluru
         </div>
       </div>
     </body>

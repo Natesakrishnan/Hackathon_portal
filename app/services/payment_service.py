@@ -9,6 +9,7 @@ import razorpay
 from app.extensions import db
 from app.models.registration import Registration
 from app.models.payment import Payment
+from app.models.event_setting import EventSetting
 from app.services.email_service import send_confirmation_email
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,9 @@ def create_payment_order(public_id: str) -> Tuple[bool, Dict[str, Any], int]:
     Creates an order with Razorpay and records pending payment in the database.
     """
     registration = Registration.query.filter_by(public_id=public_id).first()
+    if not registration and isinstance(public_id, str):
+        clean_id = public_id.strip()
+        registration = Registration.query.filter(db.func.lower(Registration.public_id) == clean_id.lower()).first()
     if not registration:
         return False, {"error": f"Registration '{public_id}' not found."}, 404
 
@@ -45,7 +49,7 @@ def create_payment_order(public_id: str) -> Tuple[bool, Dict[str, Any], int]:
             "registration_id": registration.public_id,
             "type": registration.registration_type,
             "domain": registration.domain,
-            "event": current_app.config.get("EVENT_NAME", "SYNEX 2026"),
+            "event": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026")),
         },
     }
 
@@ -116,6 +120,9 @@ def verify_payment_signature(data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]
     payment = Payment.query.filter_by(gateway_order_id=order_id).first()
     if not payment and public_id:
         reg = Registration.query.filter_by(public_id=public_id).first()
+        if not reg and isinstance(public_id, str):
+            clean_id = public_id.strip()
+            reg = Registration.query.filter(db.func.lower(Registration.public_id) == clean_id.lower()).first()
         if reg:
             payment = reg.payments.order_by(Payment.id.desc()).first()
 
@@ -236,6 +243,12 @@ def process_webhook(raw_body: bytes, webhook_signature: str) -> Tuple[bool, str,
                         payment.registration.registration_status = "confirmed"
                     db.session.commit()
                     logger.info(f"Webhook updated payment {order_id} to captured")
+
+                    if payment.registration:
+                        try:
+                            send_confirmation_email(payment.registration, payment)
+                        except Exception as e:
+                            logger.warning(f"Webhook failed to dispatch confirmation email: {e}")
 
         return True, "Webhook processed", 200
     except Exception as e:

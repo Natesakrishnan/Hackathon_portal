@@ -20,3 +20,7 @@ instance/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Scratch & Temporary Scripts
+scratch/
+

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registration Confirmation — SYNEX 2026</title>
-  <meta name="description" content="View your SYNEX 2026 Hackathon participant pass and registration confirmation details.">
+  <title>Registration Confirmation — {{ event_name | default('SYNEX 2026') }}</title>
+  <meta name="description" content="View your {{ event_name | default('SYNEX 2026') }} Hackathon participant pass and registration confirmation details.">
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
@@ -27,20 +27,14 @@
 </head>
 <body>
 
-  <!-- Demo Notice Banner -->
-  <div class="demo-banner" role="status">
-    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-    <span><strong>DEMO CONFIRMATION:</strong> No real payment was processed. This is a frontend layout and printable pass preview.</span>
-  </div>
-
   <!-- Navigation Bar (Hidden during printing) -->
   <header class="navbar no-print">
     <div class="container nav-container">
-      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
-        <div class="brand-logo-icon">S</div>
+      <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX 2026') }} Homepage">
+        <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
         <div class="brand-text">
-          <span class="brand-name">SYNEX</span>
-          <span class="brand-sub">Hackathon 2026</span>
+          <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+          <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
         </div>
       </a>
 
@@ -95,27 +89,27 @@
           <i class="fa-solid fa-circle-check"></i>
         </div>
 
-        <div class="badge badge-demo" style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.4rem 1rem;">
-          DEMO CONFIRMATION — NO REAL PAYMENT WAS PROCESSED
+        <div class="badge badge-success" style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.4rem 1rem; background: #DCFCE7; color: #15803D;">
+          REGISTRATION CONFIRMED — OFFICIAL PASS
         </div>
 
-        <h1 class="confirm-title">Registration Slot Reserved (Demo)!</h1>
+        <h1 class="confirm-title">Registration Slot Confirmed!</h1>
         <p class="confirm-subtitle">
-          Your simulated registration has been registered for the demonstration session. Save or print this pass for check-in verification.
+          Your hackathon slot has been successfully registered and verified. Save or print this pass for check-in verification.
         </p>
 
         <!-- Printable Participant Pass Slip -->
         <div class="pass-slip" id="printablePassSlip">
           <div class="pass-main-side">
             <div class="pass-slip-brand">
-              <div class="brand-logo-icon" style="width: 32px; height: 32px; font-size: 1rem;">S</div>
+              <div class="brand-logo-icon" style="width: 32px; height: 32px; font-size: 1rem;">{{ brand_initial | default('S') }}</div>
               <div>
-                <strong style="color: var(--color-text-main); font-size: 1.1rem; line-height: 1;">SYNEX 2026 OFFICIAL PASS</strong>
+                <strong class="confirmation-event-title" style="color: var(--color-text-main); font-size: 1.1rem; line-height: 1;">{{ event_name | default('SYNEX 2026') }} OFFICIAL PASS</strong>
                 <div style="font-size: 0.72rem; color: var(--color-text-secondary);">National Innovation Hackathon • Hybrid Edition</div>
               </div>
             </div>
 
-            <div class="pass-ref-tag" id="passRefId">SYN-DEMO-00000</div>
+            <div class="pass-ref-tag" id="passRefId">SYN-00000</div>
 
             <div class="pass-grid">
               <div class="pass-item">
@@ -139,8 +133,8 @@
                 <span class="pass-item-val">Nov 14, 2026 • 08:30 AM IST</span>
               </div>
               <div class="pass-item">
-                <span class="pass-item-label">Demo Fee Paid</span>
-                <span class="pass-item-val" id="passFee">₹{{ individual_fee }} (Simulated)</span>
+                <span class="pass-item-label">Entry Fee Paid</span>
+                <span class="pass-item-val" id="passFee">₹{{ individual_fee }} (Paid &amp; Confirmed)</span>
               </div>
             </div>
 
@@ -179,7 +173,7 @@
             </li>
             <li>
               <i class="fa-solid fa-check"></i>
-              <span>Join the official SYNEX 2026 Discord server (sample link: <code>discord.gg/synex-hackathon-demo</code>) for announcements and mentor office hours.</span>
+              <span>Join the official {{ event_short_name | default('SYNEX') }} WhatsApp community desk for real-time announcements and mentor office hours.</span>
             </li>
             <li>
               <i class="fa-solid fa-check"></i>
@@ -212,7 +206,7 @@
         </div>
         <h2 style="font-size: 1.6rem; color: var(--color-text-main); margin-bottom: 0.5rem;">Registration Status Unavailable</h2>
         <p style="color: var(--color-text-secondary); max-width: 520px; margin: 0 auto 2rem auto; font-size: 0.95rem;">
-          No completed demo registration was found in your current browser session. To receive a valid confirmation pass, please complete the registration and demo checkout flow.
+          No completed registration was found in your current browser session. To receive a valid confirmation pass, please complete the registration and checkout flow.
         </p>
         <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
           <a href="register.html" class="btn btn-primary btn-lg">
@@ -233,12 +227,7 @@
   <footer class="footer no-print">
     <div class="container">
       <div class="footer-bottom" style="border: none; padding-top: 0;">
-        <div>&copy; 2026 SYNEX Hackathon. Frontend demonstration prototype.</div>
-        <div>
-          <a href="admin-login.html" class="footer-admin-link">
-            <i class="fa-solid fa-lock"></i> Admin Portal
-          </a>
-        </div>
+        <div>&copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} Hackathon. All rights reserved.</div>
       </div>
     </div>
   </footer>
@@ -360,7 +349,7 @@
       }
 
       // Generate Unique Check-in QR Code (Valid Once)
-      const checkinToken = reg.checkin_token || `CHK-${publicId.replace('SYNEX-', '')}`;
+      const checkinToken = reg.checkin_token || `CHK-${publicId.split('-').slice(1).join('-') || publicId}`;
       const tokenDisp = document.getElementById("passTokenDisplay");
       if (tokenDisp) tokenDisp.textContent = checkinToken;
 

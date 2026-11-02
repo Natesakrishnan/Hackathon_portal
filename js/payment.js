@@ -123,10 +123,16 @@ function populateOrderDetails(data) {
   const collegeEl = document.getElementById("orderCollege");
   const domainEl = document.getElementById("orderDomain");
   const baseFeeEl = document.getElementById("orderBaseFee");
+  const mealsFeeEl = document.getElementById("orderMealsFee");
   const totalAmountEl = document.getElementById("orderTotalAmount");
 
   const publicId = data.public_id || data.referenceId || "SYNEX-000000";
   if (refBadge) refBadge.textContent = publicId;
+
+  // Ensure Edit Registration Details buttons preserve the registration reference
+  document.querySelectorAll('a[href*="register"]').forEach((a) => {
+    a.href = `/register?ref=${encodeURIComponent(publicId)}`;
+  });
 
   const isTeam = (data.registration_type || data.type || "").toLowerCase() === "team";
   const pName = data.participant ? data.participant.full_name : (data.participantName || "Participant");
@@ -135,7 +141,9 @@ function populateOrderDetails(data) {
   const membersCount = data.team && data.team.members ? data.team.members.length : (data.teamSize || 3);
   const indivFallback = window.SYNEX_CONFIG?.fees?.individual ?? 299;
   const teamFallback = window.SYNEX_CONFIG?.fees?.team ?? 999;
-  const fee = data.entry_fee || data.baseFee || (isTeam ? teamFallback : indivFallback);
+  const totalFee = data.entry_fee || data.baseFee || (isTeam ? teamFallback : indivFallback);
+  const mealsFee = data.meals_fee !== undefined ? data.meals_fee : (window.SYNEX_CONFIG?.fees?.meals_fee || 0);
+  const baseFee = data.base_fee !== undefined ? data.base_fee : Math.max(0, totalFee - mealsFee);
 
   if (nameEl) {
     if (isTeam && teamName) {
@@ -151,8 +159,19 @@ function populateOrderDetails(data) {
 
   if (collegeEl) collegeEl.textContent = college;
   if (domainEl) domainEl.textContent = data.domain || "AI & Machine Learning";
-  if (baseFeeEl) baseFeeEl.textContent = `₹${fee}`;
-  if (totalAmountEl) totalAmountEl.textContent = `₹${fee}`;
+  if (baseFeeEl) baseFeeEl.textContent = `₹${baseFee}`;
+  if (mealsFeeEl) {
+    if (mealsFee > 0) {
+      mealsFeeEl.textContent = `₹${mealsFee}`;
+      mealsFeeEl.style.color = "var(--color-text-main)";
+      mealsFeeEl.style.fontWeight = "700";
+    } else {
+      mealsFeeEl.textContent = "Included (₹0.00)";
+      mealsFeeEl.style.color = "var(--color-success)";
+      mealsFeeEl.style.fontWeight = "600";
+    }
+  }
+  if (totalAmountEl) totalAmountEl.textContent = `₹${totalFee}`;
 }
 
 /**
@@ -266,7 +285,7 @@ function openTestGatewayModal(modal, orderData, publicId, paymentMethod, checkou
   const btnSuccess = document.getElementById("btnCompleteDemoSuccess");
   const btnCancel = document.getElementById("btnCancelDemoModal");
 
-  if (modalTitle) modalTitle.textContent = "Test Payment Gateway";
+  if (modalTitle) modalTitle.textContent = "Secure Payment Gateway";
   if (modalDesc) modalDesc.textContent = `Pay ₹${orderData.amount} for ${orderData.registration_type} Registration (${orderData.registration_id})`;
 
   if (modalSpinner) modalSpinner.style.display = "none";

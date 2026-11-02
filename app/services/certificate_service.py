@@ -328,7 +328,8 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
     # Header Top Brand
     c.setFillColor(HexColor("#D97706"))
     c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(width / 2.0, height - 80, "SYNEX NATIONAL INNOVATION HACKATHON 2026")
+    evt_cert_title = EventSetting.get_val("EVENT_NAME", "SYNEX 2026").upper()
+    c.drawCentredString(width / 2.0, height - 80, evt_cert_title)
 
     # Title
     c.setFillColor(HexColor("#FFFFFF"))
@@ -371,7 +372,8 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
     c.drawCentredString(width / 2.0, 115, "★ OFFICIAL VERIFIED PARTICIPANT ★")
     c.setFillColor(HexColor("#64748B"))
     c.setFont("Helvetica", 9)
-    c.drawCentredString(width / 2.0, 98, "SYNEX Academic Steering Committee")
+    evt_steering = f"{EventSetting.get_val('EVENT_NAME', 'SYNEX').split()[0]} Academic Steering Committee"
+    c.drawCentredString(width / 2.0, 98, evt_steering)
 
     # Right: Signature Block
     c.setFillColor(HexColor("#FFFFFF"))
@@ -388,15 +390,20 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
 def get_participants_for_certificates(
     domain_filter: str = "all",
     paid_only: bool = True,
+    checked_in_only: bool = False,
     search: str = ""
 ) -> List[Dict[str, Any]]:
     """
     Extracts flat list of all eligible participants (Solo Hackers, Team Leaders, Team Members)
     with their metadata prepared for certificate generation.
+    Supports filtering by domain, payment status, and physical check-in status.
     """
     query = Registration.query
     if paid_only:
         query = query.filter(Registration.payment_status == "paid")
+
+    if checked_in_only:
+        query = query.filter(Registration.is_checked_in.is_(True))
     
     if domain_filter and domain_filter.lower() != "all":
         domain_term = f"%{domain_filter.strip()}%"
@@ -428,27 +435,42 @@ def get_participants_for_certificates(
             "team_name": team_title,
             "college": lead.college or "N/A",
             "payment_status": reg.payment_status or "pending",
+            "is_checked_in": bool(reg.is_checked_in),
+            "checked_in_at": reg.checked_in_at.isoformat() if reg.checked_in_at else None,
             "certificate_id": cert_id,
             "issue_date": datetime.utcnow().strftime("%B %d, %Y"),
         })
 
         # 2. Additional Team Members
         if is_team and reg.team and reg.team.members:
-            for idx, member in enumerate(reg.team.members, start=2):
+            member_idx = 2
+            for member in reg.team.members:
+                # Skip if this membership record corresponds to the leader (already added above)
+                if member.role == "leader" or (reg.team and member.participant_id == reg.team.leader_id) or member.participant_id == reg.participant_id:
+                    continue
+                part = member.participant
+                mem_name = (part.full_name if part else "") or "N/A"
+                mem_email = (part.email if part else "") or ""
+                mem_phone = (part.phone if part else "") or ""
+                mem_college = (part.college if part else "") or lead.college or "N/A"
                 mem_id = f"reg_{reg.id}_mem_{member.id}"
-                mem_cert_id = f"SYNEX-CERT-{reg.public_id}-{idx:02d}"
+                mem_cert_id = f"SYNEX-CERT-{reg.public_id}-{member_idx:02d}"
+                member_idx += 1
+
                 participants_list.append({
                     "id": mem_id,
                     "registration_id": reg.id,
                     "public_id": reg.public_id,
-                    "name": member.name or "N/A",
-                    "email": member.email or "",
-                    "phone": member.phone or "",
+                    "name": mem_name,
+                    "email": mem_email,
+                    "phone": mem_phone,
                     "role": "Team Member",
                     "domain": reg.domain or "AI & Machine Learning",
                     "team_name": team_title,
-                    "college": member.college or lead.college or "N/A",
+                    "college": mem_college,
                     "payment_status": reg.payment_status or "pending",
+                    "is_checked_in": bool(reg.is_checked_in),
+                    "checked_in_at": reg.checked_in_at.isoformat() if reg.checked_in_at else None,
                     "certificate_id": mem_cert_id,
                     "issue_date": datetime.utcnow().strftime("%B %d, %Y"),
                 })
@@ -492,7 +514,7 @@ def generate_single_certificate_pdf(participant_data: Dict[str, Any]) -> Tuple[b
         "REF_ID": public_id,
         "ISSUE_DATE": participant_data.get("issue_date") or datetime.utcnow().strftime("%B %d, %Y"),
         "DATE": participant_data.get("issue_date") or datetime.utcnow().strftime("%B %d, %Y"),
-        "EVENT_NAME": "SYNEX National Innovation Hackathon 2026",
+        "EVENT_NAME": EventSetting.get_val("EVENT_NAME", "SYNEX National Innovation Hackathon 2026"),
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -529,31 +551,34 @@ def send_participant_certificate_email(
     domain = participant_data.get("domain") or "Innovation Track"
     cert_id = participant_data.get("certificate_id") or "SYNEX-CERT"
 
-    subject = custom_subject or f"Your SYNEX 2026 Certificate of Participation — {p_name}"
+    from flask import current_app
+    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026") if current_app else "SYNEX 2026")
+    event_short = event_name.split()[0] if event_name else "SYNEX"
+
+    subject = custom_subject or f"Your {event_name} Certificate of Participation — {p_name}"
     
     pdf_bytes, pdf_filename = generate_single_certificate_pdf(participant_data)
 
     body_text = custom_body or (
         f"Dear {p_name},\n\n"
-        f"Congratulations on your outstanding contribution at the SYNEX National Innovation Hackathon 2026!\n\n"
+        f"Congratulations on your outstanding contribution at the {event_name}!\n\n"
         f"We are delighted to present your official Certificate of Participation for the '{domain}' track.\n"
         f"Your Certificate Verification ID is: {cert_id}.\n\n"
         f"Please find your high-resolution official Certificate attached as a PDF document.\n\n"
         f"Warm regards,\n"
-        f"SYNEX Organizing Committee\n"
+        f"{event_name} Organizing Committee\n"
         f"Campus Innovation Hub, Bengaluru\n"
-        f"https://synex2026.org"
     )
 
     body_html = f"""
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 28px; border: 1px solid #E2E8F0; border-radius: 12px; background: #FFFFFF;">
       <div style="padding-bottom: 18px; margin-bottom: 22px; border-bottom: 3px solid #2563EB;">
         <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #D97706; letter-spacing: 1px;">Official Credentials</span>
-        <h2 style="margin: 6px 0 0; color: #1E293B; font-size: 22px; font-weight: 800;">SYNEX 2026 Participation Certificate</h2>
+        <h2 style="margin: 6px 0 0; color: #1E293B; font-size: 22px; font-weight: 800;">{event_name} Participation Certificate</h2>
       </div>
       <p style="color: #334155; font-size: 15px; line-height: 1.6;">Dear <strong>{p_name}</strong>,</p>
       <p style="color: #334155; font-size: 15px; line-height: 1.6;">
-        Congratulations on your active participation and technical contributions during the <strong>SYNEX National Innovation Hackathon 2026</strong>!
+        Congratulations on your active participation and technical contributions during the <strong>{event_name}</strong>!
       </p>
       <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-left: 4px solid #10B981; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
         <div style="font-size: 13px; color: #64748B;">Innovation Track: <strong style="color: #0F172A;">{domain}</strong></div>
@@ -564,8 +589,7 @@ def send_participant_certificate_email(
         Your verified e-Certificate is attached to this email as a PDF document. You may also showcase this achievement on LinkedIn and technical portfolios.
       </p>
       <div style="margin-top: 32px; padding-top: 18px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
-        <p style="margin: 0;"><strong>SYNEX 2026 Organizing Committee</strong> &bull; Campus Innovation Hub, Bengaluru</p>
-        <p style="margin: 4px 0 0;">Visit <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a> for winner announcements and post-hackathon highlights.</p>
+        <p style="margin: 0;"><strong>{event_name} Organizing Committee</strong> &bull; Campus Innovation Hub, Bengaluru</p>
       </div>
     </div>
     """

@@ -34,7 +34,7 @@ def app():
             role="admin",
             is_active_account=True,
         )
-        admin.set_password("Admin@SYNEX2026")
+        admin.set_password("hack@07")
         db.session.add(admin)
 
         # Create confidential event settings admin
@@ -66,7 +66,7 @@ def admin_client(app, client):
     """A test client logged in as admin with event settings unlocked."""
     client.post(
         "/api/admin/login",
-        json={"username": "admin", "password": "Admin@SYNEX2026"},
+        json={"username": "admin", "password": "hack@07"},
     )
     client.post(
         "/api/admin/settings/unlock",

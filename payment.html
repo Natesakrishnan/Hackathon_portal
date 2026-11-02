@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment Checkout Preview — SYNEX 2026</title>
-  <meta name="description" content="Review your registration fee breakdown and preview the secure checkout flow for SYNEX 2026 Hackathon.">
+  <title>Payment Checkout — {{ event_name | default('SYNEX 2026') }}</title>
+  <meta name="description" content="Review your registration fee breakdown and complete secure checkout for {{ event_name | default('SYNEX 2026') }} Hackathon.">
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
@@ -27,20 +27,14 @@
 </head>
 <body>
 
-  <!-- Demo Notice Banner -->
-  <div class="demo-banner" role="status">
-    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-    <span><strong>DEMO PAYMENT PREVIEW:</strong> This is NOT a real payment gateway. No real money will be charged or collected.</span>
-  </div>
-
   <!-- Navigation Bar -->
   <header class="navbar">
     <div class="container nav-container">
-      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
-        <div class="brand-logo-icon">S</div>
+      <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX 2026') }} Homepage">
+        <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
         <div class="brand-text">
-          <span class="brand-name">SYNEX</span>
-          <span class="brand-sub">Hackathon 2026</span>
+          <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+          <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
         </div>
       </a>
 
@@ -123,20 +117,20 @@
         <div class="checkout-header">
           <div>
             <span class="section-tag">Step 3 of 4</span>
-            <h1 class="checkout-title">Fee Payment Checkout Preview</h1>
-            <p class="checkout-sub">Review registration summary before proceeding to the simulated gateway.</p>
+            <h1 class="checkout-title">Fee Payment Checkout</h1>
+            <p class="checkout-sub">Review registration summary before proceeding to the payment gateway.</p>
           </div>
           <div>
-            <span class="demo-ref-badge" id="checkoutRefId">SYN-DEMO-00000</span>
+            <span class="demo-ref-badge" id="checkoutRefId">SYN-000000</span>
           </div>
         </div>
 
-        <!-- Strict Safety Alert -->
-        <div class="alert alert-warning">
-          <i class="fa-solid fa-shield-halved" style="font-size: 1.15rem; color: #D97706;" aria-hidden="true"></i>
+        <!-- Payment Security Notice -->
+        <div class="alert alert-info">
+          <i class="fa-solid fa-shield-halved" style="font-size: 1.15rem; color: #2563EB;" aria-hidden="true"></i>
           <div>
-            <strong>Frontend Demonstration Mode:</strong>
-            Real payment gateway APIs (e.g. Razorpay, Stripe, or Cashfree) and server-side webhook signature verifications will be connected during backend integration. No financial credentials are collected here.
+            <strong>Secure Checkout:</strong>
+            Transactions are processed through 256-bit SSL encrypted channels. Once authorized, your official entry pass is confirmed instantly.
           </div>
         </div>
 
@@ -180,7 +174,11 @@
           </div>
           <div class="pricing-row">
             <span>Swag Kit &amp; Meals Surcharge:</span>
-            <span style="color: var(--color-success); font-weight: 600;">Included (₹0.00)</span>
+            {% if meals_fee and meals_fee > 0 %}
+            <strong id="orderMealsFee" style="color: var(--color-text-main);">₹{{ meals_fee }}</strong>
+            {% else %}
+            <span id="orderMealsFee" style="color: var(--color-success); font-weight: 600;">Included (₹0.00)</span>
+            {% endif %}
           </div>
           <div class="pricing-row">
             <span>Platform Gateway Convenience Fee:</span>
@@ -188,15 +186,15 @@
           </div>
           <div class="pricing-row total-row">
             <span>Total Payable Amount:</span>
-            <span class="total-amount-highlight" id="orderTotalAmount">₹{{ individual_fee }}</span>
+            <span class="total-amount-highlight" id="orderTotalAmount">₹{{ individual_fee + (meals_fee | default(0)) }}</span>
           </div>
         </div>
 
-        <!-- Payment Method Mock Selector -->
+        <!-- Payment Method Selector -->
         <div class="payment-methods-preview">
           <h2 class="methods-title">
             <i class="fa-solid fa-wallet"></i>
-            <span>Simulated Payment Channel Preview</span>
+            <span>Select Payment Method</span>
           </h2>
           <div class="method-options">
             <div class="method-box selected">
@@ -222,12 +220,12 @@
           <div class="checkout-action-row">
             <button type="button" class="btn btn-proceed btn-lg" id="btnProceedPayment">
               <i class="fa-solid fa-shield" aria-hidden="true"></i>
-              <span>Proceed to Secure Payment (Demo)</span>
+              <span>Proceed to Secure Payment</span>
             </button>
 
-            <button type="button" class="btn btn-fail-demo btn-lg" id="btnSimulateFailure">
+            <button type="button" class="btn btn-fail-demo btn-lg" id="btnSimulateFailure" style="display: none;">
               <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-              <span>Preview Payment Failure</span>
+              <span>Report Payment Issue</span>
             </button>
           </div>
 
@@ -237,34 +235,27 @@
               <span>Edit Registration Details</span>
             </a>
             <span style="font-size: 0.78rem; color: var(--color-text-muted);">
-              <i class="fa-solid fa-lock"></i> 256-bit Simulated Handshake
+              <i class="fa-solid fa-lock"></i> 256-bit SSL Encrypted
             </span>
           </div>
         </div>
       </div>
 
-      <!-- Payment Failure State Preview Card (Shown when failure is triggered) -->
+      <!-- Payment Failure State Card (Shown when failure is triggered) -->
       <div class="failure-state-card" id="failureStateCard">
         <div class="failure-icon">
           <i class="fa-solid fa-xmark"></i>
         </div>
-        <h2 class="failure-title">Demo Payment Failed</h2>
+        <h2 class="failure-title">Payment Transaction Declined</h2>
         <p class="failure-desc">
-          This simulates a declined transaction or network timeout from the payment provider. 
-          <strong>No money was deducted</strong> and your registration draft remains safely saved in your browser session.
+          Your transaction could not be completed by the bank or gateway. 
+          <strong>No money was deducted</strong> and your registration details remain safely saved.
         </p>
-
-        <div class="alert alert-warning" style="text-align: left; max-width: 520px; margin: 0 auto 2rem auto;">
-          <i class="fa-solid fa-circle-info"></i>
-          <div>
-            <strong>Demonstration Tip:</strong> In production with Flask and payment webhooks, failed attempts log an incident ID and allow the user to select an alternate payment method or retry.
-          </div>
-        </div>
 
         <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
           <button type="button" class="btn btn-primary btn-lg" id="btnRetryDemo">
             <i class="fa-solid fa-rotate-right"></i>
-            <span>Retry Demo Payment</span>
+            <span>Retry Payment</span>
           </button>
           <a href="register.html" class="btn btn-outline btn-lg">
             <i class="fa-solid fa-arrow-left"></i>
@@ -276,21 +267,21 @@
     </div>
   </main>
 
-  <!-- Demo Payment Simulation Modal -->
+  <!-- Payment Gateway Modal -->
   <div class="modal-backdrop" id="demoPaymentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-dialog">
       <div class="modal-spinner" id="modalSpinner"></div>
-      <h3 class="modal-title" id="modalTitle">Simulating Handshake</h3>
-      <p class="modal-desc" id="modalDesc">Connecting to simulated payment server...</p>
+      <h3 class="modal-title" id="modalTitle">Secure Payment Gateway</h3>
+      <p class="modal-desc" id="modalDesc">Connecting to payment gateway...</p>
 
       <div class="modal-actions" id="modalActions" style="display: none;">
         <button type="button" class="btn btn-primary btn-lg" id="btnCompleteDemoSuccess">
           <i class="fa-solid fa-circle-check"></i>
-          <span>Complete Demo Payment (Success)</span>
+          <span>Complete Payment Authorization</span>
         </button>
         <button type="button" class="btn btn-outline" id="btnCancelDemoModal">
           <i class="fa-solid fa-xmark"></i>
-          <span>Cancel Simulation</span>
+          <span>Cancel</span>
         </button>
       </div>
     </div>
@@ -300,12 +291,7 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-bottom" style="border: none; padding-top: 0;">
-        <div>&copy; 2026 SYNEX Hackathon. Frontend demonstration prototype.</div>
-        <div>
-          <a href="admin-login.html" class="footer-admin-link">
-            <i class="fa-solid fa-lock"></i> Admin Portal
-          </a>
-        </div>
+        <div>&copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} Hackathon. All rights reserved.</div>
       </div>
     </div>
   </footer>

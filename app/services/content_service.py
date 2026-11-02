@@ -235,7 +235,7 @@ def get_rules_content() -> Dict[str, Any]:
         dynamic_rules.append(rule_copy)
 
     return {
-        "notice_banner": "SAMPLE CONTENT: Rules, eligibility guidelines, and refund terms are sample content for demonstration.",
+        "notice_banner": "OFFICIAL RULES: All registered participants are bound by the regulations outlined below.",
         "rules": dynamic_rules,
         "is_custom": False,
     }
@@ -305,7 +305,7 @@ def get_schedule_content() -> Dict[str, Any]:
             logger.warning(f"Failed to parse stored EVENT_SCHEDULE_DATA: {e}")
 
     return {
-        "notice_banner": "SAMPLE TIMELINE: Event dates, room allocations, and session times are sample placeholders for demonstration.",
+        "notice_banner": "OFFICIAL TIMELINE: Please review the official schedule and milestone deadlines for the hackathon.",
         "milestones": DEFAULT_SCHEDULE,
         "schedule": DEFAULT_SCHEDULE,
         "is_custom": False,

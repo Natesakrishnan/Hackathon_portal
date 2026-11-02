@@ -225,6 +225,7 @@ async function syncConfigFromServer() {
 
     if (cfg.event_name) {
       window.SYNEX_CONFIG.eventName = cfg.event_name;
+      updateEventNameDisplays(cfg.event_name);
     }
     if (cfg.registration_deadline) {
       window.SYNEX_CONFIG.eventDate = cfg.registration_deadline;
@@ -244,9 +245,15 @@ async function syncConfigFromServer() {
     if (cfg.team_fee !== undefined) {
       window.SYNEX_CONFIG.fees.team = cfg.team_fee;
     }
+    if (cfg.per_member_fee !== undefined) {
+      window.SYNEX_CONFIG.fees.per_member = cfg.per_member_fee;
+    }
+    if (cfg.meals_fee !== undefined) {
+      window.SYNEX_CONFIG.fees.meals_fee = cfg.meals_fee;
+    }
     const curr = cfg.currency === "INR" ? "₹" : (cfg.currency || "₹");
     window.SYNEX_CONFIG.fees.currency = curr;
-    updatePublicFeeDisplays(cfg.individual_fee, cfg.team_fee, curr);
+    updatePublicFeeDisplays(cfg.individual_fee, cfg.team_fee, curr, cfg.per_member_fee, cfg.meals_fee);
   } catch (err) {
     // Non-blocking fallback
   }
@@ -255,14 +262,20 @@ async function syncConfigFromServer() {
 /**
  * Updates all public fee displays across any page on the portal
  */
-function updatePublicFeeDisplays(indivFee, teamFee, currency = "₹") {
+function updatePublicFeeDisplays(indivFee, teamFee, currency = "₹", perMemberFee, mealsFee) {
   const indiv = indivFee !== undefined ? indivFee : (window.SYNEX_CONFIG?.fees?.individual ?? 299);
   const team = teamFee !== undefined ? teamFee : (window.SYNEX_CONFIG?.fees?.team ?? 999);
+  const memberFee = perMemberFee !== undefined
+    ? perMemberFee
+    : (window.SYNEX_CONFIG?.fees?.per_member ?? (indivFee !== undefined ? indivFee : 250));
+  const meals = mealsFee !== undefined
+    ? mealsFee
+    : (window.SYNEX_CONFIG?.fees?.meals_fee ?? 0);
   const curr = currency || "₹";
 
   // 1. Hero Entry Fee Badge (Home page)
   document.querySelectorAll('#heroEntryFeeDisplay, [data-synex-fees="combined"]').forEach(el => {
-    el.textContent = `${curr}${indiv} Individual / ${curr}${team} Team`;
+    el.textContent = `${curr}${memberFee} / Member`;
   });
 
   // 2. FAQ section (Home page)
@@ -293,17 +306,66 @@ function updatePublicFeeDisplays(indivFee, teamFee, currency = "₹") {
   if (typeof REG_CONFIG !== "undefined") {
     REG_CONFIG.individualFee = indiv;
     REG_CONFIG.teamFee = team;
+    REG_CONFIG.perMemberFee = memberFee;
+    REG_CONFIG.mealsFee = meals;
     REG_CONFIG.currency = curr;
-    const isTeam = document.querySelector('input[name="regType"]:checked')?.value === "team";
-    const currentFee = isTeam ? team : indiv;
-    const summaryFeeEl = document.getElementById("summaryBaseFee");
-    const summaryTotalEl = document.getElementById("summaryTotalPrice");
-    const reviewFeeEl = document.getElementById("reviewBaseFee");
-    const reviewTotalEl = document.getElementById("reviewTotalAmount");
-    if (summaryFeeEl) summaryFeeEl.textContent = `${curr}${currentFee}`;
-    if (summaryTotalEl) summaryTotalEl.textContent = `${curr}${currentFee}`;
-    if (reviewFeeEl) reviewFeeEl.textContent = `${curr}${currentFee}`;
-    if (reviewTotalEl) reviewTotalEl.textContent = `${curr}${currentFee}`;
+    if (typeof updateDynamicPricing === "function") {
+      updateDynamicPricing();
+    }
   }
 }
 window.updatePublicFeeDisplays = updatePublicFeeDisplays;
+
+/**
+ * Dynamically updates all branding, titles, and mentions of the event name across the page
+ */
+function updateEventNameDisplays(eventName) {
+  if (!eventName || typeof eventName !== 'string') return;
+  const name = eventName.trim();
+  if (!name) return;
+
+  const shortName = name.split(' ')[0] || name;
+  const initial = name.charAt(0).toUpperCase();
+
+  // 1. Update logo initial and brand texts
+  document.querySelectorAll('.brand-logo-icon').forEach(el => {
+    el.textContent = initial;
+  });
+  document.querySelectorAll('.brand-name').forEach(el => {
+    el.textContent = shortName;
+  });
+  document.querySelectorAll('.brand-sub').forEach(el => {
+    el.textContent = `${name} Hackathon`;
+  });
+
+  // 2. Update document title
+  if (document.title && (document.title.includes('SYNEX') || document.title.includes('Hackathon'))) {
+    document.title = document.title.replace(/SYNEX\s*\d*/gi, name);
+  }
+
+  // 3. Update dedicated data attributes and classes
+  document.querySelectorAll('[data-event-name], .event-name-display').forEach(el => {
+    el.textContent = name;
+  });
+  document.querySelectorAll('[data-event-short-name]').forEach(el => {
+    el.textContent = shortName;
+  });
+
+  // 4. Update banner and section texts that contain SYNEX
+  const replaceSynexInElement = (el) => {
+    if (!el || !el.childNodes) return;
+    el.childNodes.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue && node.nodeValue.includes('SYNEX')) {
+        node.nodeValue = node.nodeValue.replace(/SYNEX\s*2026/g, name).replace(/SYNEX/g, shortName);
+      } else if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('no-brand-replace')) {
+        replaceSynexInElement(node);
+      }
+    });
+  };
+
+  document.querySelectorAll('.announcement-banner, .hero-title, .hero-badge, .about-highlight-title, .section-title, .section-desc, .footer-desc, .footer-bottom, .confirmation-event-title, .card-title, .rule-card p').forEach(el => {
+    replaceSynexInElement(el);
+  });
+}
+window.updateEventNameDisplays = updateEventNameDisplays;
+

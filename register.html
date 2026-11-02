@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register for SYNEX 2026 — Participant Portal</title>
+  <title>Register for {{ event_name | default('SYNEX 2026') }} — Participant Portal</title>
   <meta name="description"
-    content="Register as an individual or team for SYNEX 2026 National Innovation Hackathon. Complete your registration details and review entry fees.">
+    content="Register for {{ event_name | default('SYNEX 2026') }} National Innovation Hackathon. Complete your registration details and review entry fees.">
 
   <!-- Favicon -->
   <link rel="icon"
@@ -28,21 +28,14 @@
 
 <body>
 
-  <!-- Demo Notice Banner -->
-  <div class="demo-banner" role="status">
-    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-    <span><strong>DEMO PREVIEW:</strong> Temporary frontend registration flow. Information is saved to your browser
-      session only.</span>
-  </div>
-
   <!-- Navigation Bar -->
   <header class="navbar">
     <div class="container nav-container">
-      <a href="index.html" class="brand" aria-label="SYNEX 2026 Homepage">
-        <div class="brand-logo-icon">S</div>
+      <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX 2026') }} Homepage">
+        <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
         <div class="brand-text">
-          <span class="brand-name">SYNEX</span>
-          <span class="brand-sub">Hackathon 2026</span>
+          <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+          <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
         </div>
       </a>
 
@@ -131,21 +124,21 @@
                 <div>
                   <div class="team-banner-header-row">
                     <span class="team-format-tag"><i class="fa-solid fa-shield-halved"></i> Team Registration</span>
-                    <span class="team-size-limit-badge" id="teamSizeLimitBadge">2 to 4 Members</span>
+                    <span class="team-size-limit-badge" id="teamSizeLimitBadge">{{ min_team_members }} to {{ max_team_members }} Members</span>
                   </div>
                   <h3 class="team-banner-title">Team Hackathon Entry</h3>
                   <p class="team-banner-subtitle">
-                    Participant entry fee scales dynamically (<strong id="bannerRateDisplay">₹250</strong> per member).
+                    Participant entry fee scales dynamically (<strong id="bannerRateDisplay">₹{{ per_member_fee }}</strong> per member).
                   </p>
                 </div>
               </div>
               <div class="team-banner-calc" id="teamBannerCalc">
                 <div class="team-calc-label">Total Entry Fee</div>
                 <div class="team-calc-formula">
-                  <span id="bannerCalcMembers">2</span> members &times; ₹<span id="bannerCalcRate">250</span>
+                  <span id="bannerCalcMembers">{{ min_team_members }}</span> members &times; ₹<span id="bannerCalcRate">{{ per_member_fee }}</span>
                 </div>
                 <div class="team-calc-total" id="bannerCalcTotal">
-                  ₹500
+                  ₹{{ per_member_fee * min_team_members }}
                 </div>
               </div>
             </div>
@@ -264,7 +257,7 @@
                   <i class="fa-solid fa-people-group" aria-hidden="true"></i>
                   <span>Additional Team Members</span>
                 </div>
-                <span class="team-size-badge" id="teamSizeBadge">2 of 4 max</span>
+                <span class="team-size-badge" id="teamSizeBadge">{{ min_team_members }} of {{ max_team_members }} max</span>
               </div>
 
               <!-- Team Name Input -->
@@ -287,7 +280,7 @@
               <div class="add-member-container">
                 <button type="button" class="btn-add-member" id="btnAddMember">
                   <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                  <span>Add Team Member (Up to 4 Max)</span>
+                  <span>Add Team Member (Up to {{ max_team_members }} Max)</span>
                 </button>
               </div>
             </div>
@@ -298,7 +291,7 @@
                 <input type="checkbox" id="termsCheck" required>
                 <span>
                   I have read and agree to the <a href="rules.html" target="_blank" rel="noopener">Rules &amp; Code of
-                    Conduct</a> and understand that registration fees are non-refundable sample fees.
+                    Conduct</a> and understand that registration fees are non-refundable.
                 </span>
               </label>
             </div>
@@ -400,11 +393,15 @@
             <div class="pricing-rows-review">
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
                 <span style="color: var(--color-text-secondary);">Base Hackathon Entry Fee:</span>
-                <strong id="reviewBaseFee" style="color: var(--color-text-main);">₹500</strong>
+                <strong id="reviewBaseFee" style="color: var(--color-text-main);">₹{{ per_member_fee * min_team_members }}</strong>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
                 <span style="color: var(--color-text-secondary);">Swag Kit &amp; Meals Surcharge:</span>
-                <span style="color: var(--color-success); font-weight: 600;">Included (₹0.00)</span>
+                {% if meals_fee and meals_fee > 0 %}
+                <strong id="reviewMealsFee" style="color: var(--color-text-main);">₹{{ meals_fee }}</strong>
+                {% else %}
+                <span id="reviewMealsFee" style="color: var(--color-success); font-weight: 600;">Included (₹0.00)</span>
+                {% endif %}
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.95rem;">
                 <span style="color: var(--color-text-secondary);">Platform Processing Fee:</span>
@@ -412,7 +409,7 @@
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 0 0.25rem 0; font-size: 1.15rem; font-weight: 800;">
                 <span style="color: var(--color-text-main);">Total Payable Amount:</span>
-                <span id="reviewTotalAmount" style="color: var(--color-primary); font-size: 1.4rem;">₹500</span>
+                <span id="reviewTotalAmount" style="color: var(--color-primary); font-size: 1.4rem;">₹{{ (per_member_fee * min_team_members) + (meals_fee | default(0)) }}</span>
               </div>
             </div>
           </div>
@@ -438,7 +435,7 @@
 
             <div class="summary-row">
               <span>Event:</span>
-              <strong>SYNEX 2026</strong>
+              <strong id="summaryEventName">{{ event_name | default('SYNEX 2026') }}</strong>
             </div>
 
             <div class="summary-row">
@@ -453,17 +450,26 @@
 
             <div class="summary-row" id="summaryMembersRow" style="display: flex;">
               <span>Team Size:</span>
-              <strong id="summaryMembersCount">2 Members</strong>
+              <strong id="summaryMembersCount">{{ min_team_members }} Members</strong>
             </div>
 
             <div class="summary-row">
               <span>Rate Per Member:</span>
-              <strong id="summaryRatePerPerson">₹250</strong>
+              <strong id="summaryRatePerPerson">₹{{ per_member_fee }}</strong>
             </div>
 
             <div class="summary-row">
               <span>Base Entry Fee:</span>
-              <strong id="summaryBaseFee">₹500</strong>
+              <strong id="summaryBaseFee">₹{{ per_member_fee * min_team_members }}</strong>
+            </div>
+
+            <div class="summary-row" id="summaryMealsRow">
+              <span>Meals &amp; Swag Kit:</span>
+              {% if meals_fee and meals_fee > 0 %}
+              <span id="summaryMealsFee" class="badge badge-primary">₹{{ meals_fee }}</span>
+              {% else %}
+              <span id="summaryMealsFee" class="badge badge-success">Included</span>
+              {% endif %}
             </div>
 
             <div class="summary-row">
@@ -475,20 +481,19 @@
 
             <div class="summary-total">
               <span class="summary-total-label">Total Payable:</span>
-              <span class="summary-total-price" id="summaryTotalPrice">₹500</span>
+              <span class="summary-total-price" id="summaryTotalPrice">₹{{ (per_member_fee * min_team_members) + (meals_fee | default(0)) }}</span>
             </div>
 
             <div class="alert alert-info" style="margin-bottom: 0; font-size: 0.78rem; line-height: 1.45;">
               <i class="fa-solid fa-shield-halved" style="font-size: 1rem;" aria-hidden="true"></i>
               <span>
-                <strong>Frontend Demo:</strong> No actual monetary transaction will occur. Next step will preview the
-                payment checkout screen.
+                <strong>Secure Registration:</strong> Complete your details to proceed to secure checkout and confirm your hackathon slot.
               </span>
             </div>
 
             <div class="summary-security">
               <i class="fa-solid fa-lock" aria-hidden="true"></i>
-              <span>Temporary sessionStorage session</span>
+              <span>End-to-end encrypted registration</span>
             </div>
           </div>
         </aside>
@@ -501,12 +506,7 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-bottom" style="border: none; padding-top: 0;">
-        <div>&copy; 2026 SYNEX Hackathon </div>
-        <div>
-          <a href="admin-login.html" class="footer-admin-link">
-            <i class="fa-solid fa-lock"></i> Admin Portal
-          </a>
-        </div>
+        <div>&copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} Hackathon. All rights reserved.</div>
       </div>
     </div>
   </footer>

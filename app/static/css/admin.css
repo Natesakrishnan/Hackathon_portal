@@ -64,21 +64,122 @@
   color: var(--color-text-secondary);
 }
 
-.password-toggle-btn {
+/* Login Form Controls */
+.login-card .form-group {
+  margin-bottom: 1.35rem;
+  text-align: left;
+}
+
+.login-card .form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-main, #0F172A);
+  margin-bottom: 0.5rem;
+}
+
+.login-card .form-label .required {
+  color: var(--color-error, #EF4444);
+}
+
+.login-card .input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.login-card .input-icon {
   position: absolute;
-  right: 0.85rem;
+  left: 1.05rem;
+  color: #94A3B8;
+  font-size: 0.95rem;
+  pointer-events: none;
+  transition: color var(--transition-fast, 0.2s ease);
+  z-index: 2;
+}
+
+.login-card .form-input {
+  width: 100%;
+  padding: 0.82rem 1rem 0.82rem 2.85rem;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background-color: #F8FAFC;
+  color: var(--color-text-main, #0F172A);
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.login-card .form-input:hover {
+  background-color: #FFFFFF;
+  border-color: #CBD5E1;
+}
+
+.login-card .form-input:focus {
+  background-color: #FFFFFF;
+  border-color: var(--color-primary, #2563EB);
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.12);
+}
+
+.login-card .input-wrapper:focus-within .input-icon {
+  color: var(--color-primary, #2563EB);
+}
+
+.login-card .form-input.password-input {
+  padding-right: 3rem;
+}
+
+.login-card .password-toggle-btn {
+  position: absolute;
+  right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: var(--color-text-muted);
+  color: #94A3B8;
   cursor: pointer;
-  padding: 0.35rem;
-  font-size: 0.95rem;
+  padding: 0.45rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background 0.2s ease;
+  z-index: 2;
 }
 
-.password-toggle-btn:hover {
-  color: var(--color-primary);
+.login-card .password-toggle-btn:hover {
+  color: var(--color-primary, #2563EB);
+  background: #EFF6FF;
+}
+
+/* Error validation states */
+.login-card .form-group.has-error .form-input {
+  border-color: var(--color-error, #EF4444);
+  background-color: #FFF5F5;
+}
+
+.login-card .form-group.has-error .input-icon {
+  color: var(--color-error, #EF4444);
+}
+
+.login-card .field-error {
+  display: none;
+  font-size: 0.78rem;
+  color: var(--color-error, #EF4444);
+  font-weight: 500;
+  margin-top: 0.4rem;
+}
+
+.login-card .form-group.has-error .field-error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 /* ==========================================================================

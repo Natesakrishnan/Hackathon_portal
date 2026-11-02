@@ -6,7 +6,7 @@ class Registration(db.Model):
     __tablename__ = "registrations"
 
     id = db.Column(db.Integer, primary_key=True)
-    public_id = db.Column(db.String(32), unique=True, nullable=False, index=True)
+    public_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
     registration_type = db.Column(db.String(20), nullable=False)  # 'individual' or 'team'
     
     # Primary participant (for individual, or team leader)
@@ -38,12 +38,21 @@ class Registration(db.Model):
     payments = db.relationship("Payment", back_populates="registration", cascade="all, delete-orphan", lazy="dynamic")
 
     def to_dict(self, include_team_details: bool = True) -> dict:
+        from app.models.event_setting import EventSetting
+        try:
+            current_meals_fee = int(EventSetting.get_val("EVENT_MEALS_FEE", 0))
+        except Exception:
+            current_meals_fee = 0
+        computed_base_fee = max(0, self.entry_fee - current_meals_fee)
+
         data = {
             "id": self.id,
             "public_id": self.public_id,
             "registration_type": self.registration_type,
             "domain": self.domain,
             "entry_fee": self.entry_fee,
+            "base_fee": computed_base_fee,
+            "meals_fee": current_meals_fee,
             "currency": self.currency,
             "registration_status": self.registration_status,
             "payment_status": self.payment_status,

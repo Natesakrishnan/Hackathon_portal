@@ -75,12 +75,14 @@ def admin_legacy_index_redirect():
 
 
 @admin_bp.route("/admin/login")
+@admin_bp.route("/admin-login")
 @admin_bp.route("/admin-login.html")
 def login():
     return render_template("admin-login.html")
 
 
 @admin_bp.route("/admin/dashboard")
+@admin_bp.route("/admin-dashboard")
 @admin_bp.route("/admin-dashboard.html")
 @admin_bp.route("/admin/registrations")
 @admin_bp.route("/admin/participants")
@@ -91,6 +93,7 @@ def login():
 @admin_bp.route("/admin/announcements")
 @admin_bp.route("/admin/settings")
 @admin_bp.route("/admin/certificates")
+@admin_bp.route("/admin/checkin")
 @login_required
 def dashboard():
     initial_page = "dashboard"
@@ -113,7 +116,10 @@ def dashboard():
         initial_page = "settings"
     elif path.endswith("/certificates"):
         initial_page = "certificates"
+    elif path.endswith("/checkin"):
+        initial_page = "checkin"
     return render_template("admin-dashboard.html", initial_page=initial_page)
+
 
 
 @admin_bp.route("/admin/logout", methods=["GET", "POST"])
@@ -460,6 +466,7 @@ def api_get_settings():
             "individual_fee": int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299))),
             "team_fee": int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999))),
             "per_member_fee": int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250))),
+            "meals_fee": int(EventSetting.get_val("EVENT_MEALS_FEE", current_app.config.get("EVENT_MEALS_FEE", 0))),
             "min_team_members": int(EventSetting.get_val("MIN_TEAM_MEMBERS", current_app.config.get("MIN_TEAM_MEMBERS", 2))),
             "max_team_members": int(EventSetting.get_val("MAX_TEAM_MEMBERS", current_app.config.get("MAX_TEAM_MEMBERS", 4))),
             "registration_deadline": EventSetting.get_val("REGISTRATION_DEADLINE", "2026-11-30T23:59"),
@@ -517,6 +524,16 @@ def api_update_settings():
                 return jsonify({"success": False, "error": "Fee per member must be between 0 and 500,000 INR."}), 400
         except (TypeError, ValueError):
             return jsonify({"success": False, "error": "Fee per member must be a valid integer."}), 400
+
+    # 3a-2. Validate Swag Kit & Meals Fee
+    meals_fee = data.get("meals_fee")
+    if meals_fee is not None:
+        try:
+            meals_fee = int(meals_fee)
+            if meals_fee < 0 or meals_fee > 500000:
+                return jsonify({"success": False, "error": "Swag kit & meals fee must be between 0 and 500,000 INR."}), 400
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "Swag kit & meals fee must be a valid integer."}), 400
 
     # 3b. Validate Min Team Members
     min_team_members = data.get("min_team_members")
@@ -579,6 +596,7 @@ def api_update_settings():
     # All validations passed: Commit persistent settings
     if event_name is not None:
         EventSetting.set_val("EVENT_NAME", event_name, "Official Hackathon Event Name")
+        current_app.config["EVENT_NAME"] = event_name
     if indiv_fee is not None:
         EventSetting.set_val("EVENT_INDIVIDUAL_FEE", str(indiv_fee), "Individual Entry Fee in INR")
     if team_fee is not None:
@@ -589,6 +607,8 @@ def api_update_settings():
             EventSetting.set_val("EVENT_INDIVIDUAL_FEE", str(per_member_fee), "Individual Entry Fee in INR")
         if team_fee is None:
             EventSetting.set_val("EVENT_TEAM_FEE", str(per_member_fee * current_min), "Team Entry Fee in INR")
+    if meals_fee is not None:
+        EventSetting.set_val("EVENT_MEALS_FEE", str(meals_fee), "Swag Kit & Meals Surcharge in INR")
     if min_team_members is not None:
         EventSetting.set_val("MIN_TEAM_MEMBERS", str(min_team_members), "Minimum Team Members Required")
     if max_team_members is not None:
@@ -608,6 +628,7 @@ def api_update_settings():
             "individual_fee": int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299))),
             "team_fee": int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999))),
             "per_member_fee": int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250))),
+            "meals_fee": int(EventSetting.get_val("EVENT_MEALS_FEE", current_app.config.get("EVENT_MEALS_FEE", 0))),
             "min_team_members": int(EventSetting.get_val("MIN_TEAM_MEMBERS", current_app.config.get("MIN_TEAM_MEMBERS", 2))),
             "max_team_members": int(EventSetting.get_val("MAX_TEAM_MEMBERS", current_app.config.get("MAX_TEAM_MEMBERS", 4))),
             "registration_deadline": EventSetting.get_val("REGISTRATION_DEADLINE", "2026-11-30T23:59"),
@@ -828,7 +849,7 @@ def api_reply_inquiry(id):
         return jsonify({"success": False, "error": "Reply message body cannot be empty."}), 400
 
     # Build rich email body
-    event_name = current_app.config.get("EVENT_NAME", "SYNEX 2026")
+    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
     body_text = f"""Hi {inquiry.name},
 
 {reply_message}
@@ -1118,7 +1139,22 @@ def api_get_certificate_participants():
         paid_only = request.args.get("paid_only", "true").lower() in ("true", "1", "yes")
     search = request.args.get("search", "")
 
-    participants = get_participants_for_certificates(domain_filter=domain, paid_only=paid_only, search=search)
+    # Check-in filter
+    checkin_param = request.args.get("checkin", "").lower()
+    if checkin_param in ("checked_in", "true", "1", "yes"):
+        checked_in_only = True
+    elif checkin_param in ("all", "false", "0", "no"):
+        checked_in_only = False
+    else:
+        checked_in_param = request.args.get("checked_in_only", "").lower()
+        checked_in_only = checked_in_param in ("true", "1", "yes")
+
+    participants = get_participants_for_certificates(
+        domain_filter=domain,
+        paid_only=paid_only,
+        checked_in_only=checked_in_only,
+        search=search
+    )
     return jsonify({
         "success": True,
         "count": len(participants),
@@ -1136,7 +1172,7 @@ def api_preview_certificate():
     participant_id = request.args.get("participant_id")
     participant_data = None
     if participant_id:
-        all_participants = get_participants_for_certificates(paid_only=False)
+        all_participants = get_participants_for_certificates(paid_only=False, checked_in_only=False)
         for p in all_participants:
             if p["id"] == participant_id:
                 participant_data = p
@@ -1179,11 +1215,18 @@ def api_send_single_certificate():
 
     participant_data = None
     if participant_id:
-        all_p = get_participants_for_certificates(paid_only=False)
+        all_p = get_participants_for_certificates(paid_only=False, checked_in_only=False)
         for p in all_p:
             if p["id"] == participant_id:
                 participant_data = dict(p)
                 break
+        
+        # Enforce that certificates are only issued to checked-in attendees
+        if participant_data and not participant_data.get("is_checked_in"):
+            return jsonify({
+                "success": False,
+                "error": f"Certificate cannot be issued: '{participant_data.get('name')}' has not completed event check-in. Certificates can only be issued to checked-in attendees."
+            }), 400
 
     if not participant_data:
         participant_data = {
@@ -1236,14 +1279,15 @@ def api_send_bulk_certificates():
     custom_subject = data.get("custom_subject")
     custom_body = data.get("custom_body")
 
-    participants = get_participants_for_certificates(domain_filter=domain, paid_only=paid_only)
+    # Strictly enforce that certificates are only issued to checked-in participants
+    participants = get_participants_for_certificates(domain_filter=domain, paid_only=paid_only, checked_in_only=True)
     if selected_ids:
-        participants = [p for p in participants if p["id"] in selected_ids]
+        participants = [p for p in participants if p["id"] in selected_ids and p.get("is_checked_in")]
 
     if not participants:
         return jsonify({
             "success": False,
-            "error": "No matching participants found for certificate distribution."
+            "error": "No checked-in participants found for certificate distribution. Only checked-in participants are eligible to receive certificates."
         }), 400
 
     results = []
@@ -1409,15 +1453,30 @@ def api_admin_send_checkin_pass():
     team_name = reg.team.team_name if reg.team else (reg.participant.full_name if reg.participant else reg.public_id)
 
     latest_payment = reg.payments.order_by(db.desc(db.text("id"))).first()
-    send_confirmation_email(reg, latest_payment)
+    sent = send_confirmation_email(reg, latest_payment)
+
+    latest_log = EmailLog.query.filter_by(recipient=leader_email).order_by(EmailLog.id.desc()).first()
+    log_status = latest_log.status if latest_log else ("sent" if sent else "failed")
+    log_msg = latest_log.error_message if latest_log else ""
+
+    if not sent and log_status == "failed":
+        return jsonify({
+            "success": False,
+            "error": f"Delivery to {leader_email} failed: {log_msg or 'Email service error'}",
+            "recipient_email": leader_email,
+            "team_name": team_name,
+            "public_id": reg.public_id,
+        }), 400
 
     return jsonify({
         "success": True,
-        "message": f"Confirmation pass with check-in QR code dispatched to team leader: {leader_email}",
+        "message": f"Confirmation pass with check-in QR code dispatched for team leader: {leader_email}",
         "recipient_email": leader_email,
         "team_name": team_name,
         "public_id": reg.public_id,
         "checkin_token": reg.checkin_token,
+        "delivery_status": log_status,
+        "delivery_info": log_msg,
     }), 200
 
 

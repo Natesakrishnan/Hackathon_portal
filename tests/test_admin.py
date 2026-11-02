@@ -17,7 +17,7 @@ def test_admin_login_success(client):
     """Test successful admin login returns session and admin data."""
     res = client.post(
         "/api/admin/login",
-        json={"username": "admin", "password": "Admin@SYNEX2026"},
+        json={"username": "admin", "password": "hack@07"},
     )
     assert res.status_code == 200
     data = res.get_json()
@@ -546,6 +546,7 @@ def test_public_config_sync_with_settings(client, admin_client):
             "individual_fee": 399,
             "team_fee": 1299,
             "per_member_fee": 350,
+            "meals_fee": 150,
             "min_team_members": 2,
             "max_team_members": 4,
             "registration_deadline": "2026-12-31T23:59:59",
@@ -562,11 +563,44 @@ def test_public_config_sync_with_settings(client, admin_client):
     assert cfg["individual_fee"] == 399
     assert cfg["team_fee"] == 1299
     assert cfg["per_member_fee"] == 350
+    assert cfg["meals_fee"] == 150
     assert cfg["min_team_members"] == 2
     assert cfg["max_team_members"] == 4
     assert cfg["prize_pool"] == "₹5,00,000"
     assert cfg["registration_open"] is False
     assert cfg["registration_deadline"] == "2026-12-31T23:59:59"
+
+
+def test_admin_settings_meals_fee_edit_and_validation(admin_client, client):
+    """Test admin can view, edit, and validate Swag Kit & Meals surcharge in Event Settings."""
+    # 1. GET settings returns meals_fee
+    res = admin_client.get("/api/admin/settings")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert "meals_fee" in data["settings"]
+
+    # 2. Rejects negative meals fee
+    bad_res = admin_client.put("/api/admin/settings", json={"meals_fee": -50})
+    assert bad_res.status_code == 400
+    assert "between 0 and 500,000 INR" in bad_res.get_json()["error"]
+
+    # 3. Rejects invalid non-integer meals fee
+    invalid_res = admin_client.put("/api/admin/settings", json={"meals_fee": "not-a-number"})
+    assert invalid_res.status_code == 400
+    assert "must be a valid integer" in invalid_res.get_json()["error"]
+
+    # 4. Successfully updates meals fee
+    upd_res = admin_client.put("/api/admin/settings", json={"meals_fee": 120})
+    assert upd_res.status_code == 200
+    upd_data = upd_res.get_json()
+    assert upd_data["success"] is True
+    assert upd_data["settings"]["meals_fee"] == 120
+
+    # 5. Public /api/config reflects the new meals fee immediately
+    cfg_res = client.get("/api/config")
+    assert cfg_res.status_code == 200
+    assert cfg_res.get_json()["meals_fee"] == 120
 
 
 # ==============================================================================
@@ -973,7 +1007,7 @@ def test_confidential_settings_locked_by_default_for_standard_admin(client):
     # Login as standard admin
     login_res = client.post(
         "/api/admin/login",
-        json={"username": "admin", "password": "Admin@SYNEX2026"},
+        json={"username": "admin", "password": "hack@07"},
     )
     assert login_res.status_code == 200
 
@@ -1005,7 +1039,7 @@ def test_confidential_settings_unlock_and_lock_lifecycle(client):
     # Login as standard admin
     client.post(
         "/api/admin/login",
-        json={"username": "admin", "password": "Admin@SYNEX2026"},
+        json={"username": "admin", "password": "hack@07"},
     )
 
     # Invalid credentials rejected
@@ -1018,7 +1052,7 @@ def test_confidential_settings_unlock_and_lock_lifecycle(client):
     # Non-settings account cannot unlock
     unauth_res = client.post(
         "/api/admin/settings/unlock",
-        json={"username": "admin", "password": "Admin@SYNEX2026"},
+        json={"username": "admin", "password": "hack@07"},
     )
     assert unauth_res.status_code == 403
 
@@ -1208,6 +1242,89 @@ def test_admin_reset_certificate_history(app, admin_client):
     hist_res = admin_client.get("/api/admin/certificates/history")
     assert hist_res.status_code == 200
     assert len(hist_res.get_json()["data"]) == 0
+
+
+def test_certificate_only_for_checked_in_participants_and_team_members(admin_client):
+    """Test that team member records load without error and only checked-in participants can receive certificates."""
+    # 1. Register a team with leader and member
+    reg_res = admin_client.post(
+        "/api/registrations",
+        json={
+            "registration_type": "team",
+            "team_name": "CheckinCertTeam",
+            "domain": "AI & Machine Learning",
+            "leader": {
+                "name": "Team Lead Priya",
+                "email": "priya.lead@test.edu",
+                "phone": "9876543210",
+                "college": "Tech University",
+                "department": "CSE",
+                "year_of_study": "4th Year",
+            },
+            "members": [
+                {
+                    "name": "Member Rohan",
+                    "email": "rohan.mem@test.edu",
+                    "phone": "9876543211",
+                    "college": "Tech University",
+                    "department": "CSE",
+                    "year_of_study": "3rd Year",
+                }
+            ],
+        },
+    )
+    assert reg_res.status_code == 201
+    token = reg_res.get_json()["checkin_token"]
+
+    # 2. Query participants with checkin=all - verifies TeamMember attribute access works and returns both
+    all_res = admin_client.get("/api/admin/certificates/participants?checkin=all&payment=all")
+    assert all_res.status_code == 200
+    all_data = all_res.get_json()["data"]
+    priya_entry = next((p for p in all_data if p["email"] == "priya.lead@test.edu"), None)
+    rohan_entry = next((p for p in all_data if p["email"] == "rohan.mem@test.edu"), None)
+    assert priya_entry is not None
+    assert rohan_entry is not None
+    assert rohan_entry["name"] == "Member Rohan"
+    assert rohan_entry["role"] == "Team Member"
+    assert rohan_entry["is_checked_in"] is False
+
+    # 3. Query participants with checkin=checked_in - before check-in, neither should appear
+    checked_res = admin_client.get("/api/admin/certificates/participants?checkin=checked_in&payment=all")
+    assert checked_res.status_code == 200
+    checked_data = checked_res.get_json()["data"]
+    assert not any(p["email"] == "rohan.mem@test.edu" for p in checked_data)
+
+    # 4. Attempting to issue certificate to unchecked-in participant must be rejected (400)
+    send_reject = admin_client.post(
+        "/api/admin/certificates/send-single",
+        json={"participant_id": rohan_entry["id"]},
+    )
+    assert send_reject.status_code == 400
+    assert "not completed event check-in" in send_reject.get_json()["error"]
+
+    # 5. Check in the team using their checkin_token
+    checkin_res = admin_client.post(
+        "/api/admin/checkin",
+        json={"code": token, "coordinator_name": "Admin Coordinator"},
+    )
+    assert checkin_res.status_code == 200
+
+    # 6. Query participants with checkin=checked_in - now both leader and member MUST appear
+    after_checkin = admin_client.get("/api/admin/certificates/participants?checkin=checked_in&payment=all")
+    assert after_checkin.status_code == 200
+    after_data = after_checkin.get_json()["data"]
+    rohan_after = next((p for p in after_data if p["email"] == "rohan.mem@test.edu"), None)
+    assert rohan_after is not None
+    assert rohan_after["is_checked_in"] is True
+
+    # 7. Issue certificate to checked-in member - now succeeds!
+    send_ok = admin_client.post(
+        "/api/admin/certificates/send-single",
+        json={"participant_id": rohan_after["id"]},
+    )
+    assert send_ok.status_code == 200
+    assert send_ok.get_json()["success"] is True
+
 
 
 

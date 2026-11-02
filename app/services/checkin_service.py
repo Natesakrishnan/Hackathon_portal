@@ -40,13 +40,17 @@ def resolve_checkin_code(raw_code: str) -> Optional[Registration]:
         except Exception as e:
             logger.debug(f"Could not parse code as JSON: {e}")
 
-    # Case 2: Exact checkin_token match
+    # Case 2: Checkin token match (exact or case-insensitive)
     reg_by_token = Registration.query.filter_by(checkin_token=cleaned).first()
+    if not reg_by_token:
+        reg_by_token = Registration.query.filter(db.func.lower(Registration.checkin_token) == cleaned.lower()).first()
     if reg_by_token:
         return reg_by_token
 
-    # Case 3: Exact public_id match
+    # Case 3: Public registration ID match (exact or case-insensitive)
     reg_by_ref = Registration.query.filter_by(public_id=cleaned).first()
+    if not reg_by_ref:
+        reg_by_ref = Registration.query.filter(db.func.lower(Registration.public_id) == cleaned.lower()).first()
     if reg_by_ref:
         return reg_by_ref
 

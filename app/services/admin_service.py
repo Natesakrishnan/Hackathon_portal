@@ -193,6 +193,9 @@ def get_single_registration(ref_or_id: str) -> Optional[Dict[str, Any]]:
         reg = Registration.query.get(int(ref_or_id))
     else:
         reg = Registration.query.filter_by(public_id=ref_or_id).first()
+        if not reg and isinstance(ref_or_id, str):
+            clean_ref = ref_or_id.strip()
+            reg = Registration.query.filter(db.func.lower(Registration.public_id) == clean_ref.lower()).first()
 
     if reg and not reg.checkin_token:
         import secrets, string
@@ -400,7 +403,9 @@ def export_summary_report_csv() -> str:
 
     # Overview Metadata
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    writer.writerow([sanitize_csv_cell("SYNEX 2026 Hackathon — Executive & Financial Report")])
+    from app.models.event_setting import EventSetting
+    evt_name = EventSetting.get_val("EVENT_NAME", "SYNEX 2026")
+    writer.writerow([sanitize_csv_cell(f"{evt_name} Hackathon — Executive & Financial Report")])
     writer.writerow([sanitize_csv_cell("Generated At"), sanitize_csv_cell(now_str)])
     writer.writerow([sanitize_csv_cell("Data Source"), sanitize_csv_cell("Production MySQL Database (Real Records)")])
     writer.writerow([])
@@ -462,7 +467,9 @@ def export_domain_report_csv() -> str:
     writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
 
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    writer.writerow([sanitize_csv_cell("SYNEX 2026 Hackathon — Innovation Domain Distribution Report")])
+    from app.models.event_setting import EventSetting
+    evt_name = EventSetting.get_val("EVENT_NAME", "SYNEX 2026")
+    writer.writerow([sanitize_csv_cell(f"{evt_name} Hackathon — Innovation Domain Distribution Report")])
     writer.writerow([sanitize_csv_cell("Generated At"), sanitize_csv_cell(now_str)])
     writer.writerow([])
 

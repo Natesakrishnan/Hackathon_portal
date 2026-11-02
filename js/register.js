@@ -9,6 +9,7 @@ const REG_CONFIG = {
   individualFee: 250,
   teamFee: 500,
   perMemberFee: 250,
+  mealsFee: 0,
   currency: "₹",
   minTeamSize: 2,
   maxTeamSize: 4,
@@ -24,7 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
  * Recalculates total team fee in real-time based on member count
  */
 function updateDynamicPricing() {
-  const totalAmount = REG_CONFIG.currentTeamSize * REG_CONFIG.perMemberFee;
+  const baseAmount = REG_CONFIG.currentTeamSize * REG_CONFIG.perMemberFee;
+  const meals = REG_CONFIG.mealsFee || 0;
+  const totalAmount = baseAmount + meals;
 
   // Banner Calculation Display
   const bannerMembers = document.getElementById("bannerCalcMembers");
@@ -32,7 +35,7 @@ function updateDynamicPricing() {
   const bannerTotal = document.getElementById("bannerCalcTotal");
   if (bannerMembers) bannerMembers.textContent = REG_CONFIG.currentTeamSize;
   if (bannerRate) bannerRate.textContent = REG_CONFIG.perMemberFee;
-  if (bannerTotal) bannerTotal.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+  if (bannerTotal) bannerTotal.textContent = `${REG_CONFIG.currency}${baseAmount}`;
 
   // Team Size Badge in form section
   const sizeBadge = document.getElementById("teamSizeBadge");
@@ -42,13 +45,23 @@ function updateDynamicPricing() {
 
   // Sidebar Summary
   const summaryFeeEl = document.getElementById("summaryBaseFee");
+  const summaryMealsEl = document.getElementById("summaryMealsFee");
   const summaryTotalEl = document.getElementById("summaryTotalPrice");
   const summaryMembersCount = document.getElementById("summaryMembersCount");
   const summaryRegType = document.getElementById("summaryRegType");
   const summaryRate = document.getElementById("summaryRatePerPerson");
   if (summaryRegType) summaryRegType.textContent = "Team Registration";
   if (summaryRate) summaryRate.textContent = `${REG_CONFIG.currency}${REG_CONFIG.perMemberFee}`;
-  if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+  if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${baseAmount}`;
+  if (summaryMealsEl) {
+    if (meals > 0) {
+      summaryMealsEl.className = "badge badge-primary";
+      summaryMealsEl.textContent = `${REG_CONFIG.currency}${meals}`;
+    } else {
+      summaryMealsEl.className = "badge badge-success";
+      summaryMealsEl.textContent = "Included";
+    }
+  }
   if (summaryTotalEl) summaryTotalEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
   if (summaryMembersCount) {
     summaryMembersCount.textContent = `${REG_CONFIG.currentTeamSize} Members (1 Leader + ${REG_CONFIG.currentTeamSize - 1} Members)`;
@@ -56,8 +69,20 @@ function updateDynamicPricing() {
 
   // Step 2 Review Fee Elements
   const reviewFeeEl = document.getElementById("reviewBaseFee");
+  const reviewMealsEl = document.getElementById("reviewMealsFee");
   const reviewTotalEl = document.getElementById("reviewTotalAmount");
-  if (reviewFeeEl) reviewFeeEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
+  if (reviewFeeEl) reviewFeeEl.textContent = `${REG_CONFIG.currency}${baseAmount} (${REG_CONFIG.currentTeamSize} members × ${REG_CONFIG.currency}${REG_CONFIG.perMemberFee})`;
+  if (reviewMealsEl) {
+    if (meals > 0) {
+      reviewMealsEl.style.color = "var(--color-text-main)";
+      reviewMealsEl.style.fontWeight = "700";
+      reviewMealsEl.textContent = `${REG_CONFIG.currency}${meals}`;
+    } else {
+      reviewMealsEl.style.color = "var(--color-success)";
+      reviewMealsEl.style.fontWeight = "600";
+      reviewMealsEl.textContent = "Included (₹0.00)";
+    }
+  }
   if (reviewTotalEl) reviewTotalEl.textContent = `${REG_CONFIG.currency}${totalAmount}`;
 }
 
@@ -72,6 +97,7 @@ async function fetchEventFees() {
       if (data.per_member_fee !== undefined) REG_CONFIG.perMemberFee = data.per_member_fee;
       if (data.individual_fee !== undefined) REG_CONFIG.individualFee = data.individual_fee;
       if (data.team_fee !== undefined) REG_CONFIG.teamFee = data.team_fee;
+      if (data.meals_fee !== undefined) REG_CONFIG.mealsFee = data.meals_fee;
       if (data.min_team_members !== undefined) REG_CONFIG.minTeamSize = data.min_team_members;
       if (data.max_team_members !== undefined) REG_CONFIG.maxTeamSize = data.max_team_members;
       if (data.currency) REG_CONFIG.currency = data.currency === "INR" ? "₹" : data.currency;
@@ -83,6 +109,8 @@ async function fetchEventFees() {
       if (REG_CONFIG.currentTeamSize > REG_CONFIG.maxTeamSize) {
         REG_CONFIG.currentTeamSize = REG_CONFIG.maxTeamSize;
       }
+
+      updateDynamicPricing();
 
       // Update UI elements in banner
       const limitBadge = document.getElementById("teamSizeLimitBadge");
@@ -656,14 +684,42 @@ function advanceToStep2(result, payload, isTeam) {
 
   // Server-calculated Entry Fee with member count breakdown
   const totalCount = (payload.members ? payload.members.length : 0) + 1;
-  const calculatedFee = result.entry_fee || (totalCount * REG_CONFIG.perMemberFee);
-  if (reviewBaseFee) reviewBaseFee.textContent = `${REG_CONFIG.currency}${calculatedFee} (${totalCount} members × ${REG_CONFIG.currency}${REG_CONFIG.perMemberFee})`;
+  const perMember = REG_CONFIG.perMemberFee;
+  const baseFee = result.base_fee !== undefined ? result.base_fee : (totalCount * perMember);
+  const mealsFee = result.meals_fee !== undefined ? result.meals_fee : (REG_CONFIG.mealsFee || 0);
+  const calculatedFee = result.entry_fee !== undefined ? result.entry_fee : (baseFee + mealsFee);
+
+  if (reviewBaseFee) reviewBaseFee.textContent = `${REG_CONFIG.currency}${baseFee} (${totalCount} members × ${REG_CONFIG.currency}${perMember})`;
+
+  const reviewMealsEl = document.getElementById("reviewMealsFee");
+  if (reviewMealsEl) {
+    if (mealsFee > 0) {
+      reviewMealsEl.style.color = "var(--color-text-main)";
+      reviewMealsEl.style.fontWeight = "700";
+      reviewMealsEl.textContent = `${REG_CONFIG.currency}${mealsFee}`;
+    } else {
+      reviewMealsEl.style.color = "var(--color-success)";
+      reviewMealsEl.style.fontWeight = "600";
+      reviewMealsEl.textContent = "Included (₹0.00)";
+    }
+  }
+
   if (reviewTotalAmount) reviewTotalAmount.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
 
   // Update Summary Sidebar if present
   const summaryFeeEl = document.getElementById("summaryBaseFee");
+  const summaryMealsEl = document.getElementById("summaryMealsFee");
   const summaryTotalEl = document.getElementById("summaryTotalPrice");
-  if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
+  if (summaryFeeEl) summaryFeeEl.textContent = `${REG_CONFIG.currency}${baseFee}`;
+  if (summaryMealsEl) {
+    if (mealsFee > 0) {
+      summaryMealsEl.className = "badge badge-primary";
+      summaryMealsEl.textContent = `${REG_CONFIG.currency}${mealsFee}`;
+    } else {
+      summaryMealsEl.className = "badge badge-success";
+      summaryMealsEl.textContent = "Included";
+    }
+  }
   if (summaryTotalEl) summaryTotalEl.textContent = `${REG_CONFIG.currency}${calculatedFee}`;
 
   // 4. Wire Action Buttons
@@ -733,13 +789,53 @@ function escapeHtml(str) {
 /**
  * Check if a draft exists in sessionStorage and restore fields
  */
-function restoreDraftIfPresent() {
+async function restoreDraftIfPresent() {
   try {
+    let draft = null;
     const rawDraft = sessionStorage.getItem("synex_registration_draft");
-    if (!rawDraft) return;
+    if (rawDraft) {
+      try {
+        draft = JSON.parse(rawDraft);
+      } catch (e) {}
+    }
 
-    const draft = JSON.parse(rawDraft);
-    if (!draft || !draft.participantName) return;
+    // If no session draft, check URL ?ref=... parameter
+    const urlRef = new URLSearchParams(window.location.search).get("ref");
+    if (!draft && urlRef) {
+      try {
+        const res = await fetch(`/api/registrations/${encodeURIComponent(urlRef)}`);
+        if (res.ok) {
+          const json = await res.json();
+          const r = json.registration;
+          if (r) {
+            draft = {
+              referenceId: r.public_id,
+              type: r.registration_type === "team" ? "Team" : "Individual",
+              participantName: r.participant ? r.participant.full_name : "",
+              email: r.participant ? r.participant.email : "",
+              mobile: r.participant ? r.participant.phone : "",
+              college: r.participant ? r.participant.college : "",
+              department: r.participant ? r.participant.department : "",
+              yearOfStudy: r.participant ? r.participant.year_of_study : "",
+              domain: r.domain || "",
+              teamName: r.team ? r.team.team_name : "",
+              teamSize: r.team && r.team.members ? r.team.members.length + 1 : 2,
+              members: r.team && r.team.members ? r.team.members.map(m => ({
+                full_name: m.full_name,
+                email: m.email,
+                phone: m.phone,
+                department: m.department || "",
+                year_of_study: m.year_of_study || "",
+              })) : [],
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("Could not fetch registration for edit:", e);
+      }
+    }
+
+    if (!draft) return;
 
     const fullName = document.getElementById("fullName");
     const email = document.getElementById("email");
@@ -749,13 +845,13 @@ function restoreDraftIfPresent() {
     const yearOfStudy = document.getElementById("yearOfStudy");
     const domain = document.getElementById("domain");
 
-    if (fullName) fullName.value = draft.participantName || "";
-    if (email) email.value = draft.email || "";
-    if (mobile) mobile.value = draft.mobile || "";
-    if (college) college.value = draft.college || "";
-    if (department) department.value = draft.department || "";
-    if (yearOfStudy) yearOfStudy.value = draft.yearOfStudy || "";
-    if (domain) domain.value = draft.domain || "";
+    if (fullName && draft.participantName) fullName.value = draft.participantName;
+    if (email && draft.email) email.value = draft.email;
+    if (mobile && draft.mobile) mobile.value = draft.mobile;
+    if (college && draft.college) college.value = draft.college;
+    if (department && draft.department) department.value = draft.department;
+    if (yearOfStudy && draft.yearOfStudy) yearOfStudy.value = draft.yearOfStudy;
+    if (domain && draft.domain) domain.value = draft.domain;
 
     if (draft.type === "Team") {
       const teamRadio = document.getElementById("typeTeam");
@@ -764,7 +860,32 @@ function restoreDraftIfPresent() {
         teamRadio.dispatchEvent(new Event("change"));
       }
       const teamName = document.getElementById("teamName");
-      if (teamName) teamName.value = draft.teamName || "";
+      if (teamName && draft.teamName) teamName.value = draft.teamName;
+
+      // Adjust team size and populate member inputs
+      if (draft.teamSize && draft.teamSize >= REG_CONFIG.minTeamSize) {
+        REG_CONFIG.currentTeamSize = draft.teamSize;
+        if (typeof window.renderTeamMembersFunc === "function") {
+          window.renderTeamMembersFunc();
+        }
+        updateDynamicPricing();
+
+        if (Array.isArray(draft.members)) {
+          draft.members.forEach((m, idx) => {
+            const memberIdx = idx + 2;
+            const mName = document.getElementById(`member_${memberIdx}_name`);
+            const mEmail = document.getElementById(`member_${memberIdx}_email`);
+            const mPhone = document.getElementById(`member_${memberIdx}_phone`);
+            const mDept = document.getElementById(`member_${memberIdx}_dept`);
+            const mYear = document.getElementById(`member_${memberIdx}_year`);
+            if (mName && m.full_name) mName.value = m.full_name;
+            if (mEmail && m.email) mEmail.value = m.email;
+            if (mPhone && m.phone) mPhone.value = m.phone;
+            if (mDept && m.department) mDept.value = m.department;
+            if (mYear && m.year_of_study) mYear.value = m.year_of_study;
+          });
+        }
+      }
     }
   } catch (err) {
     console.error("Error restoring draft:", err);

@@ -1,9 +1,13 @@
 import os
+import secrets
+import string
+from sqlalchemy import inspect, text
 from config import Config
 from app import create_app
 from app.extensions import db
 from app.models.admin import Admin
 from app.models.event_setting import EventSetting
+from app.models.registration import Registration
 
 app = create_app(os.environ.get("FLASK_ENV", "development"))
 
@@ -21,6 +25,8 @@ def auto_setup():
                 EventSetting.set_val("EVENT_TEAM_FEE", "999", "Team Registration Fee in INR")
             if not EventSetting.query.filter_by(key="EVENT_PER_MEMBER_FEE").first():
                 EventSetting.set_val("EVENT_PER_MEMBER_FEE", "250", "Registration Fee Per Team Member in INR")
+            if not EventSetting.query.filter_by(key="EVENT_MEALS_FEE").first():
+                EventSetting.set_val("EVENT_MEALS_FEE", "0", "Swag Kit & Meals Surcharge in INR")
             if not EventSetting.query.filter_by(key="MIN_TEAM_MEMBERS").first():
                 EventSetting.set_val("MIN_TEAM_MEMBERS", "2", "Minimum Team Members Required")
             if not EventSetting.query.filter_by(key="MAX_TEAM_MEMBERS").first():
@@ -42,7 +48,7 @@ def auto_setup():
                     role="admin",
                     is_active_account=True,
                 )
-                admin.set_password("Admin@SYNEX2026")
+                admin.set_password(os.environ.get("ADMIN_PASSWORD", "hack@07"))
                 db.session.add(admin)
                 db.session.commit()
                 print("[OK] Default administrator ready: username='admin'")
@@ -63,23 +69,20 @@ def auto_setup():
                 print("[OK] Confidential Settings Administrator ready: username='krish@01'")
 
             # Check-in columns schema migration & token backfill
-            from sqlalchemy import inspect
-            from app.models.registration import Registration
-            import secrets, string
             insp = inspect(db.engine)
             if "registrations" in insp.get_table_names():
                 existing_cols = {c["name"] for c in insp.get_columns("registrations")}
                 with db.engine.connect() as conn:
                     if "checkin_token" not in existing_cols:
-                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checkin_token VARCHAR(64) UNIQUE NULL"))
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN checkin_token VARCHAR(64) UNIQUE NULL"))
                     if "is_checked_in" not in existing_cols:
-                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN is_checked_in BOOLEAN DEFAULT FALSE NOT NULL"))
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN is_checked_in BOOLEAN DEFAULT FALSE NOT NULL"))
                     if "checked_in_at" not in existing_cols:
-                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checked_in_at DATETIME NULL"))
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN checked_in_at DATETIME NULL"))
                     if "checked_in_by" not in existing_cols:
-                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checked_in_by VARCHAR(120) NULL"))
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN checked_in_by VARCHAR(120) NULL"))
                     if "checkin_notes" not in existing_cols:
-                        conn.execute(db.text("ALTER TABLE registrations ADD COLUMN checkin_notes VARCHAR(255) NULL"))
+                        conn.execute(text("ALTER TABLE registrations ADD COLUMN checkin_notes VARCHAR(255) NULL"))
                     conn.commit()
 
             # Backfill any existing registrations that lack a check-in token
@@ -103,6 +106,6 @@ if __name__ == "__main__":
     print(f"   - Public Portal:     http://localhost:{port}")
     print(f"   - Registration:      http://localhost:{port}/register")
     print(f"   - Admin Dashboard:   http://localhost:{port}/admin/dashboard")
-    print(f"   - Admin Login:       http://localhost:{port}/admin/login (admin / Admin@SYNEX2026)")
+    print(f"   - Admin Login:       http://localhost:{port}/admin/login (admin / hack@07)")
     print(f"=======================================================\n")
     app.run(host="0.0.0.0", port=port, debug=True)

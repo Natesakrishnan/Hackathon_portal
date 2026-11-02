@@ -70,6 +70,7 @@ def create_app(config_name: str = None) -> Flask:
             indiv_fee = int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", app.config.get("EVENT_INDIVIDUAL_FEE", 299)))
             team_fee = int(EventSetting.get_val("EVENT_TEAM_FEE", app.config.get("EVENT_TEAM_FEE", 999)))
             per_member_fee = int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", app.config.get("EVENT_PER_MEMBER_FEE", 250)))
+            meals_fee = int(EventSetting.get_val("EVENT_MEALS_FEE", app.config.get("EVENT_MEALS_FEE", 0)))
             min_team_members = int(EventSetting.get_val("MIN_TEAM_MEMBERS", app.config.get("MIN_TEAM_MEMBERS", 2)))
             max_team_members = int(EventSetting.get_val("MAX_TEAM_MEMBERS", app.config.get("MAX_TEAM_MEMBERS", 4)))
             prize_pool = EventSetting.get_val("TOTAL_PRIZE_POOL", app.config.get("TOTAL_PRIZE_POOL", "₹2,50,000"))
@@ -78,16 +79,23 @@ def create_app(config_name: str = None) -> Flask:
             indiv_fee = app.config.get("EVENT_INDIVIDUAL_FEE", 299)
             team_fee = app.config.get("EVENT_TEAM_FEE", 999)
             per_member_fee = app.config.get("EVENT_PER_MEMBER_FEE", 250)
+            meals_fee = app.config.get("EVENT_MEALS_FEE", 0)
             min_team_members = app.config.get("MIN_TEAM_MEMBERS", 2)
             max_team_members = app.config.get("MAX_TEAM_MEMBERS", 4)
             prize_pool = app.config.get("TOTAL_PRIZE_POOL", "₹2,50,000")
 
+        event_short_name = event_name.split()[0] if event_name else "SYNEX"
+        brand_initial = event_name[0].upper() if event_name else "S"
+
         return {
             "current_year": datetime.utcnow().year,
             "event_name": event_name,
+            "event_short_name": event_short_name,
+            "brand_initial": brand_initial,
             "individual_fee": indiv_fee,
             "team_fee": team_fee,
             "per_member_fee": per_member_fee,
+            "meals_fee": meals_fee,
             "min_team_members": min_team_members,
             "max_team_members": max_team_members,
             "prize_pool": prize_pool,
@@ -235,7 +243,7 @@ def register_cli_commands(app: Flask):
     @app.cli.command("create-admin")
     @click.option("--username", default="admin", help="Admin username")
     @click.option("--email", default="admin@synex.org", help="Admin email")
-    @click.option("--password", default="Admin@SYNEX2026", help="Admin password")
+    @click.option("--password", default="hack@07", help="Admin password")
     @click.option("--name", default="Portal Administrator", help="Full name")
     def create_admin(username, email, password, name):
         """Creates an administrator account with hashed password."""
@@ -277,7 +285,7 @@ def register_cli_commands(app: Flask):
                 full_name="Portal Administrator",
                 role="admin",
             )
-            admin.set_password("Admin@SYNEX2026")
+            admin.set_password("hack@07")
             db.session.add(admin)
             db.session.commit()
 

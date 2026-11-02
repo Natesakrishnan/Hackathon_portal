@@ -479,3 +479,118 @@ def test_team_registration_max_team_members_validation(client):
     assert "cannot exceed 2 members total" in res_fail.get_json()["error"]
 
 
+def test_registration_fee_with_meals_surcharge(client):
+    """Test that setting meals surcharge in EventSettings accurately reflects in entry_fee and breakdown."""
+    EventSetting.set_val("EVENT_PER_MEMBER_FEE", "200")
+    EventSetting.set_val("EVENT_MEALS_FEE", "75")
+
+    # 1. Individual registration: base 200 + meals 75 = 275
+    indiv_payload = {
+        "registration_type": "individual",
+        "domain": "AI & Machine Learning",
+        "name": "Single Hacker",
+        "email": "single.meals@college.edu",
+        "phone": "9876543999",
+        "college": "Meals Institute",
+        "department": "IT",
+        "year_of_study": "3rd Year",
+    }
+    res_indiv = client.post("/api/registrations", json=indiv_payload)
+    assert res_indiv.status_code == 201
+    indiv_data = res_indiv.get_json()
+    assert indiv_data["entry_fee"] == 275
+    assert indiv_data["base_fee"] == 200
+    assert indiv_data["meals_fee"] == 75
+
+    # 2. Team registration (2 members): base 2 * 200 = 400 + meals 75 = 475
+    team_payload = {
+        "registration_type": "team",
+        "team_name": "Meals Team",
+        "domain": "Cloud & Cybersecurity",
+        "leader": {
+            "name": "Team Leader Meals",
+            "email": "lead.meals@college.edu",
+            "phone": "9876543888",
+            "college": "Meals Institute",
+            "department": "CSE",
+            "year_of_study": "2nd Year",
+        },
+        "members": [
+            {
+                "name": "Member Two Meals",
+                "email": "mem2.meals@college.edu",
+                "phone": "9876543777",
+                "college": "Meals Institute",
+                "department": "CSE",
+                "year_of_study": "2nd Year",
+            }
+        ],
+    }
+    res_team = client.post("/api/registrations", json=team_payload)
+    assert res_team.status_code == 201
+    team_data = res_team.get_json()
+    assert team_data["entry_fee"] == 475
+    assert team_data["base_fee"] == 400
+    assert team_data["meals_fee"] == 75
+
+    # 3. Verify single registration GET endpoint returns base_fee and meals_fee
+    get_res = client.get(f"/api/registrations/{team_data['registration_id']}")
+    assert get_res.status_code == 200
+    reg_obj = get_res.get_json()["registration"]
+    assert reg_obj["entry_fee"] == 475
+    assert reg_obj["base_fee"] == 400
+    assert reg_obj["meals_fee"] == 75
+
+
+def test_registration_id_format_matches_event_name(client):
+    """Test that registration IDs are dynamically generated in the format {event_name}-{unique id}."""
+    # 1. Test with 'Hackathon'
+    EventSetting.set_val("EVENT_NAME", "Hackathon")
+    payload1 = {
+        "registration_type": "individual",
+        "domain": "AI & Machine Learning",
+        "full_name": "Event Hacker One",
+        "email": "hacker1@event.edu",
+        "phone": "9876543111",
+        "college": "Event Institute",
+        "department": "IT",
+        "year_of_study": "3rd Year",
+    }
+    res1 = client.post("/api/registrations", json=payload1)
+    assert res1.status_code == 201
+    data1 = res1.get_json()
+    reg_id_1 = data1["registration_id"]
+    assert reg_id_1.startswith("HACKATHON-")
+    # Verify unique ID part (after prefix) is 6 alphanumeric characters
+    unique_part_1 = reg_id_1.replace("HACKATHON-", "")
+    assert len(unique_part_1) == 6
+    assert unique_part_1.isalnum()
+
+    # 2. Test case-insensitive lookup
+    lookup_res = client.get(f"/api/registrations/{reg_id_1.lower()}")
+    assert lookup_res.status_code == 200
+    assert lookup_res.get_json()["registration"]["public_id"] == reg_id_1
+
+    # 3. Test with a multi-word event name 'TechFest 2026'
+    EventSetting.set_val("EVENT_NAME", "TechFest 2026")
+    payload2 = {
+        "registration_type": "individual",
+        "domain": "IoT & Embedded Systems",
+        "full_name": "Event Hacker Two",
+        "email": "hacker2@event.edu",
+        "phone": "9876543222",
+        "college": "TechFest College",
+        "department": "ECE",
+        "year_of_study": "4th Year",
+    }
+    res2 = client.post("/api/registrations", json=payload2)
+    assert res2.status_code == 201
+    data2 = res2.get_json()
+    reg_id_2 = data2["registration_id"]
+    assert reg_id_2.startswith("TECHFEST-2026-")
+    unique_part_2 = reg_id_2.replace("TECHFEST-2026-", "")
+    assert len(unique_part_2) == 6
+    assert unique_part_2.isalnum()
+
+
+

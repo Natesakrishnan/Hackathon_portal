@@ -304,7 +304,7 @@ Database backend: MySQL (Host: 127.0.0.1:3306, DB: synex_hackathon)
    - Public Portal:     http://localhost:5000
    - Registration:      http://localhost:5000/register
    - Admin Dashboard:   http://localhost:5000/admin/dashboard
-   - Admin Login:       http://localhost:5000/admin/login (admin / Admin@SYNEX2026)
+   - Admin Login:       http://localhost:5000/admin/login (admin / hack@07)
 =======================================================
 ```
 
@@ -344,7 +344,7 @@ Expected result: **`41 passed in 7.79s`**.
 | **Registration Flow** | `http://localhost:5000/register` | Individual or team registration |
 | **Payment Checkout** | `http://localhost:5000/payment` | Razorpay checkout preview |
 | **Confirmation Pass** | `http://localhost:5000/confirmation` | Printable badge & confirmation |
-| **Organizer Login** | `http://localhost:5000/admin/login` | **Username:** `admin`<br>**Password:** `Admin@SYNEX2026` |
+| **Organizer Login** | `http://localhost:5000/admin/login` | **Username:** `admin`<br>**Password:** `hack@07` |
 | **Event Settings (Confidential)** | `http://localhost:5000/admin/dashboard#settings` | **Username:** `krish@01`<br>**Password:** `@asdfg123` |
 | **Admin Dashboard** | `http://localhost:5000/admin/dashboard` | Organizer console & real-time analytics |
 | **Event Rules** | `http://localhost:5000/rules` | Eligibility, IP & evaluation rubric |

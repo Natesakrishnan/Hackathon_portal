@@ -53,6 +53,7 @@ class Config:
     EVENT_INDIVIDUAL_FEE = int(os.environ.get("EVENT_INDIVIDUAL_FEE", 299))
     EVENT_TEAM_FEE = int(os.environ.get("EVENT_TEAM_FEE", 999))
     EVENT_PER_MEMBER_FEE = int(os.environ.get("EVENT_PER_MEMBER_FEE", 250))
+    EVENT_MEALS_FEE = int(os.environ.get("EVENT_MEALS_FEE", 0))
     EVENT_CURRENCY = os.environ.get("EVENT_CURRENCY", "INR")
     MIN_TEAM_MEMBERS = int(os.environ.get("MIN_TEAM_MEMBERS", 2))
     MAX_TEAM_MEMBERS = int(os.environ.get("MAX_TEAM_MEMBERS", 4))

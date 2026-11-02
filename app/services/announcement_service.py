@@ -105,6 +105,8 @@ def create_and_dispatch_announcement(
                 delivered_count = 0
                 failed_count = 0
                 last_err = ""
+                from app.models.event_setting import EventSetting
+                evt_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
 
                 announcement_html = f"""
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #E2E8F0; border-radius: 12px; background: #FFFFFF;">
@@ -114,7 +116,7 @@ def create_and_dispatch_announcement(
                   </div>
                   <div style="color: #334155; font-size: 15px; line-height: 1.7; white-space: pre-wrap; padding: 0 4px;">{message}</div>
                   <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8; text-align: center;">
-                    <p style="margin: 0;">SYNEX 2026 Hackathon &bull; Campus Innovation Hub, Bengaluru &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
+                    <p style="margin: 0;">{evt_name} Hackathon &bull; Campus Innovation Hub, Bengaluru &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
                   </div>
                 </div>
                 """
@@ -123,7 +125,7 @@ def create_and_dispatch_announcement(
                     try:
                         ok, res_msg, _ = dispatch_email(
                             to_email=recipient_email,
-                            subject=f"[SYNEX 2026 Announcement] {title}",
+                            subject=f"[{evt_name} Announcement] {title}",
                             body_text=message,
                             body_html=announcement_html,
                             email_type="announcement",
