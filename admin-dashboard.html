@@ -1370,17 +1370,10 @@
                           <span>Resend HTTPS API <span
                               style="font-size: 0.75rem; background: #F1F5F9; color: #475569; padding: 2px 6px; border-radius: 3px;">Sandbox / Custom Domain</span></span>
                         </label>
-                        <label
-                          style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; cursor: pointer; font-weight: 600; color: #1E293B;">
-                          <input type="radio" name="emailProviderRadio" value="smtp" id="providerRadioSmtp">
-                          <span>Standard SMTP Server <span
-                              style="font-size: 0.75rem; background: #F1F5F9; color: #475569; padding: 2px 6px; border-radius: 3px;">Ports
-                              587 / 465</span></span>
-                        </label>
                       </div>
                       <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted);">
                         <i class="fa-solid fa-lightbulb" style="color: #F59E0B;"></i>
-                        <strong>Port 443 HTTPS Delivery:</strong> Brevo &amp; Resend connect via HTTPS REST API (Port 443) which works reliably on mobile hotspot &amp; cloud servers. Brevo allows sending 300 free emails/day to <em>any</em> recipient email without owning a domain.
+                        <strong>Port 443 HTTPS Delivery:</strong> Both providers connect via secure HTTPS REST API (Port 443), which is 100% immune to ISP &amp; cloud server port blocking (ports 587/465). Brevo allows sending 300 free emails/day to <em>any</em> recipient email without owning a domain.
                       </div>
                     </div>
 
@@ -1428,8 +1421,8 @@
                             Notice:</strong> Test keys (<code>onboarding@resend.dev</code>) route passes to your
                           verified Resend account. To deliver directly to external student/team leader email inboxes,
                           verify your domain at <a href="https://resend.com/domains" target="_blank" rel="noopener"
-                            style="color: #2563EB; text-decoration: underline;">resend.com/domains</a> or select
-                          <strong>Standard SMTP Server</strong> below with Gmail.
+                            style="color: #2563EB; text-decoration: underline;">resend.com/domains</a> or switch to
+                          <strong>Brevo HTTPS API</strong> above.
                         </span>
                       </div>
                       <div class="admin-form-group">
@@ -1438,63 +1431,6 @@
                           placeholder="SYNEX Hackathon &lt;onboarding@resend.dev&gt;">
                         <span class="form-helper">Use <code>SYNEX Hackathon &lt;onboarding@resend.dev&gt;</code> for
                           testing, or your verified domain.</span>
-                      </div>
-                    </div>
-
-                    <!-- SMTP Fields Group -->
-                    <div id="smtpFieldsGroup" style="display: none;">
-                      <div class="admin-form-grid">
-                        <div class="admin-form-group">
-                          <label for="smtpHost">SMTP Host Server <span
-                              style="color: var(--color-error);">*</span></label>
-                          <input type="text" id="smtpHost" class="admin-form-control" placeholder="smtp.gmail.com">
-                          <span class="form-helper">e.g., smtp.gmail.com or smtp.office365.com</span>
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label for="smtpPort">SMTP Port <span style="color: var(--color-error);">*</span></label>
-                          <input type="number" id="smtpPort" class="admin-form-control" placeholder="587" min="1"
-                            max="65535">
-                          <span class="form-helper">587 (STARTTLS) or 465 (SSL)</span>
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label for="smtpUsername">SMTP Username / Email <span
-                              style="color: var(--color-error);">*</span></label>
-                          <input type="text" id="smtpUsername" class="admin-form-control"
-                            placeholder="organizer@synex2026.org">
-                          <span class="form-helper">Your sending email address or SMTP login username.</span>
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label for="smtpPassword">SMTP Password / App Password</label>
-                          <input type="password" id="smtpPassword" name="smtp_app_pass_no_autofill"
-                            autocomplete="new-password" data-lpignore="true" data-form-type="other"
-                            class="admin-form-control" placeholder="•••••••••••• (Leave blank to keep existing)">
-                          <span class="form-helper">For Gmail, use a 16-character Google App Password (sends to any
-                            recipient domain).</span>
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label for="smtpSender">Default From Sender Header</label>
-                          <input type="text" id="smtpSender" class="admin-form-control"
-                            placeholder="SYNEX Hackathon Team &lt;organizer@synex2026.org&gt;">
-                          <span class="form-helper">Friendly sender header seen in recipient inbox.</span>
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label>Security &amp; Encryption</label>
-                          <div class="admin-checkbox-group" style="padding-top: 0.5rem;">
-                            <label class="admin-checkbox-label">
-                              <input type="checkbox" id="smtpUseTls" checked>
-                              <span>STARTTLS (Recommended for Port 587)</span>
-                            </label>
-                            <label class="admin-checkbox-label">
-                              <input type="checkbox" id="smtpUseSsl">
-                              <span>SSL (Recommended for Port 465)</span>
-                            </label>
-                          </div>
-                        </div>
                       </div>
                     </div>
 

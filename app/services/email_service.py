@@ -22,7 +22,9 @@ def get_smtp_config() -> Dict[str, Any]:
     Prioritizes persistent EventSetting values from database, falling back to Flask config/env.
     Supports both standard SMTP and HTTPS REST API (Resend).
     """
-    provider = EventSetting.get_val("EMAIL_PROVIDER", os.environ.get("EMAIL_PROVIDER", "brevo" if os.environ.get("BREVO_API_KEY") else ("resend" if os.environ.get("RESEND_API_KEY") else "smtp"))).strip().lower()
+    provider = EventSetting.get_val("EMAIL_PROVIDER", os.environ.get("EMAIL_PROVIDER", "brevo")).strip().lower()
+    if provider not in ("brevo", "resend"):
+        provider = "brevo"
     
     raw_brevo_key = EventSetting.get_val("BREVO_API_KEY", os.environ.get("BREVO_API_KEY", "")).strip()
     if raw_brevo_key and not raw_brevo_key.startswith("•"):
@@ -85,7 +87,9 @@ def get_smtp_config() -> Dict[str, Any]:
 
 def save_smtp_config(data: Dict[str, Any]) -> Tuple[bool, str]:
     """Persists updated email delivery configuration into EventSetting."""
-    provider = (data.get("provider") or "smtp").strip().lower()
+    provider = (data.get("provider") or "brevo").strip().lower()
+    if provider not in ("brevo", "resend"):
+        provider = "brevo"
     brevo_key = (data.get("brevo_key") or "").strip()
     brevo_sender_email = (data.get("brevo_sender_email") or data.get("brevo_sender") or "").strip()
     resend_key = (data.get("resend_key") or "").strip()
