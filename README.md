@@ -25,6 +25,11 @@
    - Live registration and payment verification from database
    - Printable participant entry badge with QR placeholder and team member listing (`window.print()`)
    - Automated confirmation email dispatch (with safe console logging fallback if SMTP is omitted)
+5. **Cross-Platform Desktop & Mobile Application (PWA):**
+   - **Desktop Application (Windows, macOS, Linux):** Installable via Chrome, Edge, or Brave into a dedicated, frameless standalone window with a desktop shortcut, app icon, and OS integration (`window-controls-overlay`).
+   - **Mobile Application (Android & iOS):** Installable via "Install App" button / native Android prompt or iOS Safari "Add to Home Screen" with high-DPI maskable icons and full-screen standalone execution.
+   - **Offline Mode:** Service worker (`sw.js`) caches core application shell, allowing participants to view their confirmation pass, 36-hour schedule, and rules even without internet connectivity (`/offline.html`).
+   - **Network Detection:** Dynamic toast notifications alert users when connectivity drops or is restored.
 
 ### Organizer Administration Portal
 1. **Admin Authentication (`/admin/login`):**
@@ -69,7 +74,7 @@
 - **Database:** MySQL 8.0 (via `PyMySQL` and `cryptography`) with automatic zero-friction SQLite fallback for local development
 - **Payment Gateway:** Razorpay Python SDK 2.0 (Test Mode with HMAC verification)
 - **Frontend:** Semantic HTML5, Vanilla CSS3 (Custom Design System with CSS variables), Vanilla JavaScript (ES6+), Chart.js
-- **Testing:** Pytest 8.0+ (47 unit and integration tests covering registration, payment, admin authentication, CSV reports, announcements, event settings, participant reset, public rules & schedule editors)
+- **Testing:** Pytest 8.0+ (90 unit and integration tests covering registration, payment, admin authentication, CSV reports, announcements, event settings, participant reset, check-in QR scanner, certificate generation, PWA application & offline routing)
 
 ---
 

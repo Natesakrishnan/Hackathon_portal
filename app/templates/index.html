@@ -6,8 +6,18 @@
   <title>{{ event_name | default('SYNEX 2026') }} — National Innovation Hackathon</title>
   <meta name="description" content="Join {{ event_name | default('SYNEX 2026') }}, the premier 36-hour national innovation hackathon. Build the future with ₹2,50,000+ in prizes, world-class mentorship, and 1,200+ creators.">
 
-  <!-- Favicon / Brand Icon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+    <!-- PWA & Application Meta (Desktop & Mobile) -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
+  <meta name="application-name" content="SYNEX Hackathon">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,6 +56,10 @@
       </nav>
 
       <div class="nav-cta">
+        <button id="btnPwaInstall" class="btn-pwa-install pwa-hidden" title="Install SYNEX App on Desktop or Mobile">
+          <i class="fa-solid fa-download" aria-hidden="true"></i>
+          <span>Install App</span>
+        </button>
         <a href="register.html" class="btn btn-primary" id="navRegisterBtn">
           <span>Register Now</span>
           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
@@ -59,6 +73,10 @@
 
   <!-- Mobile Navigation Drawer -->
   <div class="mobile-nav" id="mobileNav" aria-label="Mobile Navigation">
+    <button id="btnPwaInstallMobile" class="btn-pwa-install pwa-hidden" style="margin-bottom: 0.5rem; justify-content: center; width: 100%;">
+      <i class="fa-solid fa-download" aria-hidden="true"></i>
+      <span>Install App</span>
+    </button>
     <a href="index.html" class="nav-link">Home</a>
     <a href="#about" class="nav-link">About</a>
     <a href="#domains" class="nav-link">Domains</a>
@@ -83,7 +101,7 @@
             </span>
             <span class="hero-pill">
               <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-              <span>Bengaluru &amp; Hybrid</span>
+              <span id="heroVenueBadge">{{ contact_data.venue_city if contact_data else 'Bengaluru &amp; Hybrid' }}</span>
             </span>
             <span class="hero-pill">
               <i class="fa-solid fa-bolt" aria-hidden="true"></i>
@@ -890,22 +908,22 @@
           <h4 class="footer-title">Event Inquiries</h4>
           <div class="footer-contact-item">
             <i class="fa-solid fa-location-dot"></i>
-            <span>Tech Campus Auditorium, Bengaluru, KA 560001</span>
+            <span id="footerVenueAddress">{{ contact_data.venue_address if contact_data else 'Tech Campus Auditorium, Bengaluru, KA 560001' }}</span>
           </div>
           <div class="footer-contact-item">
             <i class="fa-solid fa-envelope"></i>
-            <span>contact@hackathon.org</span>
+            <span id="footerContactEmail">{{ contact_data.email if contact_data else 'contact@hackathon.org' }}</span>
           </div>
           <div class="footer-contact-item">
             <i class="fa-solid fa-phone"></i>
-            <span>+91 (080) 555-0199</span>
+            <span id="footerContactPhone">{{ contact_data.phone if contact_data else '+91 (080) 555-0199' }}</span>
           </div>
         </div>
       </div>
 
       <div class="footer-bottom">
         <div>
-          &copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} National Hackathon. All rights reserved.
+          &copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} {{ contact_data.organizing_committee if contact_data else 'Organizing Committee' }}. All rights reserved.
         </div>
       </div>
     </div>
@@ -913,5 +931,6 @@
 
   <!-- Scripts -->
   <script src="/js/main.js"></script>
+  <script src="/js/pwa.js" defer></script>
 </body>
 </html>

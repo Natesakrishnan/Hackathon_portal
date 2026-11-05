@@ -49,6 +49,9 @@ from app.services.content_service import (
     get_schedule_content,
     save_schedule_content,
     reset_schedule_to_default,
+    get_contact_content,
+    save_contact_content,
+    reset_contact_to_default,
 )
 from app.services.checkin_service import (
     verify_and_checkin,
@@ -726,6 +729,36 @@ def api_reset_admin_schedule():
     return jsonify({"success": success, "message": message, "data": get_schedule_content()}), 200
 
 
+@admin_bp.route("/api/admin/content/contact", methods=["GET"])
+@login_required
+@settings_auth_required
+def api_get_admin_contact():
+    """Fetches current public contact and venue details for the admin editor."""
+    content = get_contact_content()
+    return jsonify({"success": True, "data": content}), 200
+
+
+@admin_bp.route("/api/admin/content/contact", methods=["PUT"])
+@login_required
+@settings_auth_required
+def api_update_admin_contact():
+    """Updates and publishes public contact and venue details."""
+    data = request.get_json() or {}
+    success, message = save_contact_content(data)
+    status_code = 200 if success else 400
+    return jsonify({"success": success, "message": message, "data": get_contact_content()}), status_code
+
+
+@admin_bp.route("/api/admin/content/contact/reset", methods=["POST"])
+@login_required
+@settings_auth_required
+def api_reset_admin_contact():
+    """Resets public event contact and venue details back to default."""
+    success, message = reset_contact_to_default()
+    return jsonify({"success": success, "message": message, "data": get_contact_content()}), 200
+
+
+
 # ==============================================================================
 # FEATURE 5: INQUIRIES & EMAIL COMMUNICATION
 # ==============================================================================
@@ -1202,7 +1235,7 @@ def api_preview_certificate():
             "team_name": request.args.get("team_name") or "Neural Pioneers",
             "college": request.args.get("college") or "National Institute of Technology",
             "public_id": request.args.get("public_id") or "SYNEX-DEMO",
-            "certificate_id": "SYNEX-CERT-SAMPLE-01",
+            "certificate_id": "CERT-SAMPLE-01",
             "issue_date": datetime.utcnow().strftime("%B %d, %Y")
         }
 
@@ -1253,7 +1286,7 @@ def api_send_single_certificate():
             "team_name": data.get("team_name") or "Solo Participant",
             "college": data.get("college") or "Recognized Institution",
             "public_id": data.get("public_id") or "SYNEX-TEST",
-            "certificate_id": "SYNEX-CERT-DEMO-01",
+            "certificate_id": "CERT-DEMO-01",
             "issue_date": datetime.utcnow().strftime("%B %d, %Y"),
         }
 

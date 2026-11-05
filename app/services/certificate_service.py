@@ -305,7 +305,7 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
     domain = data.get("DOMAIN") or data.get("domain") or "Innovation Track"
     team = data.get("TEAM_NAME") or data.get("team_name") or "Individual"
     college = data.get("COLLEGE") or data.get("college") or "Recognized Institution"
-    cert_id = data.get("CERTIFICATE_ID") or data.get("certificate_id") or "SYNEX-CERT"
+    cert_id = data.get("CERTIFICATE_ID") or data.get("certificate_id") or "CERT"
     issue_date = data.get("ISSUE_DATE") or data.get("date") or datetime.utcnow().strftime("%B %d, %Y")
 
     width, height = landscape(letter) # 792 x 612 pt
@@ -387,6 +387,17 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
     return output_pdf_path
 
 
+def format_certificate_id(public_id: str, index: int = 1) -> str:
+    """
+    Generates a clean certificate verification ID without any SYNEX keyword or prefix.
+    e.g., public_id 'SYNEX-2026-5CQTP5' -> 'CERT-2026-5CQTP5-01'
+    """
+    clean_id = re.sub(r'(?i)SYNEX[-_]?', '', public_id or '').strip('-_')
+    if not clean_id:
+        clean_id = "VERIFIED"
+    return f"CERT-{clean_id}-{index:02d}"
+
+
 def get_participants_for_certificates(
     domain_filter: str = "all",
     paid_only: bool = True,
@@ -421,7 +432,7 @@ def get_participants_for_certificates(
         # 1. Team Leader or Solo Hacker
         lead_role = "Team Leader" if is_team else "Solo Hacker"
         lead_id = f"reg_{reg.id}_lead"
-        cert_id = f"SYNEX-CERT-{reg.public_id}-01"
+        cert_id = format_certificate_id(reg.public_id, 1)
         
         participants_list.append({
             "id": lead_id,
@@ -454,7 +465,7 @@ def get_participants_for_certificates(
                 mem_phone = (part.phone if part else "") or ""
                 mem_college = (part.college if part else "") or lead.college or "N/A"
                 mem_id = f"reg_{reg.id}_mem_{member.id}"
-                mem_cert_id = f"SYNEX-CERT-{reg.public_id}-{member_idx:02d}"
+                mem_cert_id = format_certificate_id(reg.public_id, member_idx)
                 member_idx += 1
 
                 participants_list.append({
@@ -510,7 +521,7 @@ def generate_single_certificate_pdf(participant_data: Dict[str, Any]) -> Tuple[b
         "TEAM_NAME": participant_data.get("team_name") or "Individual",
         "COLLEGE": participant_data.get("college") or "Recognized Institution",
         "INSTITUTION": participant_data.get("college") or "Recognized Institution",
-        "CERTIFICATE_ID": participant_data.get("certificate_id") or f"SYNEX-CERT-{public_id}",
+        "CERTIFICATE_ID": participant_data.get("certificate_id") or format_certificate_id(public_id, 1),
         "REF_ID": public_id,
         "ISSUE_DATE": participant_data.get("issue_date") or datetime.utcnow().strftime("%B %d, %Y"),
         "DATE": participant_data.get("issue_date") or datetime.utcnow().strftime("%B %d, %Y"),
@@ -549,7 +560,7 @@ def send_participant_certificate_email(
 
     p_name = participant_data.get("name") or "Participant"
     domain = participant_data.get("domain") or "Innovation Track"
-    cert_id = participant_data.get("certificate_id") or "SYNEX-CERT"
+    cert_id = participant_data.get("certificate_id") or "CERT"
 
     from flask import current_app
     event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026") if current_app else "SYNEX 2026")
@@ -559,6 +570,12 @@ def send_participant_certificate_email(
     
     pdf_bytes, pdf_filename = generate_single_certificate_pdf(participant_data)
 
+    from app.services.content_service import get_contact_content
+    contact = get_contact_content()
+    committee_name = contact.get("organizing_committee", "Organizing Committee")
+    committee_display = committee_name if event_name.lower() in committee_name.lower() else f"{event_name} {committee_name}"
+    venue_display = contact.get("venue_short") or contact.get("venue_address") or "Campus Innovation Hub, Bengaluru"
+
     body_text = custom_body or (
         f"Dear {p_name},\n\n"
         f"Congratulations on your outstanding contribution at the {event_name}!\n\n"
@@ -566,8 +583,8 @@ def send_participant_certificate_email(
         f"Your Certificate Verification ID is: {cert_id}.\n\n"
         f"Please find your high-resolution official Certificate attached as a PDF document.\n\n"
         f"Warm regards,\n"
-        f"{event_name} Organizing Committee\n"
-        f"Campus Innovation Hub, Bengaluru\n"
+        f"{committee_display}\n"
+        f"{venue_display}\n"
     )
 
     body_html = f"""
@@ -589,7 +606,7 @@ def send_participant_certificate_email(
         Your verified e-Certificate is attached to this email as a PDF document. You may also showcase this achievement on LinkedIn and technical portfolios.
       </p>
       <div style="margin-top: 32px; padding-top: 18px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
-        <p style="margin: 0;"><strong>{event_name} Organizing Committee</strong> &bull; Campus Innovation Hub, Bengaluru</p>
+        <p style="margin: 0;"><strong>{committee_display}</strong> &bull; {venue_display}</p>
       </div>
     </div>
     """

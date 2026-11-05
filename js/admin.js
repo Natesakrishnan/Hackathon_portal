@@ -1907,6 +1907,10 @@ function hideBanner(bannerEl) {
   bannerEl.style.display = "none";
 }
 
+function clearBanner(bannerEl) {
+  hideBanner(bannerEl);
+}
+
 /**
  * Danger Zone: Reset Participants Records Handler
  */
@@ -2023,6 +2027,27 @@ function setupPublicContentEditorHandlers() {
   const scheduleNoticeInput = document.getElementById("scheduleNoticeBannerInput");
   const scheduleMilestonesList = document.getElementById("scheduleMilestonesList");
   const scheduleAlertBanner = document.getElementById("scheduleModalAlertBanner");
+
+  // Elements for Contact Modal
+  const btnEditContact = document.getElementById("btnEditContactModal");
+  const contactModal = document.getElementById("editContactModal");
+  const btnCloseContact = document.getElementById("btnCloseContactModal");
+  const btnCancelContact = document.getElementById("btnCancelContactModal");
+  const btnSaveContact = document.getElementById("btnSaveContact");
+  const btnResetContactDefault = document.getElementById("btnResetContactDefault");
+  const contactAlertBanner = document.getElementById("contactModalAlertBanner");
+
+  const inputContactVenueName = document.getElementById("contactVenueName");
+  const inputContactVenueShort = document.getElementById("contactVenueShort");
+  const inputContactVenueCity = document.getElementById("contactVenueCity");
+  const inputContactVenueAddress = document.getElementById("contactVenueAddress");
+  const inputContactOrgCommittee = document.getElementById("contactOrganizingCommittee");
+  const inputContactEmail = document.getElementById("contactEmail");
+  const inputContactSponsorshipEmail = document.getElementById("contactSponsorshipEmail");
+  const inputContactMentorEmail = document.getElementById("contactMentorEmail");
+  const inputContactPhone = document.getElementById("contactPhone");
+  const inputContactWhatsapp = document.getElementById("contactWhatsapp");
+  const inputContactSupportHours = document.getElementById("contactSupportHours");
 
   function openModal(modalEl) {
     if (modalEl) {
@@ -2452,8 +2477,155 @@ function setupPublicContentEditorHandlers() {
     });
   }
 
+  // --- Contact & Venue Modal Handlers ---
+  const editContactForm = document.getElementById("editContactForm");
+  if (editContactForm) {
+    editContactForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (btnSaveContact) btnSaveContact.click();
+    });
+  }
+
+  async function loadContactEditorData() {
+    if (contactAlertBanner) hideBanner(contactAlertBanner);
+    try {
+      const res = await fetch("/api/admin/content/contact");
+      const json = await res.json();
+      if (res.ok && json.success && json.data) {
+        const c = json.data;
+        if (inputContactVenueName) inputContactVenueName.value = c.venue_name || "";
+        if (inputContactVenueShort) inputContactVenueShort.value = c.venue_short || "";
+        if (inputContactVenueCity) inputContactVenueCity.value = c.venue_city || "";
+        if (inputContactVenueAddress) inputContactVenueAddress.value = c.venue_address || "";
+        if (inputContactOrgCommittee) inputContactOrgCommittee.value = c.organizing_committee || "";
+        if (inputContactEmail) inputContactEmail.value = c.email || "";
+        if (inputContactSponsorshipEmail) inputContactSponsorshipEmail.value = c.sponsorship_email || "";
+        if (inputContactMentorEmail) inputContactMentorEmail.value = c.mentor_email || "";
+        if (inputContactPhone) inputContactPhone.value = c.phone || "";
+        if (inputContactWhatsapp) inputContactWhatsapp.value = c.whatsapp || "";
+        if (inputContactSupportHours) inputContactSupportHours.value = c.support_hours || "";
+      } else {
+        showBanner(contactAlertBanner, json.error || "Failed to load contact data.", "error");
+      }
+    } catch (err) {
+      console.error("Load contact error:", err);
+      showBanner(contactAlertBanner, "Network error loading contact and venue details.", "error");
+    }
+  }
+
+  if (btnEditContact && contactModal) {
+    btnEditContact.addEventListener("click", async () => {
+      openModal(contactModal);
+      await loadContactEditorData();
+    });
+  }
+
+  [btnCloseContact, btnCancelContact].forEach(btn => {
+    if (btn) btn.addEventListener("click", () => closeModal(contactModal));
+  });
+
+  if (btnSaveContact) {
+    btnSaveContact.addEventListener("click", async () => {
+      if (contactAlertBanner) hideBanner(contactAlertBanner);
+
+      const venueName = (inputContactVenueName ? inputContactVenueName.value : "").trim();
+      const venueShort = (inputContactVenueShort ? inputContactVenueShort.value : "").trim();
+      const venueCity = (inputContactVenueCity ? inputContactVenueCity.value : "").trim();
+      const venueAddress = (inputContactVenueAddress ? inputContactVenueAddress.value : "").trim();
+      const orgCommittee = (inputContactOrgCommittee ? inputContactOrgCommittee.value : "").trim();
+      const email = (inputContactEmail ? inputContactEmail.value : "").trim();
+      const sponsorshipEmail = (inputContactSponsorshipEmail ? inputContactSponsorshipEmail.value : "").trim();
+      const mentorEmail = (inputContactMentorEmail ? inputContactMentorEmail.value : "").trim();
+      const phone = (inputContactPhone ? inputContactPhone.value : "").trim();
+      const whatsapp = (inputContactWhatsapp ? inputContactWhatsapp.value : "").trim();
+      const supportHours = (inputContactSupportHours ? inputContactSupportHours.value : "").trim();
+
+      if (!venueName) {
+        showBanner(contactAlertBanner, "Please enter a Venue / Hall Name.", "error");
+        if (inputContactVenueName) inputContactVenueName.focus();
+        return;
+      }
+      if (!email || !email.includes("@")) {
+        showBanner(contactAlertBanner, "Please provide a valid primary contact email.", "error");
+        if (inputContactEmail) inputContactEmail.focus();
+        return;
+      }
+
+      btnSaveContact.disabled = true;
+      const originalText = btnSaveContact.innerHTML;
+      btnSaveContact.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Saving...</span>';
+
+      try {
+        const payload = {
+          venue_name: venueName,
+          venue_short: venueShort || venueName,
+          venue_city: venueCity,
+          venue_address: venueAddress,
+          organizing_committee: orgCommittee || "Organizing Committee",
+          email: email,
+          sponsorship_email: sponsorshipEmail,
+          mentor_email: mentorEmail,
+          phone: phone,
+          whatsapp: whatsapp,
+          support_hours: supportHours,
+        };
+
+        const res = await fetch("/api/admin/content/contact", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          showBanner(contactAlertBanner, "Contact & venue details published successfully across portal!", "success");
+          const settingsBanner = document.getElementById("settingsAlertBanner");
+          if (settingsBanner) {
+            showBanner(settingsBanner, "Public contact and venue details synchronized with /contact and portal pages!", "success");
+          }
+          if (typeof syncConfigFromServer === "function") {
+            try { await syncConfigFromServer(); } catch (e) { /* ignore */ }
+          }
+          setTimeout(() => closeModal(contactModal), 1200);
+        } else {
+          showBanner(contactAlertBanner, json.message || json.error || "Failed to save contact details.", "error");
+        }
+      } catch (err) {
+        console.error("Save contact error:", err);
+        showBanner(contactAlertBanner, "Network error updating contact settings.", "error");
+      } finally {
+        btnSaveContact.disabled = false;
+        btnSaveContact.innerHTML = originalText;
+      }
+    });
+  }
+
+  if (btnResetContactDefault) {
+    btnResetContactDefault.addEventListener("click", async () => {
+      if (!confirm("Reset all contact and venue details to factory defaults?")) return;
+      if (contactAlertBanner) hideBanner(contactAlertBanner);
+      btnResetContactDefault.disabled = true;
+
+      try {
+        const res = await fetch("/api/admin/content/contact/reset", { method: "POST" });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showBanner(contactAlertBanner, "Contact and venue details reset to defaults.", "success");
+          await loadContactEditorData();
+        } else {
+          showBanner(contactAlertBanner, json.error || "Failed to reset contact details.", "error");
+        }
+      } catch (err) {
+        console.error("Reset contact error:", err);
+        showBanner(contactAlertBanner, "Network error resetting contact details.", "error");
+      } finally {
+        btnResetContactDefault.disabled = false;
+      }
+    });
+  }
+
   // Close modals on Escape key or backdrop click
-  [rulesModal, scheduleModal].forEach(modalEl => {
+  [rulesModal, scheduleModal, contactModal].forEach(modalEl => {
     if (modalEl) {
       modalEl.addEventListener("click", (e) => {
         if (e.target === modalEl) closeModal(modalEl);
@@ -2465,6 +2637,7 @@ function setupPublicContentEditorHandlers() {
     if (e.key === "Escape") {
       if (rulesModal && rulesModal.classList.contains("active")) closeModal(rulesModal);
       if (scheduleModal && scheduleModal.classList.contains("active")) closeModal(scheduleModal);
+      if (contactModal && contactModal.classList.contains("active")) closeModal(contactModal);
     }
   });
 }
@@ -3191,7 +3364,7 @@ async function loadSmtpSettings() {
         brevoApiKeyEl.placeholder = s.has_brevo_key ? "•••••••••••• (API Key Configured - leave blank to keep)" : "xkeysib-123456789_abcdef...";
       }
       if (brevoSenderEmailEl) {
-        brevoSenderEmailEl.value = s.brevo_sender_email || s.username || "natesakrishna0@gmail.com";
+        brevoSenderEmailEl.value = s.brevo_sender_email || (s.username && s.username.includes("@") ? s.username : "");
       }
 
       if (resendApiKeyEl) {
@@ -3265,7 +3438,7 @@ function setupSmtpHandlers() {
       try {
         const payload = {
           provider: provider,
-          default_sender: isBrevo ? (brevoSenderEmail || "natesakrishna0@gmail.com") : (resendSender || "SYNEX Hackathon <onboarding@resend.dev>"),
+          default_sender: isBrevo ? (brevoSenderEmail || "") : (resendSender || "SYNEX Hackathon <onboarding@resend.dev>"),
         };
 
         if (isBrevo) {

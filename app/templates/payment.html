@@ -6,8 +6,18 @@
   <title>Payment Checkout — {{ event_name | default('SYNEX 2026') }}</title>
   <meta name="description" content="Review your registration fee breakdown and complete secure checkout for {{ event_name | default('SYNEX 2026') }} Hackathon.">
 
-  <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+    <!-- PWA & Application Meta (Desktop & Mobile) -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
+  <meta name="application-name" content="SYNEX Hackathon">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,6 +60,10 @@
       </nav>
 
       <div class="nav-cta">
+        <button id="btnPwaInstall" class="btn-pwa-install pwa-hidden" title="Install SYNEX App on Desktop or Mobile">
+          <i class="fa-solid fa-download" aria-hidden="true"></i>
+          <span>Install App</span>
+        </button>
         <a href="register.html" class="btn btn-outline btn-sm">
           <i class="fa-solid fa-pen" aria-hidden="true"></i>
           <span>Edit Details</span>
@@ -63,6 +77,10 @@
 
   <!-- Mobile Nav Drawer -->
   <div class="mobile-nav" id="mobileNav">
+    <button id="btnPwaInstallMobile" class="btn-pwa-install pwa-hidden" style="margin-bottom: 0.5rem; justify-content: center; width: 100%;">
+      <i class="fa-solid fa-download" aria-hidden="true"></i>
+      <span>Install App</span>
+    </button>
     <a href="index.html" class="nav-link">Home</a>
     <a href="index.html#about" class="nav-link">About</a>
     <a href="index.html#domains" class="nav-link">Domains</a>
@@ -299,5 +317,6 @@
   <!-- Scripts -->
   <script src="/js/main.js"></script>
   <script src="/js/payment.js"></script>
+  <script src="/js/pwa.js" defer></script>
 </body>
 </html>

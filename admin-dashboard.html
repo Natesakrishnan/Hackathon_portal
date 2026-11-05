@@ -8,9 +8,18 @@
   <meta name="description"
     content="Organizer administration dashboard with registration metrics, payment statistics, and participant management.">
 
-  <!-- Favicon -->
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+    <!-- PWA & Application Meta (Desktop & Mobile) -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
+  <meta name="application-name" content="SYNEX Hackathon">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1284,16 +1293,20 @@
                       <h4
                         style="color: var(--color-text-main); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.25rem 0;">
                         <i class="fa-solid fa-file-pen" style="color: var(--color-primary);"></i> Public Portal Content:
-                        Rules &amp; Schedule
+                        Rules, Schedule &amp; Contact
                       </h4>
                       <p style="color: var(--color-text-secondary); font-size: 0.82rem; margin: 0;">
-                        Directly modify rules, guidelines, eligibility rubrics, and the 36-hour schedule timeline
-                        published on the public site.
+                        Directly modify rules, guidelines, the 36-hour schedule timeline, and public contact &amp; venue details published across the site and dispatch emails.
                       </p>
                     </div>
                   </div>
 
                   <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                    <button type="button" class="btn btn-outline" id="btnEditContactModal"
+                      style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                      <i class="fa-solid fa-address-book" style="color: #8B5CF6;"></i>
+                      <span>Edit Contact &amp; Venue</span>
+                    </button>
                     <button type="button" class="btn btn-outline" id="btnEditRulesModal"
                       style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                       <i class="fa-solid fa-scale-balanced" style="color: #2563EB;"></i>
@@ -1304,6 +1317,11 @@
                       <i class="fa-solid fa-calendar-days" style="color: #059669;"></i>
                       <span>Edit Event Schedule</span>
                     </button>
+                    <a href="/contact" target="_blank" class="btn btn-outline btn-sm"
+                      style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--color-text-muted);">
+                      <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                      <span>View Live Contact</span>
+                    </a>
                     <a href="/rules" target="_blank" class="btn btn-outline btn-sm"
                       style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--color-text-muted);">
                       <i class="fa-solid fa-arrow-up-right-from-square"></i>
@@ -1389,8 +1407,7 @@
                       <div class="admin-form-group">
                         <label for="brevoSenderEmail">Brevo Sender Email <span style="color: var(--color-error);">*</span></label>
                         <input type="email" id="brevoSenderEmail" class="admin-form-control"
-                          placeholder="natesakrishna0@gmail.com">
-                        <span class="form-helper">The verified Gmail/email address you used to register on Brevo (e.g., <code>natesakrishna0@gmail.com</code>).</span>
+                          placeholder="you@gmail.com">
                       </div>
                     </div>
 
@@ -2285,6 +2302,168 @@
     </div>
   </div>
 
+  <!-- Edit Contact & Venue Modal -->
+  <div class="team-modal-backdrop" id="editContactModal" role="dialog" aria-modal="true"
+    aria-labelledby="editContactModalTitle">
+    <div class="team-modal-dialog" style="max-width: 780px; max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="team-modal-header" style="border-bottom: 1px solid var(--color-border); background: #F8FAFC;">
+        <div class="team-modal-title-group">
+          <div class="team-modal-icon" style="background: #F5F3FF; color: #7C3AED;">
+            <i class="fa-solid fa-address-book"></i>
+          </div>
+          <div>
+            <h2 class="team-modal-title" id="editContactModalTitle">Edit Public Contact &amp; Venue Details</h2>
+            <span class="team-modal-ref" style="color: var(--color-text-muted);">Synchronized across /contact, homepage footer, and certificate/pass emails</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseContactModal" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="team-modal-body" style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+        <div id="contactModalAlertBanner" class="admin-alert-banner"></div>
+
+        <form id="editContactForm" onsubmit="event.preventDefault();">
+          <!-- Section 1: Venue & Campus Location -->
+          <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0 0 0.85rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-location-dot" style="color: #2563EB;"></i> Venue &amp; Campus Location
+            </h3>
+            
+            <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+              <div class="admin-form-group">
+                <label for="contactVenueName" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Venue / Hall Name <span style="color: var(--color-error);">*</span>
+                </label>
+                <input type="text" id="contactVenueName" class="admin-form-control" placeholder="e.g., Campus Innovation Hub, Main Auditorium" required>
+                <span class="form-helper">Appears on confirmation passes and check-in rosters.</span>
+              </div>
+
+              <div class="admin-form-group">
+                <label for="contactVenueShort" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Location Summary / City <span style="color: var(--color-error);">*</span>
+                </label>
+                <input type="text" id="contactVenueShort" class="admin-form-control" placeholder="e.g., Campus Innovation Hub, Bengaluru" required>
+                <span class="form-helper">Printed in certificate dispatch emails and email footers.</span>
+              </div>
+            </div>
+
+            <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem;">
+              <div class="admin-form-group">
+                <label for="contactVenueCity" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Hero Badge Region / Mode
+                </label>
+                <input type="text" id="contactVenueCity" class="admin-form-control" placeholder="e.g., Bengaluru &amp; Hybrid">
+                <span class="form-helper">Shown on the homepage hero location pill.</span>
+              </div>
+
+              <div class="admin-form-group">
+                <label for="contactVenueAddress" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Full Campus Physical Address
+                </label>
+                <input type="text" id="contactVenueAddress" class="admin-form-control" placeholder="e.g., Tech Campus Auditorium, Bengaluru, KA 560001">
+                <span class="form-helper">Shown on /contact and homepage footer inquiries.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Organizing Committee -->
+          <div style="margin-bottom: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0 0 0.85rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-users" style="color: #059669;"></i> Organizing Body / Committee Title
+            </h3>
+
+            <div class="admin-form-group">
+              <label for="contactOrganizingCommittee" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                Organizing Committee Display Name
+              </label>
+              <input type="text" id="contactOrganizingCommittee" class="admin-form-control" placeholder="e.g., Organizing Committee or HACKATHON Organizing Committee">
+              <span class="form-helper">Featured in certificate sign-offs, email passes, and copyright notices.</span>
+            </div>
+          </div>
+
+          <!-- Section 3: Official Inquiries Email -->
+          <div style="margin-bottom: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0 0 0.85rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-envelope" style="color: #D97706;"></i> Official Inquiries &amp; Support Emails
+            </h3>
+
+            <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+              <div class="admin-form-group">
+                <label for="contactEmail" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  General Inquiries <span style="color: var(--color-error);">*</span>
+                </label>
+                <input type="email" id="contactEmail" class="admin-form-control" placeholder="contact@hackathon.org" required>
+              </div>
+
+              <div class="admin-form-group">
+                <label for="contactSponsorshipEmail" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Sponsorship / Partnerships
+                </label>
+                <input type="email" id="contactSponsorshipEmail" class="admin-form-control" placeholder="partners@hackathon.org">
+              </div>
+
+              <div class="admin-form-group">
+                <label for="contactMentorEmail" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Mentor / Judge Desk
+                </label>
+                <input type="email" id="contactMentorEmail" class="admin-form-control" placeholder="mentors@hackathon.org">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Helpline & Hours -->
+          <div style="padding-top: 1rem; border-top: 1px solid var(--color-border);">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text-main); margin: 0 0 0.85rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-phone" style="color: #4F46E5;"></i> Helpline &amp; Operational Hours
+            </h3>
+
+            <div class="admin-form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+              <div class="admin-form-group">
+                <label for="contactPhone" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Helpline Phone
+                </label>
+                <input type="text" id="contactPhone" class="admin-form-control" placeholder="+91 (080) 555-0199">
+              </div>
+
+              <div class="admin-form-group">
+                <label for="contactWhatsapp" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  WhatsApp Desk
+                </label>
+                <input type="text" id="contactWhatsapp" class="admin-form-control" placeholder="+91 98765-43210">
+              </div>
+
+              <div class="admin-form-group">
+                <label for="contactSupportHours" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Operating Hours
+                </label>
+                <input type="text" id="contactSupportHours" class="admin-form-control" placeholder="Operational 09:00 AM – 07:00 PM IST">
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="team-modal-footer"
+        style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: #F8FAFC; border-top: 1px solid var(--color-border);">
+        <button type="button" class="btn btn-outline btn-sm" id="btnResetContactDefault"
+          style="color: var(--color-error); border-color: #FECACA;">
+          <i class="fa-solid fa-rotate-left"></i> <span>Reset to Defaults</span>
+        </button>
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" class="btn btn-outline btn-sm" id="btnCancelContactModal">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnSaveContact">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Save &amp; Publish Contact</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Team & Participant Details Modal -->
   <div class="team-modal-backdrop" id="teamDetailsModal" role="dialog" aria-modal="true"
     aria-labelledby="modalTeamName">
@@ -2622,6 +2801,7 @@
     </script>
     <script src="/js/main.js"></script>
     <script src="/js/admin.js"></script>
+  <script src="/js/pwa.js" defer></script>
 </body>
 
 </html>

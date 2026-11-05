@@ -163,6 +163,10 @@ def send_email(
     envelope_from = from_email if from_email else (cfg["username"] or "noreply@synex.org")
 
     if not body_html:
+        from app.services.content_service import get_contact_content
+        contact_cfg = get_contact_content()
+        venue_short_str = contact_cfg.get("venue_short") or contact_cfg.get("venue_address") or "Campus Innovation Hub, Bengaluru"
+
         html_content = f"""
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
           <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 2px solid #2563EB;">
@@ -172,7 +176,7 @@ def send_email(
           <div style="color: #334155; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">{body_text}</div>
           <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
             <p style="margin: 0;">This email was sent by the {curr_event_name} Admin Portal.</p>
-            <p style="margin: 4px 0 0;">Campus Innovation Hub, Bengaluru &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
+            <p style="margin: 4px 0 0;">{venue_short_str} &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
           </div>
         </div>
         """
@@ -189,7 +193,7 @@ def send_email(
                 "Accept": "application/json"
             }
             display_name, parsed_addr = parseaddr(sender)
-            sender_email = (cfg.get("brevo_sender_email") or parsed_addr or cfg.get("username") or "natesakrishna0@gmail.com").strip()
+            sender_email = (cfg.get("brevo_sender_email") or parsed_addr or cfg.get("username") or "").strip()
             sender_name = display_name or f"{curr_event_name} Hackathon"
 
             payload = {
@@ -333,7 +337,7 @@ def send_email(
                     friendly_err = f"{err_msg} (Note: In Resend Sandbox mode with 'onboarding@resend.dev', you can only test-send to the email address you signed up with on Resend. To send to any recipient, add and verify your custom domain at https://resend.com/domains)."
                     import re
                     m = re.search(r'own email address \(([^)]+)\)', err_msg)
-                    owner_email = m.group(1).strip() if m else "natesakrishna0@gmail.com"
+                    owner_email = m.group(1).strip() if m else None
                     if owner_email and owner_email.lower() != to_email.lower():
                         logger.info(f"Forwarding confirmation pass to verified owner {owner_email} for team leader {to_email}...")
                         forward_payload = dict(payload)
@@ -685,6 +689,15 @@ def send_confirmation_email(registration, payment=None) -> bool:
         """
         team_members_text = "\nTeam Members:\n" + "\n".join(text_lines)
 
+    from app.services.content_service import get_contact_content
+    contact_cfg = get_contact_content()
+    committee_name = contact_cfg.get("organizing_committee", "Organizing Committee")
+    committee_display = committee_name if event_name.lower() in committee_name.lower() else f"{event_name} {committee_name}"
+    venue_name_str = contact_cfg.get("venue_name") or "Campus Innovation Hub, Main Auditorium"
+    venue_city_str = contact_cfg.get("venue_city") or "Bengaluru"
+    venue_full_str = f"{venue_name_str}, {venue_city_str}"
+    venue_short_str = contact_cfg.get("venue_short") or venue_full_str
+
     # 5. Build Plain Text Version
     body_text = f"""
 Hi {recipient_name} (Team Leader),
@@ -703,7 +716,7 @@ Domain Track:      {registration.domain}
 Fee Paid:          ₹{payment.amount if payment else registration.entry_fee} (Verified)
 Payment Ref:       {payment.gateway_payment_id if payment else 'COMPLETED'}
 Event Date:        Nov 14, 2026 - 08:30 AM IST
-Venue:             Campus Innovation Hub, Main Auditorium, Bengaluru
+Venue:             {venue_full_str}
 {team_members_text}
 
 IMPORTANT CHECK-IN INSTRUCTIONS:
@@ -789,7 +802,7 @@ Need help? Contact support@synex.org.
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #64748B;">Venue:</td>
-                <td style="padding: 6px 0; font-weight: 600; color: #0F172A;">Campus Innovation Hub, Main Auditorium, Bengaluru</td>
+                <td style="padding: 6px 0; font-weight: 600; color: #0F172A;">{venue_full_str}</td>
               </tr>
             </table>
           </div>
@@ -872,7 +885,7 @@ Need help? Contact support@synex.org.
 
         <!-- Footer -->
         <div style="background: #F8FAFC; padding: 16px 24px; text-align: center; font-size: 11px; color: #94A3B8; border-top: 1px solid #E2E8F0;">
-          &copy; 2026 {event_name} Organizing Committee &bull; Campus Innovation Hub, Bengaluru
+          &copy; 2026 {committee_display} &bull; {venue_short_str}
         </div>
       </div>
     </body>

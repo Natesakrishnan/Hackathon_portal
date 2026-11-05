@@ -254,6 +254,30 @@ async function syncConfigFromServer() {
     const curr = cfg.currency === "INR" ? "₹" : (cfg.currency || "₹");
     window.SYNEX_CONFIG.fees.currency = curr;
     updatePublicFeeDisplays(cfg.individual_fee, cfg.team_fee, curr, cfg.per_member_fee, cfg.meals_fee);
+
+    if (cfg.contact) {
+      const c = cfg.contact;
+      if (c.venue_city) {
+        document.querySelectorAll('#heroVenueBadge, [data-synex-venue-city]').forEach(el => {
+          el.textContent = c.venue_city;
+        });
+      }
+      if (c.venue_address || c.venue_short) {
+        document.querySelectorAll('#footerVenueAddress, [data-synex-venue-address]').forEach(el => {
+          el.textContent = c.venue_address || c.venue_short;
+        });
+      }
+      if (c.email) {
+        document.querySelectorAll('#footerContactEmail, [data-synex-contact-email]').forEach(el => {
+          el.textContent = c.email;
+        });
+      }
+      if (c.phone) {
+        document.querySelectorAll('#footerContactPhone, [data-synex-contact-phone]').forEach(el => {
+          el.textContent = c.phone;
+        });
+      }
+    }
   } catch (err) {
     // Non-blocking fallback
   }

@@ -87,6 +87,9 @@ def create_app(config_name: str = None) -> Flask:
         event_short_name = event_name.split()[0] if event_name else "SYNEX"
         brand_initial = event_name[0].upper() if event_name else "S"
 
+        from app.services.content_service import get_contact_content
+        contact_data = get_contact_content()
+
         return {
             "current_year": datetime.utcnow().year,
             "event_name": event_name,
@@ -101,6 +104,14 @@ def create_app(config_name: str = None) -> Flask:
             "prize_pool": prize_pool,
             "currency": app.config.get("EVENT_CURRENCY", "INR"),
             "razorpay_key_id": app.config.get("RAZORPAY_KEY_ID", ""),
+            "contact_data": contact_data,
+            "venue_name": contact_data.get("venue_name"),
+            "venue_short": contact_data.get("venue_short"),
+            "venue_address": contact_data.get("venue_address"),
+            "venue_city": contact_data.get("venue_city"),
+            "organizing_committee": contact_data.get("organizing_committee"),
+            "contact_email": contact_data.get("email"),
+            "contact_phone": contact_data.get("phone"),
         }
 
     # Error handlers

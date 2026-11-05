@@ -8,9 +8,18 @@
   <meta name="description"
     content="Get in touch with the {{ event_name | default('SYNEX 2026') }} organizing committee for inquiries, sponsorship, mentorship, and logistical assistance.">
 
-  <!-- Favicon -->
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+    <!-- PWA & Application Meta (Desktop & Mobile) -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
+  <meta name="application-name" content="SYNEX Hackathon">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -110,6 +119,10 @@
       </nav>
 
       <div class="nav-cta">
+        <button id="btnPwaInstall" class="btn-pwa-install pwa-hidden" title="Install SYNEX App on Desktop or Mobile">
+          <i class="fa-solid fa-download" aria-hidden="true"></i>
+          <span>Install App</span>
+        </button>
         <a href="register.html" class="btn btn-primary btn-sm">
           <span>Register Now</span>
           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
@@ -124,6 +137,10 @@
 
   <!-- Mobile Nav Drawer -->
   <div class="mobile-nav" id="mobileNav">
+    <button id="btnPwaInstallMobile" class="btn-pwa-install pwa-hidden" style="margin-bottom: 0.5rem; justify-content: center; width: 100%;">
+      <i class="fa-solid fa-download" aria-hidden="true"></i>
+      <span>Install App</span>
+    </button>
     <a href="index.html" class="nav-link">Home</a>
     <a href="index.html#about" class="nav-link">About</a>
     <a href="index.html#domains" class="nav-link">Domains</a>
@@ -168,10 +185,14 @@
               </div>
               <div>
                 <h3 class="contact-method-title">Venue &amp; Campus Location</h3>
-                <p class="contact-method-desc">
-                  SCAD Auditorium<br>
-                  SIMATS University<br>
-                  Chennai,Tamil Nadu
+                <p class="contact-method-desc" id="contactVenueText">
+                  {% if contact_data and contact_data.venue_address %}
+                    {{ contact_data.venue_name }}<br>
+                    {{ contact_data.venue_address }}
+                  {% else %}
+                    Campus Innovation Hub, Main Auditorium<br>
+                    Tech Campus Auditorium, Bengaluru, KA 560001
+                  {% endif %}
                 </p>
               </div>
             </div>
@@ -183,10 +204,10 @@
               </div>
               <div>
                 <h3 class="contact-method-title">Official Inquiries Email</h3>
-                <p class="contact-method-desc">
-                  General: <code>contact@hackathon.org</code><br>
-                  Sponsorship: <code>partners@hackathon.org</code><br>
-                  Mentor Desk: <code>mentors@hackathon.org</code>
+                <p class="contact-method-desc" id="contactEmailsText">
+                  General: <code>{{ contact_data.email if contact_data else 'contact@hackathon.org' }}</code><br>
+                  Sponsorship: <code>{{ contact_data.sponsorship_email if contact_data else 'partners@hackathon.org' }}</code><br>
+                  Mentor Desk: <code>{{ contact_data.mentor_email if contact_data else 'mentors@hackathon.org' }}</code>
                 </p>
               </div>
             </div>
@@ -198,10 +219,10 @@
               </div>
               <div>
                 <h3 class="contact-method-title">Participant Helpline</h3>
-                <p class="contact-method-desc">
-                  +91 (080) 555-0199<br>
-                  +91 98765-43210 (WhatsApp Desk)<br>
-                  Operational 09:00 AM – 07:00 PM IST
+                <p class="contact-method-desc" id="contactHelplineText">
+                  {{ contact_data.phone if contact_data else '+91 (080) 555-0199' }}<br>
+                  {{ contact_data.whatsapp if contact_data else '+91 98765-43210' }} (WhatsApp Desk)<br>
+                  {{ contact_data.support_hours if contact_data else 'Operational 09:00 AM – 07:00 PM IST' }}
                 </p>
               </div>
             </div>
@@ -465,8 +486,33 @@
           alert("Network error. Please check your connection and try again.");
         }
       });
+
+      // Client-side hydration for Contact & Venue details
+      fetch("/api/public/contact")
+        .then(res => res.json())
+        .then(res => {
+          if (res && res.success && res.data) {
+            const c = res.data;
+            const venueEl = document.getElementById("contactVenueText");
+            if (venueEl) {
+              const name = c.venue_name || "";
+              const addr = c.venue_address || c.venue_short || "";
+              venueEl.innerHTML = `${name ? name + '<br>' : ''}${addr}`;
+            }
+            const emailEl = document.getElementById("contactEmailsText");
+            if (emailEl) {
+              emailEl.innerHTML = `General: <code>${c.email || 'contact@hackathon.org'}</code><br>Sponsorship: <code>${c.sponsorship_email || 'partners@hackathon.org'}</code><br>Mentor Desk: <code>${c.mentor_email || 'mentors@hackathon.org'}</code>`;
+            }
+            const phoneEl = document.getElementById("contactHelplineText");
+            if (phoneEl) {
+              phoneEl.innerHTML = `${c.phone || '+91 (080) 555-0199'}<br>${c.whatsapp || '+91 98765-43210'} (WhatsApp Desk)<br>${c.support_hours || 'Operational 09:00 AM – 07:00 PM IST'}`;
+            }
+          }
+        })
+        .catch(() => {});
     });
   </script>
+  <script src="/js/pwa.js" defer></script>
 </body>
 
 </html>

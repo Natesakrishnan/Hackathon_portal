@@ -1161,7 +1161,8 @@ def test_admin_certificate_participants_and_preview(admin_client):
     found = next((p for p in parts_data["data"] if p["email"] == "devi@test.edu"), None)
     assert found is not None
     assert found["name"] == "Devi Raman"
-    assert found["certificate_id"].startswith("SYNEX-")
+    assert found["certificate_id"].startswith("CERT-")
+    assert "SYNEX" not in found["certificate_id"]
 
     # Preview PDF
     pdf_res = admin_client.get(f"/api/admin/certificates/preview?participant_id={found['id']}")
@@ -1336,6 +1337,102 @@ def test_certificate_only_for_checked_in_participants_and_team_members(admin_cli
     )
     assert send_ok.status_code == 200
     assert send_ok.get_json()["success"] is True
+
+
+def test_admin_contact_content_unauthorized(client):
+    """Test unauthenticated access to contact endpoints returns 401."""
+    assert client.get("/api/admin/content/contact").status_code == 401
+    assert client.put("/api/admin/content/contact", json={}).status_code == 401
+    assert client.post("/api/admin/content/contact/reset").status_code == 401
+
+
+def test_admin_contact_content_crud(admin_client):
+    """Test admin can view, customize, and reset public contact & venue details."""
+    # 1. Authorized fetch default contact
+    res = admin_client.get("/api/admin/content/contact")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert "venue_name" in data["data"]
+    assert "email" in data["data"]
+
+    # 3. Update contact & venue details
+    custom_contact = {
+        "organizing_committee": "HACKATHON Organizing Committee",
+        "venue_name": "SCAD Convention Center, Hall A",
+        "venue_short": "SIMATS Tech Park, Chennai",
+        "venue_address": "SCAD Auditorium, SIMATS University, Chennai, Tamil Nadu 600077",
+        "venue_city": "Chennai & Hybrid",
+        "email": "help@synexchennai.org",
+        "sponsorship_email": "partners@synexchennai.org",
+        "mentor_email": "mentors@synexchennai.org",
+        "phone": "+91 94444-12345",
+        "whatsapp": "+91 94444-67890",
+        "support_hours": "24x7 Hackathon Operations Desk",
+    }
+    update_res = admin_client.put(
+        "/api/admin/content/contact",
+        json=custom_contact
+    )
+    assert update_res.status_code == 200
+    assert update_res.get_json()["success"] is True
+
+    # 3. Check public API returns updated details
+    pub_res = admin_client.get("/api/public/contact")
+    assert pub_res.status_code == 200
+    pub_data = pub_res.get_json()["data"]
+    assert pub_data["venue_name"] == "SCAD Convention Center, Hall A"
+    assert pub_data["venue_short"] == "SIMATS Tech Park, Chennai"
+    assert pub_data["organizing_committee"] == "HACKATHON Organizing Committee"
+    assert pub_data["email"] == "help@synexchennai.org"
+
+    # 4. Check public contact page HTML renders updated details
+    contact_page = admin_client.get("/contact")
+    assert contact_page.status_code == 200
+    contact_html = contact_page.get_data(as_text=True)
+    assert "SCAD Convention Center, Hall A" in contact_html
+    assert "help@synexchennai.org" in contact_html
+
+    # 5. Check homepage HTML renders updated venue and organizing committee
+    home_page = admin_client.get("/")
+    assert home_page.status_code == 200
+    home_html = home_page.get_data(as_text=True)
+    assert "Chennai &amp; Hybrid" in home_html or "Chennai & Hybrid" in home_html
+    assert "help@synexchennai.org" in home_html
+    assert "HACKATHON Organizing Committee" in home_html
+
+    # 6. Check config endpoint has contact info
+    cfg_res = admin_client.get("/api/config")
+    assert cfg_res.status_code == 200
+    cfg_data = cfg_res.get_json()
+    assert cfg_data["venue"] == "SIMATS Tech Park, Chennai"
+    assert cfg_data["contact"]["venue_name"] == "SCAD Convention Center, Hall A"
+
+    # 7. Check certificate service dynamically uses new committee and venue
+    from app.services.certificate_service import send_participant_certificate_email
+    from unittest.mock import patch
+    with patch("app.services.certificate_service.send_email") as mock_send, \
+         patch("app.services.certificate_service.generate_single_certificate_pdf") as mock_pdf:
+        mock_pdf.return_value = (b"%PDF-mock", "cert.pdf")
+        mock_send.return_value = (True, "Delivered", None)
+        ok, msg, log = send_participant_certificate_email(
+            participant_data={"name": "Kavitha", "email": "kavitha@test.edu", "role": "Hacker", "domain": "AI", "team_name": "Alpha", "certificate_id": "CERT-TEST-999"}
+        )
+        assert ok is True
+        sent_html = mock_send.call_args[1]["body_html"]
+        # Verify the exact footer shown in screenshot:
+        assert "HACKATHON Organizing Committee" in sent_html
+        assert "SIMATS Tech Park, Chennai" in sent_html
+
+    # 9. Reset back to defaults
+    reset_res = admin_client.post("/api/admin/content/contact/reset")
+    assert reset_res.status_code == 200
+    assert reset_res.get_json()["success"] is True
+
+    # 10. Verify restored back to defaults
+    restored = admin_client.get("/api/admin/content/contact").get_json()["data"]
+    assert restored["venue_name"] == "Campus Innovation Hub, Main Auditorium"
+
 
 
 

@@ -366,3 +366,91 @@ def reset_schedule_to_default() -> Tuple[bool, str]:
         db.session.delete(record)
         db.session.commit()
     return True, "Public schedule restored to default."
+
+
+DEFAULT_CONTACT = {
+    "organizing_committee": "Organizing Committee",
+    "venue_name": "Campus Innovation Hub, Main Auditorium",
+    "venue_short": "Campus Innovation Hub, Bengaluru",
+    "venue_address": "Tech Campus Auditorium, Bengaluru, KA 560001",
+    "venue_city": "Bengaluru & Hybrid",
+    "email": "contact@hackathon.org",
+    "sponsorship_email": "partners@hackathon.org",
+    "mentor_email": "mentors@hackathon.org",
+    "phone": "+91 (080) 555-0199",
+    "whatsapp": "+91 98765-43210",
+    "support_hours": "Operational 09:00 AM – 07:00 PM IST",
+    "is_custom": False,
+}
+
+
+def get_contact_content() -> Dict[str, Any]:
+    """Retrieves current public contact and venue details from database settings or returns defaults."""
+    raw = EventSetting.get_val("EVENT_CONTACT_DATA")
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                merged = dict(DEFAULT_CONTACT)
+                merged.update(parsed)
+                merged["is_custom"] = True
+                return merged
+        except Exception as e:
+            logger.warning(f"Failed to parse stored EVENT_CONTACT_DATA: {e}")
+
+    return dict(DEFAULT_CONTACT)
+
+
+def save_contact_content(data: Dict[str, Any]) -> Tuple[bool, str]:
+    """Validates and persists updated public contact and venue configuration in database settings."""
+    if not isinstance(data, dict):
+        return False, "Contact payload must be a JSON object."
+
+    venue_name = (data.get("venue_name") or "").strip()
+    venue_short = (data.get("venue_short") or "").strip()
+    venue_address = (data.get("venue_address") or "").strip()
+    venue_city = (data.get("venue_city") or "").strip()
+    email = (data.get("email") or "").strip()
+    sponsorship_email = (data.get("sponsorship_email") or "").strip()
+    mentor_email = (data.get("mentor_email") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    whatsapp = (data.get("whatsapp") or "").strip()
+    support_hours = (data.get("support_hours") or "").strip()
+    org_committee = (data.get("organizing_committee") or "").strip() or "Organizing Committee"
+
+    if len(venue_name) < 2:
+        return False, "Venue name must be at least 2 characters."
+    if not venue_short:
+        venue_short = venue_name
+    if not email or "@" not in email:
+        return False, "A valid primary contact email address is required."
+
+    payload = {
+        "organizing_committee": org_committee,
+        "venue_name": venue_name,
+        "venue_short": venue_short,
+        "venue_address": venue_address or venue_short,
+        "venue_city": venue_city or "Bengaluru & Hybrid",
+        "email": email,
+        "sponsorship_email": sponsorship_email or "partners@hackathon.org",
+        "mentor_email": mentor_email or "mentors@hackathon.org",
+        "phone": phone or "+91 (080) 555-0199",
+        "whatsapp": whatsapp or "+91 98765-43210",
+        "support_hours": support_hours or "Operational 09:00 AM – 07:00 PM IST",
+        "is_custom": True,
+    }
+
+    EventSetting.set_val("EVENT_CONTACT_DATA", json.dumps(payload), "Custom Public Event Contact & Venue Details")
+    logger.info("Successfully updated public event contact and venue in database settings.")
+    return True, "Public contact and venue details saved and synchronized across portal."
+
+
+def reset_contact_to_default() -> Tuple[bool, str]:
+    """Resets public contact and venue settings back to factory defaults."""
+    record = EventSetting.query.filter_by(key="EVENT_CONTACT_DATA").first()
+    if record:
+        from app.extensions import db
+        db.session.delete(record)
+        db.session.commit()
+    return True, "Public contact and venue details restored to default."
+

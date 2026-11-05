@@ -4,7 +4,7 @@ from app.extensions import db
 from app.models.contact_message import ContactMessage
 from app.models.event_setting import EventSetting
 from app.services.registration_service import VALID_DOMAINS
-from app.services.content_service import get_rules_content, get_schedule_content
+from app.services.content_service import get_rules_content, get_schedule_content, get_contact_content
 from config import Config
 
 public_bp = Blueprint("public", __name__)
@@ -23,6 +23,42 @@ def serve_js(filename):
 @public_bp.route("/assets/<path:filename>")
 def serve_assets(filename):
     return send_from_directory(os.path.join(current_app.root_path, "static", "assets"), filename)
+
+
+@public_bp.route("/manifest.json")
+@public_bp.route("/manifest.webmanifest")
+def serve_manifest():
+    return send_from_directory(
+        os.path.join(current_app.root_path, "static"),
+        "manifest.json",
+        mimetype="application/manifest+json"
+    )
+
+
+@public_bp.route("/sw.js")
+def serve_sw():
+    response = send_from_directory(
+        os.path.join(current_app.root_path, "static"),
+        "sw.js",
+        mimetype="application/javascript"
+    )
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
+
+@public_bp.route("/offline.html")
+@public_bp.route("/offline")
+def offline_page():
+    return render_template("offline.html")
+
+
+@public_bp.route("/icons/<path:filename>")
+def serve_icons(filename):
+    return send_from_directory(
+        os.path.join(current_app.root_path, "static", "icons"),
+        filename
+    )
 
 
 @public_bp.route("/")
@@ -60,10 +96,18 @@ def api_public_schedule():
     return jsonify({"success": True, "data": content})
 
 
+@public_bp.route("/api/public/contact", methods=["GET"])
+def api_public_contact():
+    """Returns current public contact and venue details."""
+    content = get_contact_content()
+    return jsonify({"success": True, "data": content})
+
+
 @public_bp.route("/contact")
 @public_bp.route("/contact.html")
 def contact():
-    return render_template("contact.html")
+    content = get_contact_content()
+    return render_template("contact.html", contact_data=content)
 
 
 @public_bp.route("/api/domains", methods=["GET"])
@@ -88,6 +132,7 @@ def get_public_config():
     
     event_short_name = event_name.split()[0] if event_name else "SYNEX"
     brand_initial = event_name[0].upper() if event_name else "S"
+    contact_data = get_contact_content()
     
     return jsonify({
         "event_name": event_name,
@@ -104,6 +149,11 @@ def get_public_config():
         "razorpay_key_id": current_app.config.get("RAZORPAY_KEY_ID"),
         "min_team_members": min_team_members,
         "max_team_members": max_team_members,
+        "venue": contact_data.get("venue_short"),
+        "venue_name": contact_data.get("venue_name"),
+        "venue_address": contact_data.get("venue_address"),
+        "venue_city": contact_data.get("venue_city"),
+        "contact": contact_data,
     })
 
 

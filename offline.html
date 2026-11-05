@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline — SYNEX Hackathon</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0F172A;
+      --card-bg: #1E293B;
+      --border: #334155;
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --accent: #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .offline-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 520px;
+      width: 100%;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .icon-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: rgba(37, 99, 235, 0.15);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      color: #60A5FA;
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .badge-offline {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      border: 2px solid var(--card-bg);
+    }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+    }
+    p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1.8rem;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #FBBF24;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #F59E0B;
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: #64748B;
+    }
+    .cached-links {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .cached-nav {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-top: 0.8rem;
+    }
+    .cached-nav a {
+      color: #60A5FA;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.3rem 0.6rem;
+      background: rgba(96, 165, 250, 0.1);
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .cached-nav a:hover {
+      background: rgba(96, 165, 250, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div class="icon-wrapper">
+      <i class="fa-solid fa-wifi"></i>
+      <div class="badge-offline">!</div>
+    </div>
+    
+    <div class="status-pill">
+      <span class="pulse-dot"></span>
+      <span>Operating in Offline Mode</span>
+    </div>
+
+    <h1>You are Currently Offline</h1>
+    <p>
+      The SYNEX Hackathon Portal has loaded from your local device cache. You can still access saved passes, offline schedules, and event guidelines.
+    </p>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btnRetry">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>Try Reconnecting</span>
+      </button>
+      <a href="/" class="btn btn-outline">
+        <i class="fa-solid fa-house"></i>
+        <span>Return to Home</span>
+      </a>
+    </div>
+
+    <div class="cached-links">
+      <span>Available Offline Caches:</span>
+      <div class="cached-nav">
+        <a href="/confirmation.html"><i class="fa-solid fa-qrcode"></i> Pass</a>
+        <a href="/schedule.html"><i class="fa-solid fa-calendar-days"></i> Schedule</a>
+        <a href="/rules.html"><i class="fa-solid fa-book-open"></i> Rules</a>
+        <a href="/contact.html"><i class="fa-solid fa-phone"></i> Helpline</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('btnRetry').addEventListener('click', () => {
+      const btn = document.getElementById('btnRetry');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking connection...';
+      btn.disabled = true;
+      fetch('/api/config', { cache: 'no-store' })
+        .then(() => { window.location.reload(); })
+        .catch(() => {
+          setTimeout(() => {
+            btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Try Reconnecting';
+            btn.disabled = false;
+            alert('Still offline. Please verify your internet connection or Wi-Fi network.');
+          }, 800);
+        });
+    });
+
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+  </script>
+</body>
+</html>
