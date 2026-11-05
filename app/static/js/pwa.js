@@ -50,31 +50,22 @@
 
   // 2. Listen for BeforeInstallPrompt (Desktop & Android)
   window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent the mini-infobar from appearing on mobile
+    // Prevent default browser prompt from interrupting users
     e.preventDefault();
     deferredPrompt = e;
-    console.log('[PWA] Captured beforeinstallprompt event');
-
-    // Show install buttons
-    updateInstallUi(true);
+    console.log('[PWA] App is installable in standalone mode');
   });
 
   window.addEventListener('appinstalled', () => {
     console.log('[PWA] Application was successfully installed!');
     deferredPrompt = null;
-    updateInstallUi(false);
-    showToast('SYNEX App installed successfully! You can launch it from your desktop or home screen.', 'success');
   });
 
-  // 3. UI Update Helpers
-  function updateInstallUi(show) {
-    if (isStandalone) {
-      show = false;
-    }
-
+  // 3. UI Update Helpers (Keeps public portal clean without automatic install prompts)
+  function updateInstallUi(show = false) {
     const installBtns = document.querySelectorAll('.pwa-install-btn, #btnPwaInstall, #btnPwaInstallMobile');
     installBtns.forEach((btn) => {
-      if (show || isIOS) {
+      if (show) {
         btn.classList.remove('pwa-hidden');
         btn.style.display = 'inline-flex';
       } else {
@@ -82,11 +73,6 @@
         btn.style.display = 'none';
       }
     });
-
-    // Also inject floating prompt if not on standalone and not dismissed
-    if (show && !sessionStorage.getItem('pwa_prompt_dismissed') && !document.getElementById('pwaFloatingBanner')) {
-      createFloatingPrompt();
-    }
   }
 
   // 4. Handle Install Click Trigger
@@ -285,10 +271,7 @@
       });
     });
 
-    // If on iOS and not standalone, show install button in navbar
-    if (isIOS && !isStandalone) {
-      updateInstallUi(true);
-    }
+    // Event listeners attached if any install buttons exist
   }
 
   if (document.readyState === 'loading') {

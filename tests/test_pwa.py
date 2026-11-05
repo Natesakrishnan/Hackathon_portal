@@ -68,12 +68,12 @@ def test_pwa_client_script_served(client):
 
 
 def test_pwa_meta_tags_in_templates(client):
-    """Test that public pages include PWA manifest link and install button elements."""
+    """Test that public pages include PWA manifest link and script without visible install button clutter."""
     pages = ["/", "/schedule", "/rules", "/contact", "/register"]
     for page in pages:
         response = client.get(page)
         assert response.status_code == 200
         assert b'rel="manifest"' in response.data, f"Page {page} missing manifest link"
         assert b'meta name="theme-color"' in response.data, f"Page {page} missing theme-color"
-        assert b'btnPwaInstall' in response.data, f"Page {page} missing install button"
+        assert b'btnPwaInstall' not in response.data, f"Page {page} unexpectedly contains visible install button"
         assert b'/js/pwa.js' in response.data, f"Page {page} missing pwa.js script"
