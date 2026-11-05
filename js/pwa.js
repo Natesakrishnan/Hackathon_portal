@@ -1,5 +1,5 @@
 /**
- * SYNEX 2026 — PWA & Standalone App Manager
+ * Hack 2026 — PWA & Standalone App Manager
  * Enables one-click installation on Desktop (Windows/Mac/Linux) and Mobile (Android/iOS),
  * manages offline connectivity banners, and registers the root Service Worker.
  */
@@ -78,7 +78,7 @@
   // 4. Handle Install Click Trigger
   async function triggerInstallFlow() {
     if (isStandalone) {
-      showToast('SYNEX is already running as an installed standalone app.', 'info');
+      showToast('Hack is already running as an installed standalone app.', 'info');
       return;
     }
 
@@ -115,7 +115,7 @@
           <img src="/icons/icon-192.png" alt="App Icon" width="40" height="40">
         </div>
         <div class="pwa-banner-text">
-          <strong>Install SYNEX App</strong>
+          <strong>Install Hack App</strong>
           <span>Access passes, schedule & offline guidelines seamlessly</span>
         </div>
       </div>
@@ -157,7 +157,7 @@
           <button class="pwa-modal-close" onclick="document.getElementById('pwaIosModal').remove()">&times;</button>
         </div>
         <div class="pwa-modal-body">
-          <p>Install SYNEX 2026 on your iOS device for instant access to your pass, offline rules, and live alerts:</p>
+          <p>Install Hack 2026 on your iOS device for instant access to your pass, offline rules, and live alerts:</p>
           <ol class="pwa-steps-list">
             <li>
               <span class="step-num">1</span>
@@ -198,7 +198,7 @@
           <button class="pwa-modal-close" onclick="document.getElementById('pwaDesktopModal').remove()">&times;</button>
         </div>
         <div class="pwa-modal-body">
-          <p>You can run SYNEX 2026 as a standalone desktop app on Windows, macOS, or Linux:</p>
+          <p>You can run Hack 2026 as a standalone desktop app on Windows, macOS, or Linux:</p>
           <ol class="pwa-steps-list">
             <li>
               <span class="step-num">1</span>
@@ -206,7 +206,7 @@
             </li>
             <li>
               <span class="step-num">2</span>
-              <span>Click the <strong>Install App icon</strong> <i class="fa-solid fa-desktop" style="color:#38bdf8"></i> or <strong>Settings (&#8942;) &rarr; Cast, Save, and Share &rarr; Install SYNEX Hackathon</strong>.</span>
+              <span>Click the <strong>Install App icon</strong> <i class="fa-solid fa-desktop" style="color:#38bdf8"></i> or <strong>Settings (&#8942;) &rarr; Cast, Save, and Share &rarr; Install Hack Hackathon</strong>.</span>
             </li>
             <li>
               <span class="step-num">3</span>

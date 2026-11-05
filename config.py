@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class Config:
     """Base application configuration with safe MySQL URI construction and configurable fallback."""
-    SECRET_KEY = os.environ.get("SECRET_KEY", "synex-default-secret-key-change-me")
+    SECRET_KEY = os.environ.get("SECRET_KEY", "hack-default-secret-key-change-me")
 
     # Session Configuration
     PERMANENT_SESSION_LIFETIME = timedelta(
@@ -44,12 +44,12 @@ class Config:
     }
 
     # Razorpay Payment Gateway
-    RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_SYNEX_DEMO_KEY")
-    RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "synex_razorpay_secret_test_2026")
-    RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "synex_webhook_secret_test_2026")
+    RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_HACK_DEMO_KEY")
+    RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "hack_razorpay_secret_test_2026")
+    RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "hack_webhook_secret_test_2026")
 
     # Hackathon Business Rules
-    EVENT_NAME = os.environ.get("EVENT_NAME", "SYNEX 2026")
+    EVENT_NAME = os.environ.get("EVENT_NAME", "Hack 2026")
     EVENT_INDIVIDUAL_FEE = int(os.environ.get("EVENT_INDIVIDUAL_FEE", 299))
     EVENT_TEAM_FEE = int(os.environ.get("EVENT_TEAM_FEE", 999))
     EVENT_PER_MEMBER_FEE = int(os.environ.get("EVENT_PER_MEMBER_FEE", 250))
@@ -64,7 +64,7 @@ class Config:
     MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "True").lower() in ("true", "1")
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "SYNEX Hackathon Team <noreply@synex.org>")
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "Hack Hackathon Team <noreply@hack.org>")
 
     # CSRF
     WTF_CSRF_ENABLED = True

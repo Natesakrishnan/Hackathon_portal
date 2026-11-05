@@ -1,9 +1,9 @@
 /**
- * SYNEX Hackathon Portal — Service Worker (PWA)
+ * Hack Portal — Service Worker (PWA)
  * Provides offline navigation, instant asset caching, and standalone app execution.
  */
 
-const CACHE_NAME = 'synex-pwa-v1';
+const CACHE_NAME = 'hack-pwa-v1';
 const OFFLINE_URL = '/offline.html';
 
 const PRECACHE_ASSETS = [

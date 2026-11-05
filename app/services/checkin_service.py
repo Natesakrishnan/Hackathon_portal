@@ -13,9 +13,9 @@ def resolve_checkin_code(raw_code: str) -> Optional[Registration]:
     """
     Parses and resolves a check-in code into a Registration object.
     Supports:
-      1. JSON string: {"type":"synex_checkin","ref":"SYNEX-XXXXXX","token":"CHK-XXXXXX"}
+      1. JSON string: {"type":"hack_checkin","ref":"HACK-XXXXXX","token":"CHK-XXXXXX"}
       2. Checkin token: CHK-XXXXXXXXXXXX
-      3. Registration public_id: SYNEX-XXXXXX
+      3. Registration public_id: HACK-XXXXXX
       4. Integer DB ID
     """
     if not raw_code:
@@ -122,7 +122,7 @@ def verify_and_checkin(code: str, coordinator_name: str = "Coordinator", notes: 
 def undo_checkin(ref_or_id: Any) -> Tuple[bool, str, int]:
     """
     Allows a coordinator to undo an accidental check-in.
-    Accepts numeric DB ID, public_id (SYNEX-...), or checkin_token (CHK-...).
+    Accepts numeric DB ID, public_id (HACK-...), or checkin_token (CHK-...).
     """
     reg = resolve_checkin_code(ref_or_id)
     if not reg:
@@ -189,7 +189,7 @@ def get_qr_code_payload(reg: Registration) -> str:
     """
     team_name = reg.team.team_name if reg.team else (reg.participant.full_name if reg.participant else reg.public_id)
     return json.dumps({
-        "type": "synex_checkin",
+        "type": "hack_checkin",
         "ref": reg.public_id,
         "token": reg.checkin_token or "",
         "team": team_name,

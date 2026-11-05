@@ -13,7 +13,7 @@ def test_pwa_manifest_endpoint(client):
     assert "application/manifest+json" in response.content_type
 
     data = json.loads(response.data.decode("utf-8"))
-    assert "SYNEX" in data["name"]
+    assert "Hack" in data["name"]
     assert data["display"] == "standalone"
     assert "window-controls-overlay" in data.get("display_override", [])
     assert data["scope"] == "/"
@@ -32,7 +32,7 @@ def test_pwa_service_worker_endpoint(client):
     assert "application/javascript" in response.content_type
     assert response.headers.get("Service-Worker-Allowed") == "/"
     assert "no-cache" in response.headers.get("Cache-Control", "")
-    assert b"synex-pwa" in response.data
+    assert b"hack-pwa" in response.data
 
 
 def test_pwa_offline_page(client):

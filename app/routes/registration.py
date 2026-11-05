@@ -53,4 +53,4 @@ def get_registration_qr_image(ref):
 
     payload_str = get_qr_code_payload(reg)
     png_bytes = generate_qr_code_png_bytes(payload_str)
-    return send_file(io.BytesIO(png_bytes), mimetype="image/png", download_name=f"synex_qr_{ref}.png")
+    return send_file(io.BytesIO(png_bytes), mimetype="image/png", download_name=f"hack_qr_{ref}.png")

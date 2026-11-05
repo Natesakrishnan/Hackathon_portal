@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ event_name | default('SYNEX 2026') }} — National Innovation Hackathon</title>
-  <meta name="description" content="Join {{ event_name | default('SYNEX 2026') }}, the premier 36-hour national innovation hackathon. Build the future with ₹2,50,000+ in prizes, world-class mentorship, and 1,200+ creators.">
+  <title>{{ event_name | default('Hack 2026') }} — National Innovation Hackathon</title>
+  <meta name="description" content="Join {{ event_name | default('Hack 2026') }}, the premier 36-hour national innovation hackathon. Build the future with ₹2,50,000+ in prizes, world-class mentorship, and 1,200+ creators.">
 
     <!-- PWA & Application Meta (Desktop & Mobile) -->
   <link rel="manifest" href="/manifest.json">
@@ -12,12 +12,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
-  <meta name="application-name" content="SYNEX Hackathon">
+  <meta name="apple-mobile-web-app-title" content="Hack 2026">
+  <meta name="application-name" content="Hack">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,10 +35,10 @@
   <!-- Navigation Bar -->
   <header class="navbar" id="topNav">
     <div class="container nav-container">
-      <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX 2026') }} Homepage">
-        <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
+      <a href="index.html" class="brand" aria-label="{{ event_name | default('Hack 2026') }} Homepage">
+        <div class="brand-logo-icon">{{ brand_initial | default('H') }}</div>
         <div class="brand-text">
-          <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+          <span class="brand-name">{{ event_short_name | default('Hack') }}</span>
           <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
         </div>
       </a>
@@ -137,7 +137,7 @@
               </div>
               <div class="hero-meta-text">
                 <span class="hero-meta-label">Entry From</span>
-                <span class="hero-meta-val" id="heroEntryFeeDisplay" data-synex-fees="combined">₹{{ per_member_fee | default(250) }} / Member</span>
+                <span class="hero-meta-val" id="heroEntryFeeDisplay" data-hack-fees="combined">₹{{ per_member_fee | default(250) }} / Member</span>
               </div>
             </div>
           </div>
@@ -250,14 +250,14 @@
           <div class="about-info">
             <span class="section-tag">
               <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
-              <span>About {{ event_short_name | default('SYNEX') }}</span>
+              <span>About {{ event_short_name | default('Hack') }}</span>
             </span>
             <h2 class="section-title">Fostering Groundbreaking Solutions For Real-World Challenges</h2>
             <p>
-              {{ event_name | default('SYNEX 2026') }} is an intensive, high-energy hackathon designed to empower student innovators and tech pioneers. Over 36 exhilarating hours, teams will conceptualize, build, and deploy production-ready prototypes across 8 multidisciplinary domains.
+              {{ event_name | default('Hack 2026') }} is an intensive, high-energy hackathon designed to empower student innovators and tech pioneers. Over 36 exhilarating hours, teams will conceptualize, build, and deploy production-ready prototypes across 8 multidisciplinary domains.
             </p>
             <p>
-              Whether you are an experienced systems programmer, an AI enthusiast, an IoT hardware tinkerer, or a product designer, {{ event_short_name | default('SYNEX') }} provides the ideal launchpad to validate your hypotheses with veteran industry mentors and venture scouts.
+              Whether you are an experienced systems programmer, an AI enthusiast, an IoT hardware tinkerer, or a product designer, {{ event_short_name | default('Hack') }} provides the ideal launchpad to validate your hypotheses with veteran industry mentors and venture scouts.
             </p>
 
             <div class="about-features">
@@ -301,7 +301,7 @@
           </div>
 
           <div class="about-highlight-box">
-            <h3 class="about-highlight-title">Why Compete in {{ event_name | default('SYNEX 2026') }}?</h3>
+            <h3 class="about-highlight-title">Why Compete in {{ event_name | default('Hack 2026') }}?</h3>
             <p class="about-highlight-p">
               We bridge academic rigor with commercial viability. Gain access to cloud infrastructure credits, API sponsorships, live code review checkpoints, and high-impact jury panels.
             </p>
@@ -671,7 +671,7 @@
             <div class="benefit-icon"><i class="fa-solid fa-shirt"></i></div>
             <div>
               <h4 class="benefit-title">Exclusive Swag Kit</h4>
-              <p class="benefit-desc">{{ event_short_name | default('SYNEX') }} premium t-shirt, stickers, tech lanyard, and partner goodies.</p>
+              <p class="benefit-desc">{{ event_short_name | default('Hack') }} premium t-shirt, stickers, tech lanyard, and partner goodies.</p>
             </div>
           </div>
         </div>
@@ -688,7 +688,7 @@
           </span>
           <h2 class="section-title">Participation Rules at a Glance</h2>
           <p class="section-desc">
-            Fair play, academic integrity, and collaboration are fundamental to the spirit of {{ event_short_name | default('SYNEX') }}.
+            Fair play, academic integrity, and collaboration are fundamental to the spirit of {{ event_short_name | default('Hack') }}.
           </p>
         </div>
 
@@ -752,7 +752,7 @@
           <!-- Q1 -->
           <div class="faq-item">
             <button class="faq-question" aria-expanded="false">
-              <span>Who is eligible to participate in {{ event_name | default('SYNEX 2026') }}?</span>
+              <span>Who is eligible to participate in {{ event_name | default('Hack 2026') }}?</span>
               <div class="faq-icon"><i class="fa-solid fa-chevron-down"></i></div>
             </button>
             <div class="faq-answer">
@@ -822,7 +822,7 @@
             </button>
             <div class="faq-answer">
               <p>
-                Yes! {{ event_name | default('SYNEX 2026') }} offers a hybrid track. Remote participants can join mentoring calls and jury presentations via Zoom/Google Meet while enjoying parity in judging criteria and special online category awards.
+                Yes! {{ event_name | default('Hack 2026') }} offers a hybrid track. Remote participants can join mentoring calls and jury presentations via Zoom/Google Meet while enjoying parity in judging criteria and special online category awards.
               </p>
             </div>
           </div>
@@ -858,10 +858,10 @@
     <div class="container">
       <div class="footer-top">
         <div class="footer-brand">
-          <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX') }} Homepage">
-            <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
+          <a href="index.html" class="brand" aria-label="{{ event_name | default('Hack') }} Homepage">
+            <div class="brand-logo-icon">{{ brand_initial | default('H') }}</div>
             <div class="brand-text">
-              <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+              <span class="brand-name">{{ event_short_name | default('Hack') }}</span>
               <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
             </div>
           </a>
@@ -915,7 +915,7 @@
 
       <div class="footer-bottom">
         <div>
-          &copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} {{ contact_data.organizing_committee if contact_data else 'Organizing Committee' }}. All rights reserved.
+          &copy; {{ current_year | default(2026) }} {{ event_name | default('Hack') }} {{ contact_data.organizing_committee if contact_data else 'Organizing Committee' }}. All rights reserved.
         </div>
       </div>
     </div>

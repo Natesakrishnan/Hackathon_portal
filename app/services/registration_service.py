@@ -31,7 +31,7 @@ def get_event_registration_prefix() -> str:
     Formats {event_name} into an uppercase slug suitable for registration IDs.
     Example:
       'Hackathon' -> 'HACKATHON'
-      'SYNEX 2026' -> 'SYNEX-2026'
+      'Hack 2026' -> 'HACK-2026'
     """
     raw_name = None
     try:
@@ -48,14 +48,14 @@ def get_event_registration_prefix() -> str:
             pass
 
     if not raw_name:
-        raw_name = getattr(Config, "EVENT_NAME", "SYNEX")
+        raw_name = getattr(Config, "EVENT_NAME", "Hack")
 
     # Clean characters: replace spaces/underscores with hyphens, remove special characters
     clean_slug = re.sub(r"[\s_]+", "-", str(raw_name).strip())
     clean_slug = re.sub(r"[^A-Za-z0-9-]", "", clean_slug)
     clean_slug = re.sub(r"-+", "-", clean_slug).strip("-")
 
-    prefix = clean_slug.upper() if clean_slug else "SYNEX"
+    prefix = clean_slug.upper() if clean_slug else "Hack"
     return prefix[:24].rstrip("-")
 
 

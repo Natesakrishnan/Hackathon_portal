@@ -52,7 +52,7 @@ def get_smtp_config() -> Dict[str, Any]:
     use_ssl = EventSetting.get_val("SMTP_USE_SSL", "false").lower() in ("true", "1", "yes")
     default_sender = EventSetting.get_val(
         "SMTP_SENDER",
-        current_app.config.get("MAIL_DEFAULT_SENDER", f"{EventSetting.get_val('EVENT_NAME', 'SYNEX 2026')} Team <noreply@synex.org>")
+        current_app.config.get("MAIL_DEFAULT_SENDER", f"{EventSetting.get_val('EVENT_NAME', 'Hack 2026')} Team <noreply@hack.org>")
     ).strip()
 
     if provider == "brevo":
@@ -103,7 +103,7 @@ def save_smtp_config(data: Dict[str, Any]) -> Tuple[bool, str]:
     password = (data.get("password") or "").strip()
     use_tls = bool(data.get("use_tls", True))
     use_ssl = bool(data.get("use_ssl", False))
-    sender = (data.get("default_sender") or f"SYNEX Team <{user or 'noreply@synex.org'}>").strip()
+    sender = (data.get("default_sender") or f"Hack Team <{user or 'noreply@hack.org'}>").strip()
 
     EventSetting.set_val("EMAIL_PROVIDER", provider, "Email Delivery Provider (brevo, resend, or smtp)")
     if brevo_key:
@@ -157,10 +157,10 @@ def send_email(
         return False, "Email message body is required.", None
 
     cfg = get_smtp_config()
-    curr_event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
-    sender = cfg["default_sender"] or f"{curr_event_name} Hackathon <{cfg['username'] or 'noreply@synex.org'}>"
+    curr_event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026"))
+    sender = cfg["default_sender"] or f"{curr_event_name} Hackathon <{cfg['username'] or 'noreply@hack.org'}>"
     _, from_email = parseaddr(sender)
-    envelope_from = from_email if from_email else (cfg["username"] or "noreply@synex.org")
+    envelope_from = from_email if from_email else (cfg["username"] or "noreply@hack.org")
 
     if not body_html:
         from app.services.content_service import get_contact_content
@@ -176,7 +176,7 @@ def send_email(
           <div style="color: #334155; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">{body_text}</div>
           <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8;">
             <p style="margin: 0;">This email was sent by the {curr_event_name} Admin Portal.</p>
-            <p style="margin: 4px 0 0;">{venue_short_str} &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
+            <p style="margin: 4px 0 0;">{venue_short_str} &bull; <a href="https://hack2026.org" style="color: #2563EB;">hack2026.org</a></p>
           </div>
         </div>
         """
@@ -277,8 +277,8 @@ def send_email(
             # If sender domain is synthetic/unverified placeholder, default to Resend test sandbox
             is_placeholder_domain = (
                 not parsed_addr
-                or parsed_addr.endswith("@synex.org")
-                or parsed_addr.endswith("@synex2026.org")
+                or parsed_addr.endswith("@hack.org")
+                or parsed_addr.endswith("@hack2026.org")
                 or parsed_addr.endswith("@example.com")
             )
             if is_placeholder_domain:
@@ -307,7 +307,7 @@ def send_email(
 
             # If rejected because domain is unverified, auto-retry with onboarding@resend.dev sandbox
             if resp.status_code == 403 and "domain is not verified" in resp.text:
-                fallback_from = f"{display_name or 'SYNEX Hackathon'} <onboarding@resend.dev>"
+                fallback_from = f"{display_name or 'Hack Hackathon'} <onboarding@resend.dev>"
                 if payload["from"] != fallback_from:
                     logger.info(f"Resend reported domain unverified for '{payload['from']}'. Auto-retrying with '{fallback_from}'...")
                     payload["from"] = fallback_from
@@ -371,7 +371,7 @@ def send_email(
                         except Exception as fe:
                             logger.warning(f"Failed to forward via Resend sandbox: {fe}")
                 elif "domain is not verified" in err_msg.lower():
-                    friendly_err = f"{err_msg} (Tip: To test without adding a custom domain, set your Sender Header to 'SYNEX Hackathon <onboarding@resend.dev>')."
+                    friendly_err = f"{err_msg} (Tip: To test without adding a custom domain, set your Sender Header to 'Hack Hackathon <onboarding@resend.dev>')."
                 else:
                     friendly_err = err_msg
 
@@ -499,8 +499,8 @@ def test_smtp_connection(test_recipient: Optional[str] = None) -> Tuple[bool, st
                 if test_recipient and "@" in test_recipient:
                     success, msg, _ = send_email(
                         to_email=test_recipient,
-                        subject="[SYNEX 2026] Brevo Live Email Test",
-                        body_text="Congratulations! Your SYNEX 2026 Hackathon email delivery is working perfectly via Brevo API on Port 443."
+                        subject="[Hack 2026] Brevo Live Email Test",
+                        body_text="Congratulations! Your Hack 2026 Hackathon email delivery is working perfectly via Brevo API on Port 443."
                     )
                     return success, f"Brevo API authenticated ({acc_email})! Test ping result: {msg}"
                 return True, f"Brevo API connection established and authenticated successfully for account {acc_email}!"
@@ -519,8 +519,8 @@ def test_smtp_connection(test_recipient: Optional[str] = None) -> Tuple[bool, st
                 if test_recipient and "@" in test_recipient:
                     success, msg, _ = send_email(
                         to_email=test_recipient,
-                        subject="[SYNEX 2026] Live Email Connection Test",
-                        body_text="Congratulations! Your SYNEX 2026 Hackathon email delivery is working perfectly via Resend API."
+                        subject="[Hack 2026] Live Email Connection Test",
+                        body_text="Congratulations! Your Hack 2026 Hackathon email delivery is working perfectly via Resend API."
                     )
                     return success, f"Resend API authenticated! Test ping result: {msg}"
                 return True, "Resend API connection established and authenticated successfully!"
@@ -542,7 +542,7 @@ def test_smtp_connection(test_recipient: Optional[str] = None) -> Tuple[bool, st
         server.login(cfg["username"], cfg["password"])
 
         if test_recipient and "@" in test_recipient:
-            test_evt = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
+            test_evt = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026"))
             msg = MIMEText(f"This is an automated test ping from the {test_evt} Hackathon Admin Portal.")
             msg["Subject"] = f"[{test_evt}] SMTP Connection Test Ping"
             msg["From"] = cfg["default_sender"]
@@ -604,7 +604,7 @@ def send_confirmation_email(registration, payment=None) -> bool:
     else:
         return False
 
-    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
+    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026"))
     subject = f"[{event_name}] Registration & Check-In Pass Confirmed - {team_name} ({registration.public_id})"
 
     # 3. Generate Unique Check-In QR Code
@@ -733,7 +733,7 @@ QR Image URL:      {qr_image_url}
 View or Print Official Pass Online:
 {confirmation_pass_url}
 
-Need help? Contact support@synex.org.
+Need help? Contact support@hack.org.
 - {event_name} Organizing Committee
     """.strip()
 
@@ -816,7 +816,7 @@ Need help? Contact support@synex.org.
             <ul style="margin: 6px 0 0 0; padding-left: 18px;">
               <li>Please have the check-in QR code below ready on your mobile device or printed copy at the entrance desk.</li>
               <li>Every team member must present their valid college/university photo identity card.</li>
-              <li>The QR code PNG is also attached to this email as <code>synex_checkin_qr_{registration.public_id}.png</code> for offline access.</li>
+              <li>The QR code PNG is also attached to this email as <code>hack_checkin_qr_{registration.public_id}.png</code> for offline access.</li>
               <li>Registration desk opens at 08:30 AM IST. Keynote and hackathon kickoff begins at 10:00 AM IST.</li>
             </ul>
           </div>
@@ -872,14 +872,14 @@ Need help? Contact support@synex.org.
 
               <div style="font-size: 11px; color: #94A3B8; margin-top: 10px;">
                 Pass Link: <a href="{confirmation_pass_url}" style="color: #2563EB;">{confirmation_pass_url}</a><br>
-                <em>(The high-resolution QR image is also attached to this email as synex_checkin_qr_{registration.public_id}.png)</em>
+                <em>(The high-resolution QR image is also attached to this email as hack_checkin_qr_{registration.public_id}.png)</em>
               </div>
 
             </div>
           </div>
 
           <p style="margin-top: 24px; color: #64748B; font-size: 12px; line-height: 1.5; text-align: center;">
-            Questions or support? Reply to this email or contact us at <a href="mailto:support@synex.org" style="color: #2563EB;">support@synex.org</a>.
+            Questions or support? Reply to this email or contact us at <a href="mailto:support@hack.org" style="color: #2563EB;">support@hack.org</a>.
           </p>
         </div>
 
@@ -896,7 +896,7 @@ Need help? Contact support@synex.org.
     attachments = []
     if qr_png_bytes:
         attachments.append({
-            "filename": f"synex_checkin_qr_{registration.public_id}.png",
+            "filename": f"hack_checkin_qr_{registration.public_id}.png",
             "content_bytes": qr_png_bytes,
             "subtype": "png"
         })

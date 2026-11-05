@@ -49,7 +49,7 @@ def create_payment_order(public_id: str) -> Tuple[bool, Dict[str, Any], int]:
             "registration_id": registration.public_id,
             "type": registration.registration_type,
             "domain": registration.domain,
-            "event": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026")),
+            "event": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026")),
         },
     }
 

@@ -404,7 +404,7 @@ def export_summary_report_csv() -> str:
     # Overview Metadata
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
     from app.models.event_setting import EventSetting
-    evt_name = EventSetting.get_val("EVENT_NAME", "SYNEX 2026")
+    evt_name = EventSetting.get_val("EVENT_NAME", "Hack 2026")
     writer.writerow([sanitize_csv_cell(f"{evt_name} Hackathon — Executive & Financial Report")])
     writer.writerow([sanitize_csv_cell("Generated At"), sanitize_csv_cell(now_str)])
     writer.writerow([sanitize_csv_cell("Data Source"), sanitize_csv_cell("Production MySQL Database (Real Records)")])
@@ -468,7 +468,7 @@ def export_domain_report_csv() -> str:
 
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
     from app.models.event_setting import EventSetting
-    evt_name = EventSetting.get_val("EVENT_NAME", "SYNEX 2026")
+    evt_name = EventSetting.get_val("EVENT_NAME", "Hack 2026")
     writer.writerow([sanitize_csv_cell(f"{evt_name} Hackathon — Innovation Domain Distribution Report")])
     writer.writerow([sanitize_csv_cell("Generated At"), sanitize_csv_cell(now_str)])
     writer.writerow([])

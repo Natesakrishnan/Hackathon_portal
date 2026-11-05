@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_app(config_name: str = None) -> Flask:
-    """Application factory for SYNEX Hackathon Portal."""
+    """Application factory for Hack Portal."""
     if not config_name:
         config_name = os.environ.get("FLASK_ENV", "development")
 
@@ -66,7 +66,7 @@ def create_app(config_name: str = None) -> Flask:
     def inject_global_vars():
         try:
             from app.models.event_setting import EventSetting
-            event_name = EventSetting.get_val("EVENT_NAME", app.config.get("EVENT_NAME", "SYNEX 2026"))
+            event_name = EventSetting.get_val("EVENT_NAME", app.config.get("EVENT_NAME", "Hack 2026"))
             indiv_fee = int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", app.config.get("EVENT_INDIVIDUAL_FEE", 299)))
             team_fee = int(EventSetting.get_val("EVENT_TEAM_FEE", app.config.get("EVENT_TEAM_FEE", 999)))
             per_member_fee = int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", app.config.get("EVENT_PER_MEMBER_FEE", 250)))
@@ -75,7 +75,7 @@ def create_app(config_name: str = None) -> Flask:
             max_team_members = int(EventSetting.get_val("MAX_TEAM_MEMBERS", app.config.get("MAX_TEAM_MEMBERS", 4)))
             prize_pool = EventSetting.get_val("TOTAL_PRIZE_POOL", app.config.get("TOTAL_PRIZE_POOL", "₹2,50,000"))
         except Exception:
-            event_name = app.config.get("EVENT_NAME", "SYNEX 2026")
+            event_name = app.config.get("EVENT_NAME", "Hack 2026")
             indiv_fee = app.config.get("EVENT_INDIVIDUAL_FEE", 299)
             team_fee = app.config.get("EVENT_TEAM_FEE", 999)
             per_member_fee = app.config.get("EVENT_PER_MEMBER_FEE", 250)
@@ -84,8 +84,8 @@ def create_app(config_name: str = None) -> Flask:
             max_team_members = app.config.get("MAX_TEAM_MEMBERS", 4)
             prize_pool = app.config.get("TOTAL_PRIZE_POOL", "₹2,50,000")
 
-        event_short_name = event_name.split()[0] if event_name else "SYNEX"
-        brand_initial = event_name[0].upper() if event_name else "S"
+        event_short_name = event_name.split()[0] if event_name else "Hack"
+        brand_initial = event_name[0].upper() if event_name else "H"
 
         from app.services.content_service import get_contact_content
         contact_data = get_contact_content()
@@ -165,7 +165,7 @@ def register_cli_commands(app: Flask):
         from sqlalchemy import text, inspect
 
         click.echo("==================================================")
-        click.echo(" SYNEX Hackathon Portal - Database Health Check")
+        click.echo(" Hack Portal - Database Health Check")
         click.echo("==================================================")
 
         # 1. Config loading check
@@ -253,7 +253,7 @@ def register_cli_commands(app: Flask):
 
     @app.cli.command("create-admin")
     @click.option("--username", default="admin", help="Admin username")
-    @click.option("--email", default="admin@synex.org", help="Admin email")
+    @click.option("--email", default="admin@hack.org", help="Admin email")
     @click.option("--password", default="hack@07", help="Admin password")
     @click.option("--name", default="Portal Administrator", help="Full name")
     def create_admin(username, email, password, name):
@@ -292,7 +292,7 @@ def register_cli_commands(app: Flask):
         if not admin:
             admin = Admin(
                 username="admin",
-                email="admin@synex.org",
+                email="admin@hack.org",
                 full_name="Portal Administrator",
                 role="admin",
             )

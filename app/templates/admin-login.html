@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Portal Login — {{ event_name | default('SYNEX 2026') }}</title>
-  <meta name="description" content="Organizer administration portal login for {{ event_name | default('SYNEX') }} Hackathon.">
+  <title>Admin Portal Login — {{ event_name | default('Hack 2026') }}</title>
+  <meta name="description" content="Organizer administration portal login for {{ event_name | default('Hack') }} Hackathon.">
 
     <!-- PWA & Application Meta (Desktop & Mobile) -->
   <link rel="manifest" href="/manifest.json">
@@ -12,12 +12,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
-  <meta name="application-name" content="SYNEX Hackathon">
+  <meta name="apple-mobile-web-app-title" content="Hack 2026">
+  <meta name="application-name" content="Hack">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,7 +36,7 @@
   <main class="admin-login-wrapper">
     <div class="login-card">
       <div class="login-header">
-        <div class="login-brand-icon">{{ brand_initial | default('S') }}</div>
+        <div class="login-brand-icon">{{ brand_initial | default('H') }}</div>
         <h1 class="login-title">Organizer Portal</h1>
         <p class="login-sub">Sign in to manage registrations and monitor hackathon analytics</p>
       </div>
@@ -95,7 +95,7 @@
 
   <footer class="footer" style="padding: 1.5rem 0; margin-top: auto; background: transparent; border: none;">
     <div class="container" style="text-align: center; font-size: 0.75rem; color: var(--color-text-muted);">
-      &copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} Hackathon • Internal Organizer Management Portal
+      &copy; {{ current_year | default(2026) }} {{ event_name | default('Hack') }} Hackathon • Internal Organizer Management Portal
     </div>
   </footer>
 
@@ -174,8 +174,8 @@
 
           if (res.ok && data.success) {
             // Set session indicators
-            sessionStorage.setItem("synex_admin_logged_in", "true");
-            sessionStorage.setItem("synex_admin_user", data.admin?.username || username);
+            sessionStorage.setItem("hack_admin_logged_in", "true");
+            sessionStorage.setItem("hack_admin_user", data.admin?.username || username);
             window.location.href = data.redirect_url || "/admin/dashboard";
           } else {
             btnSubmit.disabled = false;

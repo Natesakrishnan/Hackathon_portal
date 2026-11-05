@@ -119,7 +119,7 @@ def get_domains():
 @public_bp.route("/api/config", methods=["GET"])
 def get_public_config():
     """Returns dynamic public event configuration from persistent database settings."""
-    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
+    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026"))
     indiv_fee = int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299)))
     team_fee = int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999)))
     per_member_fee = int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250)))
@@ -130,8 +130,8 @@ def get_public_config():
     prize_pool = EventSetting.get_val("TOTAL_PRIZE_POOL", "₹2,50,000")
     reg_open = EventSetting.get_val("REGISTRATION_OPEN", "true").lower() in ("true", "1", "yes")
     
-    event_short_name = event_name.split()[0] if event_name else "SYNEX"
-    brand_initial = event_name[0].upper() if event_name else "S"
+    event_short_name = event_name.split()[0] if event_name else "Hack"
+    brand_initial = event_name[0].upper() if event_name else "H"
     contact_data = get_contact_content()
     
     return jsonify({

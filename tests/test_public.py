@@ -24,7 +24,7 @@ def test_api_config(client):
     assert response.status_code == 200
 
     data = response.get_json()
-    assert data["event_name"] == "SYNEX 2026"
+    assert data["event_name"] == "Hack 2026"
     assert data["individual_fee"] == 299
     assert data["team_fee"] == 999
     assert data["currency"] == "INR"

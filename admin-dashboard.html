@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard — {{ event_name | default('SYNEX 2026') }}</title>
+  <title>Admin Dashboard — {{ event_name | default('Hack 2026') }}</title>
   <meta name="description"
     content="Organizer administration dashboard with registration metrics, payment statistics, and participant management.">
 
@@ -14,12 +14,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
-  <meta name="application-name" content="SYNEX Hackathon">
+  <meta name="apple-mobile-web-app-title" content="Hack 2026">
+  <meta name="application-name" content="Hack">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,11 +48,11 @@
     <!-- Sidebar Navigation -->
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin Navigation Sidebar">
       <div class="sidebar-header">
-        <a href="/" target="_blank" class="brand" aria-label="{{ event_name | default('SYNEX') }} Public Portal">
+        <a href="/" target="_blank" class="brand" aria-label="{{ event_name | default('Hack') }} Public Portal">
           <div class="brand-logo-icon" style="width: 36px; height: 36px; font-size: 1.1rem;">{{ brand_initial |
-            default('S') }}</div>
+            default('H') }}</div>
           <div class="brand-text">
-            <span class="brand-name" style="font-size: 1.2rem;">{{ event_short_name | default('SYNEX') }}</span>
+            <span class="brand-name" style="font-size: 1.2rem;">{{ event_short_name | default('Hack') }}</span>
             <span class="brand-sub">{{ event_name | default('Admin Console') }}</span>
           </div>
         </a>
@@ -1205,7 +1205,7 @@
                     <div class="admin-form-group">
                       <label for="settingEventName">Official Event Name <span
                           style="color: var(--color-error);">*</span></label>
-                      <input type="text" id="settingEventName" class="admin-form-control" placeholder="SYNEX 2026"
+                      <input type="text" id="settingEventName" class="admin-form-control" placeholder="Hack 2026"
                         required>
                       <span class="form-helper">Displayed across public portal navigation and banners.</span>
                     </div>
@@ -1439,8 +1439,8 @@
                       <div class="admin-form-group">
                         <label for="resendSender">Sender Header</label>
                         <input type="text" id="resendSender" class="admin-form-control"
-                          placeholder="SYNEX Hackathon &lt;onboarding@resend.dev&gt;">
-                        <span class="form-helper">Use <code>SYNEX Hackathon &lt;onboarding@resend.dev&gt;</code> for
+                          placeholder="Hack &lt;onboarding@resend.dev&gt;">
+                        <span class="form-helper">Use <code>Hack &lt;onboarding@resend.dev&gt;</code> for
                           testing, or your verified domain.</span>
                       </div>
                     </div>
@@ -1549,7 +1549,7 @@
                     <i class="fa-solid fa-file-powerpoint" style="color: #EA580C;"></i> PowerPoint Template Studio
                   </h3>
                   <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0;">Upload your custom slide
-                    design or use the built-in official SYNEX template.</p>
+                    design or use the built-in official Hack template.</p>
                 </div>
                 <span class="badge badge-success" id="badgeCertTemplateType">Official Default</span>
               </div>
@@ -1559,7 +1559,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                   <span style="font-size: 0.8rem; color: var(--color-text-muted);">Active File:</span>
                   <strong style="font-size: 0.85rem; color: #1E293B; font-family: monospace;"
-                    id="certActiveFilename">synex_certificate_template.pptx</strong>
+                    id="certActiveFilename">hack_certificate_template.pptx</strong>
                 </div>
                 <div
                   style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--color-text-secondary);">
@@ -1666,7 +1666,7 @@
                     Email Subject
                   </label>
                   <input type="text" id="certSingleCustomSubject" class="admin-form-control"
-                    placeholder="Your SYNEX 2026 Certificate of Participation — {{NAME}}">
+                    placeholder="Your Hack 2026 Certificate of Participation — {{NAME}}">
                 </div>
 
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -1935,7 +1935,7 @@
                 </label>
                 <div style="display: flex; gap: 0.5rem;">
                   <input type="text" id="manualCheckinInput" class="admin-form-control"
-                    placeholder="e.g., CHK-A3F8B9C1E2D4 or SYNEX-X99EGQ"
+                    placeholder="e.g., CHK-A3F8B9C1E2D4 or HACK-X99EGQ"
                     onkeydown="if(event.key==='Enter'){event.preventDefault(); handleManualCheckin();}">
                   <button type="button" class="btn btn-primary btn-sm" id="btnSubmitManualCheckin"
                     onclick="handleManualCheckin();" style="white-space: nowrap;">
@@ -1943,7 +1943,7 @@
                   </button>
                 </div>
                 <span style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 0.35rem; display: block;">
-                  Accepts Pass Token (CHK-...), Reference (SYNEX-...), or direct QR text.
+                  Accepts Pass Token (CHK-...), Reference (HACK-...), or direct QR text.
                 </span>
               </div>
             </div>
@@ -1983,7 +1983,7 @@
                       </div>
                       <span
                         style="font-family: monospace; font-size: 0.85rem; font-weight: 700; color: var(--color-primary);"
-                        id="scannedRefId">SYNEX-000000</span>
+                        id="scannedRefId">HACK-000000</span>
                       <span style="font-size: 0.78rem; color: var(--color-text-muted); margin-left: 0.5rem;">• Token:
                         <code id="scannedCheckinToken" style="color: #475569;">CHK-0000</code></span>
                     </div>
@@ -2198,7 +2198,7 @@
             Public Header Notice Banner
           </label>
           <input type="text" id="rulesNoticeBannerInput" class="admin-form-control"
-            placeholder="e.g., OFFICIAL GUIDELINES: Rules, eligibility guidelines, and evaluation criteria for SYNEX 2026.">
+            placeholder="e.g., OFFICIAL GUIDELINES: Rules, eligibility guidelines, and evaluation criteria for Hack 2026.">
           <span style="font-size: 0.78rem; color: var(--color-text-muted);">Notice shown at the very top of the public
             rules page.</span>
         </div>
@@ -2725,7 +2725,7 @@
               Subject <span style="color: var(--color-error);">*</span>
             </label>
             <input type="text" id="composeSubject" class="admin-form-control"
-              placeholder="e.g., [SYNEX 2026] Important update regarding your entry" required>
+              placeholder="e.g., [Hack 2026] Important update regarding your entry" required>
           </div>
 
           <div class="admin-form-group" style="margin-bottom: 1rem;">

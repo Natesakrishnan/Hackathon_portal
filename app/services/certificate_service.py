@@ -23,7 +23,7 @@ from app.services.email_service import send_email
 logger = logging.getLogger(__name__)
 
 CERT_TEMPLATES_DIR = os.path.join("app", "static", "certificates", "templates")
-DEFAULT_TEMPLATE_FILENAME = "synex_certificate_template.pptx"
+DEFAULT_TEMPLATE_FILENAME = "hack_certificate_template.pptx"
 
 
 def get_templates_dir() -> str:
@@ -101,7 +101,7 @@ def create_default_pptx_template(target_path: str) -> str:
     tf_header.word_wrap = True
     p_brand = tf_header.paragraphs[0]
     p_brand.alignment = PP_ALIGN.CENTER
-    p_brand.text = "SYNEX NATIONAL INNOVATION HACKATHON 2026"
+    p_brand.text = "Hack NATIONAL INNOVATION HACKATHON 2026"
     p_brand.font.name = "Arial"
     p_brand.font.size = Pt(14)
     p_brand.font.bold = True
@@ -177,7 +177,7 @@ def create_default_pptx_template(target_path: str) -> str:
     p_s1.font.color.rgb = RGBColor(16, 185, 129) # Emerald
     p_s2 = tf_seal.add_paragraph()
     p_s2.alignment = PP_ALIGN.CENTER
-    p_s2.text = "SYNEX Academic Council"
+    p_s2.text = "Hack Academic Council"
     p_s2.font.size = Pt(10)
     p_s2.font.color.rgb = RGBColor(100, 116, 139)
 
@@ -328,7 +328,7 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
     # Header Top Brand
     c.setFillColor(HexColor("#D97706"))
     c.setFont("Helvetica-Bold", 12)
-    evt_cert_title = EventSetting.get_val("EVENT_NAME", "SYNEX 2026").upper()
+    evt_cert_title = EventSetting.get_val("EVENT_NAME", "Hack 2026").upper()
     c.drawCentredString(width / 2.0, height - 80, evt_cert_title)
 
     # Title
@@ -372,7 +372,7 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
     c.drawCentredString(width / 2.0, 115, "★ OFFICIAL VERIFIED PARTICIPANT ★")
     c.setFillColor(HexColor("#64748B"))
     c.setFont("Helvetica", 9)
-    evt_steering = f"{EventSetting.get_val('EVENT_NAME', 'SYNEX').split()[0]} Academic Steering Committee"
+    evt_steering = f"{EventSetting.get_val('EVENT_NAME', 'Hack').split()[0]} Academic Steering Committee"
     c.drawCentredString(width / 2.0, 98, evt_steering)
 
     # Right: Signature Block
@@ -389,10 +389,10 @@ def generate_reportlab_certificate_pdf(data: Dict[str, Any], output_pdf_path: st
 
 def format_certificate_id(public_id: str, index: int = 1) -> str:
     """
-    Generates a clean certificate verification ID without any SYNEX keyword or prefix.
-    e.g., public_id 'SYNEX-2026-5CQTP5' -> 'CERT-2026-5CQTP5-01'
+    Generates a clean certificate verification ID without any Hack keyword or prefix.
+    e.g., public_id 'Hack-2026-5CQTP5' -> 'CERT-2026-5CQTP5-01'
     """
-    clean_id = re.sub(r'(?i)SYNEX[-_]?', '', public_id or '').strip('-_')
+    clean_id = re.sub(r'(?i)Hack[-_]?', '', public_id or '').strip('-_')
     if not clean_id:
         clean_id = "VERIFIED"
     return f"CERT-{clean_id}-{index:02d}"
@@ -509,8 +509,8 @@ def generate_single_certificate_pdf(participant_data: Dict[str, Any]) -> Tuple[b
     active_template = get_active_template_path()
     p_name = participant_data.get("name") or "Participant"
     clean_name = re.sub(r"[^a-zA-Z0-9_-]", "_", p_name)
-    public_id = participant_data.get("public_id") or "SYNEX"
-    pdf_filename = f"SYNEX_Certificate_{public_id}_{clean_name}.pdf"
+    public_id = participant_data.get("public_id") or "Hack"
+    pdf_filename = f"Hack_Certificate_{public_id}_{clean_name}.pdf"
 
     context = {
         "PARTICIPANT_NAME": p_name,
@@ -525,7 +525,7 @@ def generate_single_certificate_pdf(participant_data: Dict[str, Any]) -> Tuple[b
         "REF_ID": public_id,
         "ISSUE_DATE": participant_data.get("issue_date") or datetime.utcnow().strftime("%B %d, %Y"),
         "DATE": participant_data.get("issue_date") or datetime.utcnow().strftime("%B %d, %Y"),
-        "EVENT_NAME": EventSetting.get_val("EVENT_NAME", "SYNEX National Innovation Hackathon 2026"),
+        "EVENT_NAME": EventSetting.get_val("EVENT_NAME", "Hack National Innovation Hackathon 2026"),
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -563,8 +563,8 @@ def send_participant_certificate_email(
     cert_id = participant_data.get("certificate_id") or "CERT"
 
     from flask import current_app
-    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026") if current_app else "SYNEX 2026")
-    event_short = event_name.split()[0] if event_name else "SYNEX"
+    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026") if current_app else "Hack 2026")
+    event_short = event_name.split()[0] if event_name else "Hack"
 
     subject = custom_subject or f"Your {event_name} Certificate of Participation — {p_name}"
     

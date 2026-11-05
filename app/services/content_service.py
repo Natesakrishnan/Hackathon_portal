@@ -10,7 +10,7 @@ DEFAULT_RULES = [
         "id": "eligibility",
         "num": 1,
         "title": "Eligibility & Format",
-        "content": "SYNEX 2026 is open to all students actively pursuing full-time or part-time undergraduate (B.E./B.Tech, BCA, B.Sc), postgraduate (M.E./M.Tech, MCA, M.Sc, MBA), or diploma degrees from accredited educational institutions worldwide.\n\nBoth in-person attendance at our Bengaluru tech campus and virtual hybrid participation options are provided. All participants must present a valid student identity card or proof of current enrollment at check-in."
+        "content": "Hack 2026 is open to all students actively pursuing full-time or part-time undergraduate (B.E./B.Tech, BCA, B.Sc), postgraduate (M.E./M.Tech, MCA, M.Sc, MBA), or diploma degrees from accredited educational institutions worldwide.\n\nBoth in-person attendance at our Bengaluru tech campus and virtual hybrid participation options are provided. All participants must present a valid student identity card or proof of current enrollment at check-in."
     },
     {
         "id": "teamsize",
@@ -28,13 +28,13 @@ DEFAULT_RULES = [
         "id": "ip",
         "num": 4,
         "title": "100% Intellectual Property (IP) Retention",
-        "content": "You own what you build. Neither the SYNEX organizers, sponsors, nor venue partners claim any rights, equity, or ownership over the intellectual property created during the hackathon.\n\nTeams remain free to open-source, patent, incorporate into startups, or commercialize their products after the event concludes."
+        "content": "You own what you build. Neither the Hack organizers, sponsors, nor venue partners claim any rights, equity, or ownership over the intellectual property created during the hackathon.\n\nTeams remain free to open-source, patent, incorporate into startups, or commercialize their products after the event concludes."
     },
     {
         "id": "conduct",
         "num": 5,
         "title": "Code of Conduct",
-        "content": "SYNEX is committed to providing a safe, respectful, inclusive, and harassment-free experience for everyone regardless of gender, sexual orientation, disability, physical appearance, race, ethnicity, or religion.\n\nHarassment of any kind, plagiarism, toxic competitive behavior, or violation of venue regulations will result in immediate disqualification and removal from the premises without refund."
+        "content": "Hack is committed to providing a safe, respectful, inclusive, and harassment-free experience for everyone regardless of gender, sexual orientation, disability, physical appearance, race, ethnicity, or religion.\n\nHarassment of any kind, plagiarism, toxic competitive behavior, or violation of venue regulations will result in immediate disqualification and removal from the premises without refund."
     },
     {
         "id": "submission",

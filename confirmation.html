@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registration Confirmation — {{ event_name | default('SYNEX 2026') }}</title>
-  <meta name="description" content="View your {{ event_name | default('SYNEX 2026') }} Hackathon participant pass and registration confirmation details.">
+  <title>Registration Confirmation — {{ event_name | default('Hack 2026') }}</title>
+  <meta name="description" content="View your {{ event_name | default('Hack 2026') }} Hackathon participant pass and registration confirmation details.">
 
     <!-- PWA & Application Meta (Desktop & Mobile) -->
   <link rel="manifest" href="/manifest.json">
@@ -12,12 +12,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SYNEX 2026">
-  <meta name="application-name" content="SYNEX Hackathon">
+  <meta name="apple-mobile-web-app-title" content="Hack 2026">
+  <meta name="application-name" content="Hack">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png"><rect width='100' height='100' rx='20' fill='%232563EB'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' text-anchor='middle'>S</text></svg>">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,10 +40,10 @@
   <!-- Navigation Bar (Hidden during printing) -->
   <header class="navbar no-print">
     <div class="container nav-container">
-      <a href="index.html" class="brand" aria-label="{{ event_name | default('SYNEX 2026') }} Homepage">
-        <div class="brand-logo-icon">{{ brand_initial | default('S') }}</div>
+      <a href="index.html" class="brand" aria-label="{{ event_name | default('Hack 2026') }} Homepage">
+        <div class="brand-logo-icon">{{ brand_initial | default('H') }}</div>
         <div class="brand-text">
-          <span class="brand-name">{{ event_short_name | default('SYNEX') }}</span>
+          <span class="brand-name">{{ event_short_name | default('Hack') }}</span>
           <span class="brand-sub">{{ event_name | default('Hackathon 2026') }}</span>
         </div>
       </a>
@@ -112,9 +112,9 @@
         <div class="pass-slip" id="printablePassSlip">
           <div class="pass-main-side">
             <div class="pass-slip-brand">
-              <div class="brand-logo-icon" style="width: 32px; height: 32px; font-size: 1rem;">{{ brand_initial | default('S') }}</div>
+              <div class="brand-logo-icon" style="width: 32px; height: 32px; font-size: 1rem;">{{ brand_initial | default('H') }}</div>
               <div>
-                <strong class="confirmation-event-title" style="color: var(--color-text-main); font-size: 1.1rem; line-height: 1;">{{ event_name | default('SYNEX 2026') }} OFFICIAL PASS</strong>
+                <strong class="confirmation-event-title" style="color: var(--color-text-main); font-size: 1.1rem; line-height: 1;">{{ event_name | default('Hack 2026') }} OFFICIAL PASS</strong>
                 <div style="font-size: 0.72rem; color: var(--color-text-secondary);">National Innovation Hackathon • Hybrid Edition</div>
               </div>
             </div>
@@ -183,7 +183,7 @@
             </li>
             <li>
               <i class="fa-solid fa-check"></i>
-              <span>Join the official {{ event_short_name | default('SYNEX') }} WhatsApp community desk for real-time announcements and mentor office hours.</span>
+              <span>Join the official {{ event_short_name | default('Hack') }} WhatsApp community desk for real-time announcements and mentor office hours.</span>
             </li>
             <li>
               <i class="fa-solid fa-check"></i>
@@ -237,7 +237,7 @@
   <footer class="footer no-print">
     <div class="container">
       <div class="footer-bottom" style="border: none; padding-top: 0;">
-        <div>&copy; {{ current_year | default(2026) }} {{ event_name | default('SYNEX') }} Hackathon. All rights reserved.</div>
+        <div>&copy; {{ current_year | default(2026) }} {{ event_name | default('Hack') }} Hackathon. All rights reserved.</div>
       </div>
     </div>
   </footer>
@@ -256,7 +256,7 @@
 
       if (!refId) {
         try {
-          refId = sessionStorage.getItem("synex_registration_ref");
+          refId = sessionStorage.getItem("hack_registration_ref");
         } catch (e) {}
       }
 
@@ -277,7 +277,7 @@
       // Fallback to draft in session
       if (!reg) {
         try {
-          const rawDraft = sessionStorage.getItem("synex_registration_draft");
+          const rawDraft = sessionStorage.getItem("hack_registration_draft");
           if (rawDraft) {
             const draft = JSON.parse(rawDraft);
             if (draft && draft.participantName) {
@@ -311,12 +311,12 @@
       if (successCard) successCard.style.display = "block";
       if (unavailCard) unavailCard.style.display = "none";
 
-      const publicId = reg.public_id || refId || "SYNEX-000000";
+      const publicId = reg.public_id || refId || "HACK-000000";
       const isTeam = (reg.registration_type || "").toLowerCase() === "team";
       const pName = reg.participant ? reg.participant.full_name : "Participant";
       const college = reg.participant ? reg.participant.college : "N/A";
       const teamName = reg.team ? reg.team.team_name : null;
-      const fee = reg.entry_fee || (isTeam ? (window.SYNEX_CONFIG?.fees?.team || 999) : (window.SYNEX_CONFIG?.fees?.individual || 299));
+      const fee = reg.entry_fee || (isTeam ? (window.Hack_CONFIG?.fees?.team || 999) : (window.Hack_CONFIG?.fees?.individual || 299));
 
       document.getElementById("passRefId").textContent = publicId;
       
@@ -364,7 +364,7 @@
       if (tokenDisp) tokenDisp.textContent = checkinToken;
 
       const checkinPayload = JSON.stringify({
-        type: "synex_checkin",
+        type: "hack_checkin",
         ref: publicId,
         token: checkinToken,
         team: teamName || pName,

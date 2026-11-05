@@ -1,5 +1,5 @@
 /**
- * SYNEX HACKATHON — REGISTRATION LOGIC (register.js)
+ * Hack HACKATHON — REGISTRATION LOGIC (register.js)
  * Manages participant/team registration, dynamic member fields,
  * real-time fee calculation, validation, API submission, and
  * seamless progression to Step 2 (Review Entry Fee).
@@ -497,8 +497,8 @@ function initRegistrationForm() {
       if (response.ok && result.success) {
         // Save draft in sessionStorage for payment / offline fallback
         try {
-          sessionStorage.setItem("synex_registration_ref", result.registration_id);
-          sessionStorage.setItem("synex_registration_draft", JSON.stringify({
+          sessionStorage.setItem("hack_registration_ref", result.registration_id);
+          sessionStorage.setItem("hack_registration_draft", JSON.stringify({
             referenceId: result.registration_id,
             type: isTeam ? "Team" : "Individual",
             participantName: fullName.value.trim(),
@@ -792,7 +792,7 @@ function escapeHtml(str) {
 async function restoreDraftIfPresent() {
   try {
     let draft = null;
-    const rawDraft = sessionStorage.getItem("synex_registration_draft");
+    const rawDraft = sessionStorage.getItem("hack_registration_draft");
     if (rawDraft) {
       try {
         draft = JSON.parse(rawDraft);

@@ -18,10 +18,10 @@
   <rect x="24" y="24" width="464" height="464" rx="104" fill="url(#bgGradient)" filter="url(#shadow)"/>
   <rect x="26" y="26" width="460" height="460" rx="102" fill="none" stroke="#60A5FA" stroke-width="3" stroke-opacity="0.4"/>
 
-  <!-- Geometric Tech Monogram 'S' -->
-  <path d="M 340 160 L 190 160 C 160 160 160 210 160 230 C 160 260 180 270 210 275 L 300 290 C 335 295 345 315 345 340 C 345 375 320 395 275 395 L 160 395" 
+  <!-- Geometric Tech Monogram 'H' -->
+  <path d="M 175 145 L 175 367 M 337 145 L 337 367 M 175 256 L 337 256" 
         fill="none" stroke="url(#glyphGradient)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
   
   <!-- Amber Accent Pulse Dot -->
-  <circle cx="348" cy="168" r="22" fill="#F59E0B"/>
+  <circle cx="348" cy="148" r="22" fill="#F59E0B"/>
 </svg>

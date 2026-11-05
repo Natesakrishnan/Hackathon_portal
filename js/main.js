@@ -1,13 +1,13 @@
 /**
- * SYNEX HACKATHON — MAIN JAVASCRIPT
+ * Hack HACKATHON — MAIN JAVASCRIPT
  * Handles mobile navigation, countdown timer, FAQ accordion, smooth scrolling,
  * and shared event configuration.
  */
 
 // Global Configurable Event Settings (Easily modified by organizers)
-window.SYNEX_CONFIG = {
-  eventName: "SYNEX",
-  fullName: "SYNEX National Innovation Hackathon 2026",
+window.Hack_CONFIG = {
+  eventName: "Hack",
+  fullName: "Hack National Innovation Hackathon 2026",
   tagline: "BUILD THE FUTURE. ONE IDEA AT A TIME.",
   // Configure event kickoff date here (Format: YYYY-MM-DDTHH:mm:ss)
   // Default set to 30 days ahead from today for realistic countdown demonstration
@@ -99,7 +99,7 @@ function initCountdown() {
 
   if (!daysEl || !hoursEl || !minutesEl || !secondsEl) return;
 
-  let targetDate = new Date(window.SYNEX_CONFIG.eventDate).getTime();
+  let targetDate = new Date(window.Hack_CONFIG.eventDate).getTime();
 
   window.updateCountdownTarget = function(newDateStr) {
     if (!newDateStr) return;
@@ -118,7 +118,7 @@ function initCountdown() {
       if (gridEl) gridEl.style.display = "none";
       if (expiredMsgEl) {
         expiredMsgEl.style.display = "block";
-        expiredMsgEl.textContent = "SYNEX Hackathon is currently live or registration has concluded!";
+        expiredMsgEl.textContent = "Hack is currently live or registration has concluded!";
       }
       return;
     }
@@ -224,56 +224,56 @@ async function syncConfigFromServer() {
     if (!cfg) return;
 
     if (cfg.event_name) {
-      window.SYNEX_CONFIG.eventName = cfg.event_name;
+      window.Hack_CONFIG.eventName = cfg.event_name;
       updateEventNameDisplays(cfg.event_name);
     }
     if (cfg.registration_deadline) {
-      window.SYNEX_CONFIG.eventDate = cfg.registration_deadline;
+      window.Hack_CONFIG.eventDate = cfg.registration_deadline;
       if (typeof window.updateCountdownTarget === 'function') {
         window.updateCountdownTarget(cfg.registration_deadline);
       }
     }
     if (cfg.prize_pool) {
-      window.SYNEX_CONFIG.prizePool = cfg.prize_pool;
-      document.querySelectorAll('.prize-pool-text, #heroPrizePool, [data-synex-prize]').forEach(el => {
+      window.Hack_CONFIG.prizePool = cfg.prize_pool;
+      document.querySelectorAll('.prize-pool-text, #heroPrizePool, [data-hack-prize]').forEach(el => {
         el.textContent = cfg.prize_pool;
       });
     }
     if (cfg.individual_fee !== undefined) {
-      window.SYNEX_CONFIG.fees.individual = cfg.individual_fee;
+      window.Hack_CONFIG.fees.individual = cfg.individual_fee;
     }
     if (cfg.team_fee !== undefined) {
-      window.SYNEX_CONFIG.fees.team = cfg.team_fee;
+      window.Hack_CONFIG.fees.team = cfg.team_fee;
     }
     if (cfg.per_member_fee !== undefined) {
-      window.SYNEX_CONFIG.fees.per_member = cfg.per_member_fee;
+      window.Hack_CONFIG.fees.per_member = cfg.per_member_fee;
     }
     if (cfg.meals_fee !== undefined) {
-      window.SYNEX_CONFIG.fees.meals_fee = cfg.meals_fee;
+      window.Hack_CONFIG.fees.meals_fee = cfg.meals_fee;
     }
     const curr = cfg.currency === "INR" ? "₹" : (cfg.currency || "₹");
-    window.SYNEX_CONFIG.fees.currency = curr;
+    window.Hack_CONFIG.fees.currency = curr;
     updatePublicFeeDisplays(cfg.individual_fee, cfg.team_fee, curr, cfg.per_member_fee, cfg.meals_fee);
 
     if (cfg.contact) {
       const c = cfg.contact;
       if (c.venue_city) {
-        document.querySelectorAll('#heroVenueBadge, [data-synex-venue-city]').forEach(el => {
+        document.querySelectorAll('#heroVenueBadge, [data-hack-venue-city]').forEach(el => {
           el.textContent = c.venue_city;
         });
       }
       if (c.venue_address || c.venue_short) {
-        document.querySelectorAll('#footerVenueAddress, [data-synex-venue-address]').forEach(el => {
+        document.querySelectorAll('#footerVenueAddress, [data-hack-venue-address]').forEach(el => {
           el.textContent = c.venue_address || c.venue_short;
         });
       }
       if (c.email) {
-        document.querySelectorAll('#footerContactEmail, [data-synex-contact-email]').forEach(el => {
+        document.querySelectorAll('#footerContactEmail, [data-hack-contact-email]').forEach(el => {
           el.textContent = c.email;
         });
       }
       if (c.phone) {
-        document.querySelectorAll('#footerContactPhone, [data-synex-contact-phone]').forEach(el => {
+        document.querySelectorAll('#footerContactPhone, [data-hack-contact-phone]').forEach(el => {
           el.textContent = c.phone;
         });
       }
@@ -287,18 +287,18 @@ async function syncConfigFromServer() {
  * Updates all public fee displays across any page on the portal
  */
 function updatePublicFeeDisplays(indivFee, teamFee, currency = "₹", perMemberFee, mealsFee) {
-  const indiv = indivFee !== undefined ? indivFee : (window.SYNEX_CONFIG?.fees?.individual ?? 299);
-  const team = teamFee !== undefined ? teamFee : (window.SYNEX_CONFIG?.fees?.team ?? 999);
+  const indiv = indivFee !== undefined ? indivFee : (window.Hack_CONFIG?.fees?.individual ?? 299);
+  const team = teamFee !== undefined ? teamFee : (window.Hack_CONFIG?.fees?.team ?? 999);
   const memberFee = perMemberFee !== undefined
     ? perMemberFee
-    : (window.SYNEX_CONFIG?.fees?.per_member ?? (indivFee !== undefined ? indivFee : 250));
+    : (window.Hack_CONFIG?.fees?.per_member ?? (indivFee !== undefined ? indivFee : 250));
   const meals = mealsFee !== undefined
     ? mealsFee
-    : (window.SYNEX_CONFIG?.fees?.meals_fee ?? 0);
+    : (window.Hack_CONFIG?.fees?.meals_fee ?? 0);
   const curr = currency || "₹";
 
   // 1. Hero Entry Fee Badge (Home page)
-  document.querySelectorAll('#heroEntryFeeDisplay, [data-synex-fees="combined"]').forEach(el => {
+  document.querySelectorAll('#heroEntryFeeDisplay, [data-hack-fees="combined"]').forEach(el => {
     el.textContent = `${curr}${memberFee} / Member`;
   });
 
@@ -363,8 +363,8 @@ function updateEventNameDisplays(eventName) {
   });
 
   // 2. Update document title
-  if (document.title && (document.title.includes('SYNEX') || document.title.includes('Hackathon'))) {
-    document.title = document.title.replace(/SYNEX\s*\d*/gi, name);
+  if (document.title && (document.title.includes('Hack') || document.title.includes('Hackathon'))) {
+    document.title = document.title.replace(/Hack\s*\d*/gi, name);
   }
 
   // 3. Update dedicated data attributes and classes
@@ -375,20 +375,20 @@ function updateEventNameDisplays(eventName) {
     el.textContent = shortName;
   });
 
-  // 4. Update banner and section texts that contain SYNEX
-  const replaceSynexInElement = (el) => {
+  // 4. Update banner and section texts that contain Hack
+  const replaceBrandInElement = (el) => {
     if (!el || !el.childNodes) return;
     el.childNodes.forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE && node.nodeValue && node.nodeValue.includes('SYNEX')) {
-        node.nodeValue = node.nodeValue.replace(/SYNEX\s*2026/g, name).replace(/SYNEX/g, shortName);
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue && node.nodeValue.includes('Hack')) {
+        node.nodeValue = node.nodeValue.replace(/Hack\s*2026/g, name).replace(/Hack/g, shortName);
       } else if (node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('no-brand-replace')) {
-        replaceSynexInElement(node);
+        replaceBrandInElement(node);
       }
     });
   };
 
   document.querySelectorAll('.announcement-banner, .hero-title, .hero-badge, .about-highlight-title, .section-title, .section-desc, .footer-desc, .footer-bottom, .confirmation-event-title, .card-title, .rule-card p').forEach(el => {
-    replaceSynexInElement(el);
+    replaceBrandInElement(el);
   });
 }
 window.updateEventNameDisplays = updateEventNameDisplays;

@@ -352,7 +352,7 @@ def api_update_status(id):
 def api_download_csv_report():
     """Streams CSV file with all registration and team data safely sanitized."""
     csv_content = export_registrations_csv()
-    filename = f"synex_registrations_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+    filename = f"hack_registrations_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
     
     return Response(
         csv_content,
@@ -369,7 +369,7 @@ def api_download_csv_report():
 def api_download_summary_report():
     """Generates and streams Executive Summary & Financial Audit CSV report."""
     csv_content = export_summary_report_csv()
-    filename = f"synex_executive_summary_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+    filename = f"hack_executive_summary_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
 
     return Response(
         csv_content,
@@ -386,7 +386,7 @@ def api_download_summary_report():
 def api_download_domain_report():
     """Generates and streams Domain & Innovation Track Distribution CSV report."""
     csv_content = export_domain_report_csv()
-    filename = f"synex_domain_breakdown_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+    filename = f"hack_domain_breakdown_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
 
     return Response(
         csv_content,
@@ -403,7 +403,7 @@ def api_download_domain_report():
 def api_download_paid_participants_report():
     """Generates and streams Paid Participants & Fee Audit CSV report."""
     csv_content = export_paid_participants_report_csv()
-    filename = f"synex_paid_participants_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+    filename = f"hack_paid_participants_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
 
     return Response(
         csv_content,
@@ -478,7 +478,7 @@ def api_get_settings():
     return jsonify({
         "success": True,
         "settings": {
-            "event_name": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026")),
+            "event_name": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026")),
             "individual_fee": int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299))),
             "team_fee": int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999))),
             "per_member_fee": int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250))),
@@ -640,7 +640,7 @@ def api_update_settings():
         "success": True,
         "message": "Event settings updated and saved successfully.",
         "settings": {
-            "event_name": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026")),
+            "event_name": EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026")),
             "individual_fee": int(EventSetting.get_val("EVENT_INDIVIDUAL_FEE", current_app.config.get("EVENT_INDIVIDUAL_FEE", 299))),
             "team_fee": int(EventSetting.get_val("EVENT_TEAM_FEE", current_app.config.get("EVENT_TEAM_FEE", 999))),
             "per_member_fee": int(EventSetting.get_val("EVENT_PER_MEMBER_FEE", current_app.config.get("EVENT_PER_MEMBER_FEE", 250))),
@@ -895,7 +895,7 @@ def api_reply_inquiry(id):
         return jsonify({"success": False, "error": "Reply message body cannot be empty."}), 400
 
     # Build rich email body
-    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
+    event_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026"))
     body_text = f"""Hi {inquiry.name},
 
 {reply_message}
@@ -1091,7 +1091,7 @@ def api_get_certificate_template_info():
             {"placeholder": "{{COLLEGE}}", "tag": "{{COLLEGE}}", "description": "Institution / University affiliation"},
             {"placeholder": "{{CERTIFICATE_ID}}", "tag": "{{CERTIFICATE_ID}}", "description": "Unique verified certificate credential ID"},
             {"placeholder": "{{ISSUE_DATE}}", "tag": "{{ISSUE_DATE}}", "description": "Official issuance date (e.g. October 30, 2026)"},
-            {"placeholder": "{{EVENT_NAME}}", "tag": "{{EVENT_NAME}}", "description": "SYNEX National Innovation Hackathon 2026"},
+            {"placeholder": "{{EVENT_NAME}}", "tag": "{{EVENT_NAME}}", "description": "Hack National Innovation Hackathon 2026"},
         ]
     }
     
@@ -1167,11 +1167,11 @@ def api_upload_certificate_template():
 @admin_bp.route("/api/admin/certificates/template/reset", methods=["POST"])
 @login_required
 def api_reset_certificate_template():
-    """Resets the active certificate template back to the default SYNEX official template."""
+    """Resets the active certificate template back to the default Hack official template."""
     EventSetting.set_val("ACTIVE_CERTIFICATE_TEMPLATE", "", "Active PPTX Certificate Template Path")
     return jsonify({
         "success": True,
-        "message": "Certificate template reset to official default SYNEX design."
+        "message": "Certificate template reset to official default Hack design."
     }), 200
 
 
@@ -1234,7 +1234,7 @@ def api_preview_certificate():
             "domain": request.args.get("domain") or "AI & Machine Learning",
             "team_name": request.args.get("team_name") or "Neural Pioneers",
             "college": request.args.get("college") or "National Institute of Technology",
-            "public_id": request.args.get("public_id") or "SYNEX-DEMO",
+            "public_id": request.args.get("public_id") or "HACK-DEMO",
             "certificate_id": "CERT-SAMPLE-01",
             "issue_date": datetime.utcnow().strftime("%B %d, %Y")
         }
@@ -1285,7 +1285,7 @@ def api_send_single_certificate():
             "domain": data.get("domain") or "AI & Machine Learning",
             "team_name": data.get("team_name") or "Solo Participant",
             "college": data.get("college") or "Recognized Institution",
-            "public_id": data.get("public_id") or "SYNEX-TEST",
+            "public_id": data.get("public_id") or "HACK-TEST",
             "certificate_id": "CERT-DEMO-01",
             "issue_date": datetime.utcnow().strftime("%B %d, %Y"),
         }

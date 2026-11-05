@@ -23,7 +23,7 @@ def test_individual_registration_success(client):
 
     data = response.get_json()
     assert data["success"] is True
-    assert data["registration_id"].startswith("SYNEX-")
+    assert data["registration_id"].startswith("HACK-")
     assert data["entry_fee"] == 299
     assert data["registration_type"] == "individual"
 
@@ -302,7 +302,7 @@ def test_registration_flow_response_structure_for_step2(client):
 
     assert data["success"] is True
     assert "registration_id" in data
-    assert data["registration_id"].startswith("SYNEX-")
+    assert data["registration_id"].startswith("HACK-")
     assert data["entry_fee"] == 999
     assert data["registration_type"] == "team"
     assert data["domain"] == "IoT & Embedded Systems"

@@ -19,7 +19,7 @@ def app():
     with app.app_context():
         db.create_all()
         # Seed test event settings
-        EventSetting.set_val("EVENT_NAME", "SYNEX 2026", "Event Name")
+        EventSetting.set_val("EVENT_NAME", "Hack 2026", "Event Name")
         EventSetting.set_val("EVENT_INDIVIDUAL_FEE", "299", "Individual Fee")
         EventSetting.set_val("EVENT_TEAM_FEE", "999", "Team Fee")
         EventSetting.set_val("REGISTRATION_DEADLINE", "2026-11-30T23:59:59", "Registration Deadline")

@@ -1,5 +1,5 @@
 /**
- * SYNEX HACKATHON — PAYMENT CHECKOUT LOGIC (payment.js)
+ * Hack HACKATHON — PAYMENT CHECKOUT LOGIC (payment.js)
  * Manages order creation, Razorpay checkout integration,
  * HMAC signature verification, and instant test simulation.
  */
@@ -20,9 +20,9 @@ async function initPaymentCheckout() {
   
   if (!refId) {
     try {
-      refId = sessionStorage.getItem("synex_registration_ref");
+      refId = sessionStorage.getItem("hack_registration_ref");
       if (!refId) {
-        const rawDraft = sessionStorage.getItem("synex_registration_draft");
+        const rawDraft = sessionStorage.getItem("hack_registration_draft");
         if (rawDraft) {
           const draft = JSON.parse(rawDraft);
           refId = draft.referenceId;
@@ -54,7 +54,7 @@ async function initPaymentCheckout() {
   // Fallback to local draft if API returned 404
   if (!regData) {
     try {
-      const raw = sessionStorage.getItem("synex_registration_draft");
+      const raw = sessionStorage.getItem("hack_registration_draft");
       if (raw) regData = JSON.parse(raw);
     } catch (e) {}
   }
@@ -126,7 +126,7 @@ function populateOrderDetails(data) {
   const mealsFeeEl = document.getElementById("orderMealsFee");
   const totalAmountEl = document.getElementById("orderTotalAmount");
 
-  const publicId = data.public_id || data.referenceId || "SYNEX-000000";
+  const publicId = data.public_id || data.referenceId || "HACK-000000";
   if (refBadge) refBadge.textContent = publicId;
 
   // Ensure Edit Registration Details buttons preserve the registration reference
@@ -139,10 +139,10 @@ function populateOrderDetails(data) {
   const college = data.participant ? data.participant.college : (data.college || "N/A");
   const teamName = data.team ? data.team.team_name : data.teamName;
   const membersCount = data.team && data.team.members ? data.team.members.length : (data.teamSize || 3);
-  const indivFallback = window.SYNEX_CONFIG?.fees?.individual ?? 299;
-  const teamFallback = window.SYNEX_CONFIG?.fees?.team ?? 999;
+  const indivFallback = window.Hack_CONFIG?.fees?.individual ?? 299;
+  const teamFallback = window.Hack_CONFIG?.fees?.team ?? 999;
   const totalFee = data.entry_fee || data.baseFee || (isTeam ? teamFallback : indivFallback);
-  const mealsFee = data.meals_fee !== undefined ? data.meals_fee : (window.SYNEX_CONFIG?.fees?.meals_fee || 0);
+  const mealsFee = data.meals_fee !== undefined ? data.meals_fee : (window.Hack_CONFIG?.fees?.meals_fee || 0);
   const baseFee = data.base_fee !== undefined ? data.base_fee : Math.max(0, totalFee - mealsFee);
 
   if (nameEl) {
@@ -221,7 +221,7 @@ async function launchPaymentFlow(publicId, regData, paymentMethod, modalBackdrop
         key: keyId,
         amount: amountPaise,
         currency: orderData.currency || "INR",
-        name: "SYNEX Hackathon 2026",
+        name: "Hack 2026",
         description: `${orderData.registration_type} Registration - ${orderData.domain}`,
         order_id: orderId,
         prefill: {
@@ -343,7 +343,7 @@ async function verifyPaymentOnServer(payload, checkoutCard, failureCard) {
     if (res.ok && data.success) {
       // Clear draft session
       try {
-        sessionStorage.removeItem("synex_registration_draft");
+        sessionStorage.removeItem("hack_registration_draft");
       } catch (e) {}
       // Redirect to confirmation
       window.location.href = data.redirect_url || `/confirmation?ref=${payload.registration_id}`;

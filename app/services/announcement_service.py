@@ -106,7 +106,7 @@ def create_and_dispatch_announcement(
                 failed_count = 0
                 last_err = ""
                 from app.models.event_setting import EventSetting
-                evt_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "SYNEX 2026"))
+                evt_name = EventSetting.get_val("EVENT_NAME", current_app.config.get("EVENT_NAME", "Hack 2026"))
 
                 from app.services.content_service import get_contact_content
                 contact_cfg = get_contact_content()
@@ -120,7 +120,7 @@ def create_and_dispatch_announcement(
                   </div>
                   <div style="color: #334155; font-size: 15px; line-height: 1.7; white-space: pre-wrap; padding: 0 4px;">{message}</div>
                   <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #94A3B8; text-align: center;">
-                    <p style="margin: 0;">{evt_name} Hackathon &bull; {venue_short_str} &bull; <a href="https://synex2026.org" style="color: #2563EB;">synex2026.org</a></p>
+                    <p style="margin: 0;">{evt_name} Hackathon &bull; {venue_short_str} &bull; <a href="https://hack2026.org" style="color: #2563EB;">hack2026.org</a></p>
                   </div>
                 </div>
                 """

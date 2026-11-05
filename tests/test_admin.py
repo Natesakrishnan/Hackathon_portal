@@ -331,10 +331,10 @@ def test_reports_executive_summary_csv(admin_client):
     res = admin_client.get("/api/admin/reports/summary.csv")
     assert res.status_code == 200
     assert "text/csv" in res.headers.get("Content-Type", "")
-    assert "attachment; filename=synex_executive_summary_" in res.headers.get("Content-Disposition", "")
+    assert "attachment; filename=hack_executive_summary_" in res.headers.get("Content-Disposition", "")
 
     csv_text = res.get_data(as_text=True)
-    assert "SYNEX 2026 Hackathon" in csv_text
+    assert "Hack 2026" in csv_text
     assert "Total Registrations" in csv_text
     assert "Gross Verified Revenue" in csv_text
     assert "Payment Conversion Rate" in csv_text
@@ -346,7 +346,7 @@ def test_reports_domain_breakdown_csv(admin_client):
     res = admin_client.get("/api/admin/reports/domains.csv")
     assert res.status_code == 200
     assert "text/csv" in res.headers.get("Content-Type", "")
-    assert "attachment; filename=synex_domain_breakdown_" in res.headers.get("Content-Disposition", "")
+    assert "attachment; filename=hack_domain_breakdown_" in res.headers.get("Content-Disposition", "")
 
     csv_text = res.get_data(as_text=True)
     assert "Innovation Domain Track" in csv_text
@@ -414,7 +414,7 @@ def test_reports_paid_participants_csv(app, admin_client):
     res = admin_client.get("/api/admin/reports/paid-participants.csv")
     assert res.status_code == 200
     assert "text/csv" in res.headers.get("Content-Type", "")
-    assert "attachment; filename=synex_paid_participants_" in res.headers.get("Content-Disposition", "")
+    assert "attachment; filename=hack_paid_participants_" in res.headers.get("Content-Disposition", "")
 
     csv_text = res.get_data(as_text=True)
 
@@ -1162,7 +1162,7 @@ def test_admin_certificate_participants_and_preview(admin_client):
     assert found is not None
     assert found["name"] == "Devi Raman"
     assert found["certificate_id"].startswith("CERT-")
-    assert "SYNEX" not in found["certificate_id"]
+    assert "Hack" not in found["certificate_id"]
 
     # Preview PDF
     pdf_res = admin_client.get(f"/api/admin/certificates/preview?participant_id={found['id']}")

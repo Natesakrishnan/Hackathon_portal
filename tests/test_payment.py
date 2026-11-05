@@ -44,7 +44,7 @@ def test_create_payment_order_success(client):
 
 def test_create_payment_order_invalid_ref(client):
     """Test order creation fails with 404 for non-existent registration."""
-    res = client.post("/api/payments/create-order", json={"registration_id": "SYNEX-NOTFOUND"})
+    res = client.post("/api/payments/create-order", json={"registration_id": "HACK-NOTFOUND"})
     assert res.status_code == 404
     assert "not found" in res.get_json()["error"]
 

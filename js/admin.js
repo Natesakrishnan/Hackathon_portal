@@ -1,5 +1,5 @@
 /**
- * SYNEX HACKATHON — ADMIN DASHBOARD JAVASCRIPT (admin.js)
+ * Hack HACKATHON — ADMIN DASHBOARD JAVASCRIPT (admin.js)
  * Live backend integration for metrics, registration table,
  * domain filtering, search, status management, team details modal,
  * Chart.js analytics, and formula-safe CSV export.
@@ -993,7 +993,7 @@ function setupEventListeners() {
       try {
         await fetch("/api/admin/logout", { method: "POST" });
       } catch (e) {}
-      sessionStorage.removeItem("synex_admin_logged_in");
+      sessionStorage.removeItem("hack_admin_logged_in");
       window.location.href = "/admin/login";
     });
   });
@@ -1547,7 +1547,7 @@ function setupReportDownloadHandlers() {
         }
 
         const blob = await res.blob();
-        let filename = "synex_report.csv";
+        let filename = "hack_report.csv";
         const disposition = res.headers.get("Content-Disposition");
         if (disposition && disposition.indexOf("filename=") !== -1) {
           const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
@@ -1847,17 +1847,17 @@ function setupSettingsHandlers() {
         const json = await res.json();
         if (res.ok && json.success) {
           showBanner(banner, "Event configuration saved and synchronized with public portal!", "success");
-          if (window.SYNEX_CONFIG) {
-            window.SYNEX_CONFIG.eventName = eventName;
-            window.SYNEX_CONFIG.eventDate = deadline;
-            window.SYNEX_CONFIG.prizePool = prizePool;
-            window.SYNEX_CONFIG.perMemberFee = perMemberFee;
-            if (window.SYNEX_CONFIG.fees) {
-              window.SYNEX_CONFIG.fees.meals_fee = mealsFee;
+          if (window.Hack_CONFIG) {
+            window.Hack_CONFIG.eventName = eventName;
+            window.Hack_CONFIG.eventDate = deadline;
+            window.Hack_CONFIG.prizePool = prizePool;
+            window.Hack_CONFIG.perMemberFee = perMemberFee;
+            if (window.Hack_CONFIG.fees) {
+              window.Hack_CONFIG.fees.meals_fee = mealsFee;
             }
-            window.SYNEX_CONFIG.minTeamMembers = minTeamMembers;
-            window.SYNEX_CONFIG.maxTeamMembers = maxTeamMembers;
-            window.SYNEX_CONFIG.fees = {
+            window.Hack_CONFIG.minTeamMembers = minTeamMembers;
+            window.Hack_CONFIG.maxTeamMembers = maxTeamMembers;
+            window.Hack_CONFIG.fees = {
               individual: indivFee,
               team: teamFee,
               perMember: perMemberFee,
@@ -2859,7 +2859,7 @@ async function openInquiryModal(id) {
     }
 
     if (replyIdInput) replyIdInput.value = inq.id;
-    if (replySubjectInput) replySubjectInput.value = `Re: ${inq.subject || "SYNEX 2026 Inquiry"}`;
+    if (replySubjectInput) replySubjectInput.value = `Re: ${inq.subject || "Hack 2026 Inquiry"}`;
     if (replyMessageInput) replyMessageInput.value = "";
 
     // Refresh list in background to update unread badge
@@ -3372,8 +3372,8 @@ async function loadSmtpSettings() {
         resendApiKeyEl.placeholder = s.has_resend_key ? "•••••••••••• (API Key Configured - leave blank to keep)" : "re_123456789_abcdef...";
       }
       if (resendSenderEl) {
-        if (!s.default_sender || s.default_sender.includes("synex2026.org") || s.default_sender.includes("synex.org") || s.default_sender.includes("noreply")) {
-          resendSenderEl.value = "SYNEX Hackathon <onboarding@resend.dev>";
+        if (!s.default_sender || s.default_sender.includes("hack2026.org") || s.default_sender.includes("hack.org") || s.default_sender.includes("noreply")) {
+          resendSenderEl.value = "Hack <onboarding@resend.dev>";
         } else {
           resendSenderEl.value = s.default_sender;
         }
@@ -3438,7 +3438,7 @@ function setupSmtpHandlers() {
       try {
         const payload = {
           provider: provider,
-          default_sender: isBrevo ? (brevoSenderEmail || "") : (resendSender || "SYNEX Hackathon <onboarding@resend.dev>"),
+          default_sender: isBrevo ? (brevoSenderEmail || "") : (resendSender || "Hack <onboarding@resend.dev>"),
         };
 
         if (isBrevo) {
@@ -3554,7 +3554,7 @@ async function loadCertificateTemplateInfo() {
         badgeEl.textContent = json.data.is_custom ? "Custom Template" : "Official Default";
         badgeEl.className = json.data.is_custom ? "badge badge-primary" : "badge badge-success";
       }
-      if (filenameEl) filenameEl.textContent = json.data.filename || "synex_certificate_template.pptx";
+      if (filenameEl) filenameEl.textContent = json.data.filename || "hack_certificate_template.pptx";
       if (sizeEl) sizeEl.textContent = `${json.data.size_kb} KB`;
       if (dateEl) dateEl.textContent = json.data.updated_at || "Built-in";
 
@@ -3663,7 +3663,7 @@ async function handleCertificateTemplateUpload() {
 window.handleCertificateTemplateUpload = handleCertificateTemplateUpload;
 
 /**
- * Resets the active template back to the built-in official SYNEX template
+ * Resets the active template back to the built-in official Hack template
  */
 async function handleResetCertificateTemplate() {
   if (!confirm("Are you sure you want to revert to the official default PowerPoint certificate template?")) {
@@ -3805,7 +3805,7 @@ function handleSelectCertParticipantChange() {
     if (emailInput) emailInput.value = participant.email || "";
     if (domainInput) domainInput.value = participant.domain || "";
     if (roleInput) roleInput.value = participant.role || "";
-    if (subjInput) subjInput.value = `Your SYNEX 2026 Certificate of Participation — ${participant.name}`;
+    if (subjInput) subjInput.value = `Your Hack 2026 Certificate of Participation — ${participant.name}`;
   }
 }
 window.handleSelectCertParticipantChange = handleSelectCertParticipantChange;
