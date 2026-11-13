@@ -2042,3 +2042,154 @@ p:last-child {
   }
 }
 
+/* ==========================================================================
+   MOBILE APPLICATION APP-SHELL & NATIVE BOTTOM NAVIGATION
+   ========================================================================== */
+
+/* Touch-action and tap highlight normalization for mobile app feel */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, .btn, .mobile-tab-item {
+  touch-action: manipulation;
+}
+
+/* Ensure smooth native-like momentum scrolling and overscroll behavior */
+html {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Desktop: Mobile bottom navigation bar hidden by default */
+.mobile-app-bottom-bar {
+  display: none;
+}
+
+/* Mobile Screens & PWA Standalone Mode */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .mobile-app-bottom-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px)) 12px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  .mobile-tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #94A3B8;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .mobile-tab-item:active {
+    transform: scale(0.92);
+  }
+
+  .mobile-tab-icon {
+    font-size: 1.15rem;
+    margin-bottom: 2px;
+    line-height: 1;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .mobile-tab-label {
+    letter-spacing: -0.01em;
+  }
+
+  /* Active Tab State */
+  .mobile-tab-item.active {
+    color: #38BDF8;
+  }
+
+  .mobile-tab-item.active .mobile-tab-icon {
+    transform: translateY(-1px);
+    color: #38BDF8;
+  }
+
+  .mobile-tab-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    width: 14px;
+    height: 3px;
+    background: #38BDF8;
+    border-radius: 9999px;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  }
+
+  /* Elevated Center Action Tab (Register) */
+  .mobile-tab-item.mobile-tab-action {
+    color: #FFFFFF;
+    position: relative;
+    top: -12px;
+  }
+
+  .mobile-tab-action-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.55), 0 0 0 4px #0F172A;
+    font-size: 1.25rem;
+    color: #FFFFFF;
+    margin-bottom: 3px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .mobile-tab-item.mobile-tab-action:active .mobile-tab-action-button {
+    transform: scale(0.92);
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.4), 0 0 0 3px #0F172A;
+  }
+
+  .mobile-tab-item.mobile-tab-action .mobile-tab-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #E2E8F0;
+  }
+
+  .mobile-tab-item.mobile-tab-action.active .mobile-tab-action-button {
+    background: linear-gradient(135deg, #38BDF8 0%, #6366F1 100%);
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.65), 0 0 0 4px #0F172A;
+  }
+
+  .mobile-tab-item.mobile-tab-action.active::after {
+    display: none;
+  }
+}
+
+/* Standalone PWA Native App Display Tweaks */
+@media all and (display-mode: standalone) {
+  header.site-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+  }
+}
+

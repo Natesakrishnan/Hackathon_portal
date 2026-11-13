@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Event Schedule — {{ event_name | default('Hack 2026') }} 36-Hour Hackathon</title>
   <meta name="description" content="Explore the comprehensive 36-hour schedule for {{ event_name | default('Hack 2026') }}. Detailed timeline for mentoring checkpoints, code sprints, and jury demonstrations.">
 
@@ -450,6 +450,31 @@
     </div>
   </footer>
 
+    <!-- Mobile Application Bottom Navigation Bar -->
+  <nav class="mobile-app-bottom-bar" aria-label="Mobile Application Navigation">
+    <a href="index.html" class="mobile-tab-item" data-tab="home">
+      <div class="mobile-tab-icon"><i class="fa-solid fa-house" aria-hidden="true"></i></div>
+      <span class="mobile-tab-label">Home</span>
+    </a>
+    <a href="rules.html" class="mobile-tab-item" data-tab="rules">
+      <div class="mobile-tab-icon"><i class="fa-solid fa-book-bookmark" aria-hidden="true"></i></div>
+      <span class="mobile-tab-label">Rules</span>
+    </a>
+    <a href="register.html" class="mobile-tab-item mobile-tab-action" data-tab="register">
+      <div class="mobile-tab-action-button">
+        <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+      </div>
+      <span class="mobile-tab-label">Register</span>
+    </a>
+    <a href="schedule.html" class="mobile-tab-item active" data-tab="schedule">
+      <div class="mobile-tab-icon"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></div>
+      <span class="mobile-tab-label">Schedule</span>
+    </a>
+    <a href="contact.html" class="mobile-tab-item" data-tab="contact">
+      <div class="mobile-tab-icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></div>
+      <span class="mobile-tab-label">Contact</span>
+    </a>
+  </nav>
   <!-- Scripts -->
   <script src="/js/main.js"></script>
   <script>
